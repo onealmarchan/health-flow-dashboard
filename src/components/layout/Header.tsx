@@ -12,31 +12,32 @@ import {
 import { cn } from '@/lib/utils';
 
 const lightThemes: { id: ThemeType; name: string; color: string }[] = [
-  { id: 'light-white', name: 'Blanco', color: 'bg-white border border-gray-200' },
-  { id: 'light-green', name: 'Verde Pastel', color: 'bg-green-200' },
-  { id: 'light-blue', name: 'Azul Celeste', color: 'bg-sky-200' },
+  { id: 'light-blue', name: 'Azul Celeste', color: 'bg-sky-300' },
+  { id: 'light-green', name: 'Verde Esmeralda', color: 'bg-emerald-400' },
+  { id: 'light-violet', name: 'Violeta Claro', color: 'bg-violet-300' },
+  { id: 'light-brown', name: 'Marrón Claro', color: 'bg-amber-600' },
 ];
 
 const darkThemes: { id: ThemeType; name: string; color: string }[] = [
-  { id: 'dark-purple', name: 'Morado', color: 'bg-purple-700' },
+  { id: 'dark-purple', name: 'Morado/Rosa', color: 'bg-purple-600' },
   { id: 'dark-scarlet', name: 'Escarlata', color: 'bg-red-700' },
-  { id: 'dark-black', name: 'Negro', color: 'bg-gray-900' },
+  { id: 'dark-black-green', name: 'Negro/Verde', color: 'bg-emerald-900' },
+  { id: 'dark-white-gray', name: 'Blanco/Gris', color: 'bg-gray-400' },
 ];
 
 export function Header() {
-  const { theme, setTheme, isDark } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   return (
     <header className="h-16 bg-card border-b border-border px-6 flex items-center justify-between sticky top-0 z-40">
       <div className="flex items-center gap-4">
         <h2 className="text-lg font-semibold text-foreground">
-          Sistema de Citas Médicas
+          Sistema de Gestión Médica
         </h2>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Theme Selector */}
         <DropdownMenu open={themeMenuOpen} onOpenChange={setThemeMenuOpen}>
           <DropdownMenuTrigger asChild>
             <button className="p-2.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
@@ -80,7 +81,6 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">

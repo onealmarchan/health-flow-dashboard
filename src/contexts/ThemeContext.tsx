@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type ThemeType = 
-  | 'light-white' 
-  | 'light-green' 
   | 'light-blue' 
+  | 'light-green' 
+  | 'light-violet' 
+  | 'light-brown'
   | 'dark-purple' 
   | 'dark-scarlet' 
-  | 'dark-black';
+  | 'dark-black-green'
+  | 'dark-white-gray';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -17,26 +19,24 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const themeClasses: Record<ThemeType, string> = {
-  'light-white': '',
+  'light-blue': '',
   'light-green': 'theme-light-green',
-  'light-blue': 'theme-light-blue',
+  'light-violet': 'theme-light-violet',
+  'light-brown': 'theme-light-brown',
   'dark-purple': 'theme-dark-purple',
   'dark-scarlet': 'theme-dark-scarlet',
-  'dark-black': 'theme-dark-black',
+  'dark-black-green': 'theme-dark-black-green',
+  'dark-white-gray': 'theme-dark-white-gray',
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<ThemeType>('light-white');
+  const [theme, setTheme] = useState<ThemeType>('light-blue');
 
   useEffect(() => {
     const root = document.documentElement;
-    
-    // Remove all theme classes
     Object.values(themeClasses).forEach(cls => {
       if (cls) root.classList.remove(cls);
     });
-    
-    // Add new theme class
     const themeClass = themeClasses[theme];
     if (themeClass) {
       root.classList.add(themeClass);

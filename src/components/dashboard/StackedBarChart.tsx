@@ -1,78 +1,125 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { KPIWrapper } from './KPIWrapper';
 
-const monthlyData = [
-  { month: 'Ene', urgente: 12, noUrgente: 85, viral: 28, transmision: 15 },
-  { month: 'Feb', urgente: 15, noUrgente: 92, viral: 32, transmision: 18 },
-  { month: 'Mar', urgente: 18, noUrgente: 110, viral: 45, transmision: 22 },
-  { month: 'Abr', urgente: 14, noUrgente: 95, viral: 38, transmision: 20 },
-  { month: 'May', urgente: 20, noUrgente: 105, viral: 42, transmision: 25 },
-  { month: 'Jun', urgente: 16, noUrgente: 88, viral: 30, transmision: 17 },
-  { month: 'Jul', urgente: 13, noUrgente: 78, viral: 26, transmision: 14 },
-  { month: 'Ago', urgente: 11, noUrgente: 82, viral: 24, transmision: 12 },
-  { month: 'Sep', urgente: 14, noUrgente: 90, viral: 28, transmision: 16 },
-  { month: 'Oct', urgente: 17, noUrgente: 98, viral: 35, transmision: 19 },
-  { month: 'Nov', urgente: 12, noUrgente: 86, viral: 22, transmision: 13 },
-  { month: 'Dic', urgente: 14, noUrgente: 90, viral: 24, transmision: 16 },
+const monthlyDiseaseData = [
+  { month: 'Ene', gripe: 18.5, covid: 12.3, hepatitis: 5.2, otras: 64.0 },
+  { month: 'Feb', gripe: 20.1, covid: 10.8, hepatitis: 4.8, otras: 64.3 },
+  { month: 'Mar', gripe: 25.0, covid: 15.2, hepatitis: 6.1, otras: 53.7 },
+  { month: 'Abr', gripe: 22.3, covid: 13.1, hepatitis: 5.5, otras: 59.1 },
+  { month: 'May', gripe: 19.8, covid: 14.5, hepatitis: 6.8, otras: 58.9 },
+  { month: 'Jun', gripe: 16.2, covid: 11.0, hepatitis: 4.2, otras: 68.6 },
 ];
 
-export function StackedBarChartComponent() {
+const reconsultaData = [
+  { month: 'Ene', cardio: 12, neuro: 8, pediatria: 5, trauma: 15 },
+  { month: 'Feb', cardio: 14, neuro: 10, pediatria: 6, trauma: 12 },
+  { month: 'Mar', cardio: 11, neuro: 12, pediatria: 8, trauma: 18 },
+  { month: 'Abr', cardio: 16, neuro: 9, pediatria: 4, trauma: 14 },
+  { month: 'May', cardio: 13, neuro: 11, pediatria: 7, trauma: 16 },
+  { month: 'Jun', cardio: 15, neuro: 10, pediatria: 5, trauma: 13 },
+];
+
+const trimestralData = [
+  { trimestre: 'Q1 2023', cardio: 100, neuro: 80, pediatria: 120 },
+  { trimestre: 'Q2 2023', cardio: 110, neuro: 85, pediatria: 115 },
+  { trimestre: 'Q3 2023', cardio: 105, neuro: 92, pediatria: 130 },
+  { trimestre: 'Q4 2023', cardio: 120, neuro: 88, pediatria: 125 },
+  { trimestre: 'Q1 2024', cardio: 130, neuro: 95, pediatria: 140 },
+];
+
+const chartStyle = {
+  grid: { strokeDasharray: "3 3", stroke: 'hsl(var(--border))', vertical: false as const },
+  xAxis: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 },
+  tooltip: {
+    backgroundColor: 'hsl(var(--popover))',
+    border: '1px solid hsl(var(--border))',
+    borderRadius: '8px',
+  },
+};
+
+function DiseaseDistribution() {
   return (
-    <div className="chart-container animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground mb-1">Tendencia Mensual</h3>
-      <p className="text-sm text-muted-foreground mb-4">Registros por tipo de condición</p>
-      
-      <div className="h-[300px]">
+    <div>
+      <div className="mb-4 pr-8">
+        <h3 className="text-lg font-semibold text-foreground">Distribución de Enfermedades</h3>
+        <p className="text-sm text-muted-foreground">Porcentaje mensual por diagnóstico</p>
+      </div>
+      <div className="h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="hsl(var(--border))" 
-              vertical={false}
-            />
-            <XAxis 
-              dataKey="month" 
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              axisLine={{ stroke: 'hsl(var(--border))' }}
-              tickLine={false}
-            />
-            <YAxis 
-              tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'hsl(var(--popover))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '8px',
-              }}
-              labelStyle={{ color: 'hsl(var(--foreground))' }}
-            />
-            <Legend 
-              wrapperStyle={{ paddingTop: '20px' }}
-              formatter={(value) => (
-                <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: '12px' }}>
-                  {value}
-                </span>
-              )}
-            />
-            <Bar 
-              dataKey="urgente" 
-              stackId="a" 
-              fill="hsl(var(--destructive))" 
-              name="Urgente"
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar 
-              dataKey="noUrgente" 
-              stackId="a" 
-              fill="hsl(var(--chart-3))" 
-              name="No Urgente"
-              radius={[4, 4, 0, 0]}
-            />
+          <BarChart data={monthlyDiseaseData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid {...chartStyle.grid} />
+            <XAxis dataKey="month" tick={chartStyle.xAxis} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
+            <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} unit="%" />
+            <Tooltip contentStyle={chartStyle.tooltip} />
+            <Legend wrapperStyle={{ paddingTop: '10px' }} />
+            <Bar dataKey="gripe" stackId="a" fill="hsl(var(--chart-1))" name="Gripe" />
+            <Bar dataKey="covid" stackId="a" fill="hsl(var(--chart-2))" name="COVID" />
+            <Bar dataKey="hepatitis" stackId="a" fill="hsl(var(--chart-4))" name="Hepatitis" />
+            <Bar dataKey="otras" stackId="a" fill="hsl(var(--chart-3))" name="Otras" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
+  );
+}
+
+function ReconsultaFrequency() {
+  return (
+    <div>
+      <div className="mb-4 pr-8">
+        <h3 className="text-lg font-semibold text-foreground">Frecuencia de Reconsultas</h3>
+        <p className="text-sm text-muted-foreground">Pacientes críticos reconsultados por especialidad</p>
+      </div>
+      <div className="h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={reconsultaData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid {...chartStyle.grid} />
+            <XAxis dataKey="month" tick={chartStyle.xAxis} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
+            <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={chartStyle.tooltip} />
+            <Legend wrapperStyle={{ paddingTop: '10px' }} />
+            <Line type="monotone" dataKey="cardio" stroke="hsl(var(--chart-1))" name="Cardiología" strokeWidth={2} />
+            <Line type="monotone" dataKey="neuro" stroke="hsl(var(--chart-2))" name="Neurología" strokeWidth={2} />
+            <Line type="monotone" dataKey="pediatria" stroke="hsl(var(--chart-3))" name="Pediatría" strokeWidth={2} />
+            <Line type="monotone" dataKey="trauma" stroke="hsl(var(--chart-4))" name="Traumatología" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function TrimestralTrend() {
+  return (
+    <div>
+      <div className="mb-4 pr-8">
+        <h3 className="text-lg font-semibold text-foreground">Tasa Trimestral por Especialidad</h3>
+        <p className="text-sm text-muted-foreground">Aumento/decremento de enfermedades</p>
+      </div>
+      <div className="h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={trimestralData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+            <CartesianGrid {...chartStyle.grid} />
+            <XAxis dataKey="trimestre" tick={{ ...chartStyle.xAxis, fontSize: 10 }} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
+            <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={chartStyle.tooltip} />
+            <Legend wrapperStyle={{ paddingTop: '10px' }} />
+            <Bar dataKey="cardio" fill="hsl(var(--chart-1))" name="Cardiología" />
+            <Bar dataKey="neuro" fill="hsl(var(--chart-2))" name="Neurología" />
+            <Bar dataKey="pediatria" fill="hsl(var(--chart-3))" name="Pediatría" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+export function StackedBarChartComponent() {
+  return (
+    <KPIWrapper views={[
+      { label: 'Distribución Enfermedades', component: <DiseaseDistribution /> },
+      { label: 'Reconsultas', component: <ReconsultaFrequency /> },
+      { label: 'Tendencia Trimestral', component: <TrimestralTrend /> },
+    ]} />
   );
 }
