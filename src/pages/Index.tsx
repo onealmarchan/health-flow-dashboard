@@ -3,23 +3,22 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
 import { CitasPage } from '@/components/pages/CitasPage';
-import { HorariosPage } from '@/components/pages/HorariosPage';
+import { JornadasPage } from '@/components/pages/JornadasPage';
 import { EspecialistasPage } from '@/components/pages/EspecialistasPage';
-import { EmpleadosPage } from '@/components/pages/EmpleadosPage';
+import { UsuariosPage } from '@/components/pages/UsuariosPage';
 import { AuditoriasPage } from '@/components/pages/AuditoriasPage';
 
 const pageComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardContent,
   citas: CitasPage,
-  horarios: HorariosPage,
+  jornadas: JornadasPage,
   especialistas: EspecialistasPage,
-  empleados: EmpleadosPage,
+  usuarios: UsuariosPage,
   auditorias: AuditoriasPage,
 };
 
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
-  
   const PageComponent = pageComponents[currentPage] || DashboardContent;
 
   return (
