@@ -71,9 +71,25 @@ export function CitasPage() {
   );
 
   const handleSavePatient = () => {
-    // Mock save - return to search
     setModalStep('search');
-    setNewPatient({ ci: '', nombres: '', apellidos: '', fechaNac: '', sexo: '', direccion: '', telefono: '', nacionalidad: '', estado: 'Activo', estadoCivil: '', ciRepresentante: '' });
+    setNewPatient(emptyPatient);
+  };
+
+  const handleSaveAndContinue = () => {
+    setNewPatient(emptyPatient);
+  };
+
+  const handleCancelRegister = () => {
+    setNewPatient(emptyPatient);
+    setIsMinor(false);
+    setModalStep('search');
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction === 'save') handleSavePatient();
+    else if (confirmAction === 'saveContinue') handleSaveAndContinue();
+    else if (confirmAction === 'cancel') handleCancelRegister();
+    setConfirmAction(null);
   };
 
   const handleSchedule = () => {
