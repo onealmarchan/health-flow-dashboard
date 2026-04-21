@@ -221,93 +221,166 @@ export function CitasPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-foreground">Cédula de Identidad</Label>
-              <Input value={newPatient.ci} onChange={e => setNewPatient({ ...newPatient, ci: e.target.value })} placeholder="Ej: 12345678" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Nombres</Label>
-              <Input value={newPatient.nombres} onChange={e => setNewPatient({ ...newPatient, nombres: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Apellidos</Label>
-              <Input value={newPatient.apellidos} onChange={e => setNewPatient({ ...newPatient, apellidos: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Fecha de Nacimiento</Label>
-              <Input type="date" value={newPatient.fechaNac} onChange={e => setNewPatient({ ...newPatient, fechaNac: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Sexo</Label>
-              <Select value={newPatient.sexo} onValueChange={v => setNewPatient({ ...newPatient, sexo: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Femenino</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Dirección</Label>
-              <Input value={newPatient.direccion} onChange={e => setNewPatient({ ...newPatient, direccion: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Teléfono</Label>
-              <Input value={newPatient.telefono} onChange={e => setNewPatient({ ...newPatient, telefono: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Nacionalidad</Label>
-              <Input value={newPatient.nacionalidad} onChange={e => setNewPatient({ ...newPatient, nacionalidad: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Estado del Paciente</Label>
-              <Select value={newPatient.estado} onValueChange={v => setNewPatient({ ...newPatient, estado: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  <SelectItem value="Activo">Activo</SelectItem>
-                  <SelectItem value="Inactivo">Inactivo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Estado Civil</Label>
-              <Select value={newPatient.estadoCivil} onValueChange={v => setNewPatient({ ...newPatient, estadoCivil: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  <SelectItem value="Soltero/a">Soltero/a</SelectItem>
-                  <SelectItem value="Casado/a">Casado/a</SelectItem>
-                  <SelectItem value="Divorciado/a">Divorciado/a</SelectItem>
-                  <SelectItem value="Viudo/a">Viudo/a</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Minor without CI */}
-          <div className="flex items-center gap-2 mt-4">
-            <input type="checkbox" id="isMinor" checked={isMinor} onChange={e => setIsMinor(e.target.checked)} className="rounded border-border" />
-            <Label htmlFor="isMinor" className="text-foreground text-sm">Paciente menor de edad sin CI</Label>
-          </div>
-          {isMinor && (
-            <div className="space-y-2 mt-2 p-3 rounded-lg bg-secondary/50 border border-border">
-              <Label className="text-foreground">Cédula del Representante</Label>
-              <Input
-                value={newPatient.ciRepresentante}
-                onChange={e => setNewPatient({ ...newPatient, ciRepresentante: e.target.value })}
-                placeholder="Ej: 4568987 → generará 4568987-R01"
+          {/* Minor without CI - relocated to top */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isMinor"
+                checked={isMinor}
+                onChange={e => setIsMinor(e.target.checked)}
+                className="rounded border-border"
               />
-              <p className="text-xs text-muted-foreground">Se asignará un subíndice correlativo (ej: 4568987-R01)</p>
+              <Label htmlFor="isMinor" className="text-foreground text-sm">
+                Paciente menor de edad sin C.I.
+              </Label>
             </div>
-          )}
+            {isMinor && (
+              <div className="space-y-2 p-3 rounded-lg bg-secondary/50 border border-border">
+                <Label className="text-foreground">Cédula del Representante</Label>
+                <Input
+                  value={newPatient.ciRepresentante}
+                  onChange={e => setNewPatient({ ...newPatient, ciRepresentante: e.target.value })}
+                  placeholder="Ej: 4568987 → generará 4568987-R01"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Se asignará un subíndice correlativo (ej: 4568987-R01)
+                </p>
+              </div>
+            )}
+          </div>
 
-          <ModalFormButtons
-            onSave={handleSavePatient}
-            onSaveAndAnother={() => {
-              handleSavePatient();
-              setNewPatient({ ci: '', nombres: '', apellidos: '', fechaNac: '', sexo: '', direccion: '', telefono: '', nacionalidad: '', estado: 'Activo', estadoCivil: '', ciRepresentante: '' });
-            }}
-            onCancel={() => setModalStep('search')}
+          {/* Section 1: Datos Personales */}
+          <div className="space-y-4 mt-2">
+            <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+              Datos Personales
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Cédula de Identidad</Label>
+                <Input value={newPatient.ci} onChange={e => setNewPatient({ ...newPatient, ci: e.target.value })} placeholder="Ej: 12345678" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Nombres</Label>
+                <Input value={newPatient.nombres} onChange={e => setNewPatient({ ...newPatient, nombres: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Apellidos</Label>
+                <Input value={newPatient.apellidos} onChange={e => setNewPatient({ ...newPatient, apellidos: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Fecha de Nacimiento</Label>
+                <Input type="date" value={newPatient.fechaNac} onChange={e => setNewPatient({ ...newPatient, fechaNac: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Sexo</Label>
+                <Select value={newPatient.sexo} onValueChange={v => setNewPatient({ ...newPatient, sexo: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                    <SelectItem value="M">Masculino</SelectItem>
+                    <SelectItem value="F">Femenino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Dirección</Label>
+                <Input value={newPatient.direccion} onChange={e => setNewPatient({ ...newPatient, direccion: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Teléfono</Label>
+                <Input value={newPatient.telefono} onChange={e => setNewPatient({ ...newPatient, telefono: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Nacionalidad</Label>
+                <Input value={newPatient.nacionalidad} onChange={e => setNewPatient({ ...newPatient, nacionalidad: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Estado del Paciente</Label>
+                <Select value={newPatient.estado} onValueChange={v => setNewPatient({ ...newPatient, estado: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Inactivo">Inactivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Estado Civil</Label>
+                <Select value={newPatient.estadoCivil} onValueChange={v => setNewPatient({ ...newPatient, estadoCivil: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                    <SelectItem value="Soltero/a">Soltero/a</SelectItem>
+                    <SelectItem value="Casado/a">Casado/a</SelectItem>
+                    <SelectItem value="Divorciado/a">Divorciado/a</SelectItem>
+                    <SelectItem value="Viudo/a">Viudo/a</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Ubicación */}
+          <div className="space-y-4 mt-4">
+            <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+              Ubicación
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-foreground">Comunidad</Label>
+                <Input value={newPatient.comunidad} onChange={e => setNewPatient({ ...newPatient, comunidad: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Estado</Label>
+                <Input value={newPatient.estadoUbic} onChange={e => setNewPatient({ ...newPatient, estadoUbic: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Municipio</Label>
+                <Input value={newPatient.municipio} onChange={e => setNewPatient({ ...newPatient, municipio: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">Parroquia</Label>
+                <Input value={newPatient.parroquia} onChange={e => setNewPatient({ ...newPatient, parroquia: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 justify-end pt-4 mt-4 border-t border-border">
+            <Button
+              type="button"
+              onClick={() => setConfirmAction('save')}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Guardar
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setConfirmAction('saveContinue')}
+            >
+              Guardar y Continuar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmAction('cancel')}
+            >
+              Cancelar
+            </Button>
+          </div>
+
+          <ConfirmDialog
+            open={confirmAction !== null}
+            onOpenChange={(open) => !open && setConfirmAction(null)}
+            onConfirm={handleConfirmAction}
+            title="¿Estás seguro?"
+            description={
+              confirmAction === 'cancel'
+                ? 'Se perderán los cambios no guardados.'
+                : confirmAction === 'saveContinue'
+                ? 'Se guardarán los datos y podrá registrar otro paciente.'
+                : 'Se guardarán los datos ingresados.'
+            }
           />
         </DialogContent>
       </Dialog>
