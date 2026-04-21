@@ -78,7 +78,6 @@ type SelectedDoctor = Doctor & { specialty: string };
 function buildMonthGrid(year: number, month: number): (number | null)[] {
   const firstDay = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  // Convert: Sunday=0 → 6, Monday=1 → 0 (week starts on Monday)
   const offset = (firstDay.getDay() + 6) % 7;
   const cells: (number | null)[] = Array(offset).fill(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -100,21 +99,42 @@ function formatDateKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }
 
+// ── NUEVO: helper que traduce "occupied/capacity" → colores ──────────────────
+function parseCarga(carga: string): { occupied: number; capacity: number; pct: number } {
+  const [oStr, cStr] = carga.split('/');
+  const occupied = parseInt(oStr, 10);
+  const capacity = parseInt(cStr, 10);
+  const pct = capacity > 0 ? (occupied / capacity) * 100 : 0;
+  return { occupied, capacity, pct };
+}
+
+function getCargaBarColor(pct: number): string {
+  if (pct >= 100) return 'bg-destructive';          // rojo  – lleno
+  if (pct > 50)   return 'bg-orange-500';           // naranja – más de la mitad
+  if (pct >= 50)  return 'bg-warning';              // amarillo – exactamente la mitad
+  return 'bg-success';                              // verde  – menos de la mitad
+}
+
+function getCargaTextColor(pct: number): string {
+  if (pct >= 100) return 'text-destructive';
+  if (pct > 50)   return 'text-orange-500';
+  if (pct >= 50)  return 'text-warning';
+  return 'text-success';
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 export function CitasPage() {
   const [modalStep, setModalStep] = useState<ModalStep>('closed');
   const [patientSearch, setPatientSearch] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<typeof allPatients[0] | null>(null);
   const [isMinor, setIsMinor] = useState(false);
 
-  // Appointments (mutable mock)
   const [appointments, setAppointments] = useState(initialAppointments);
 
-  // Day availability mock
   const [dayAvailability, setDayAvailability] = useState<Record<string, 'available' | 'reserved'>>({
     '2024-01-28': 'reserved',
   });
 
-  // New patient form state
   const [newPatient, setNewPatient] = useState({
     ci: '', nombres: '', apellidos: '', fechaNac: '', sexo: '',
     direccion: '', telefono: '', nacionalidad: '', estado: 'Activo', estadoCivil: '',
@@ -124,10 +144,8 @@ export function CitasPage() {
 
   const [confirmAction, setConfirmAction] = useState<'save' | 'saveContinue' | 'cancel' | null>(null);
 
-  // Doctor selected for the new appointment
   const [selectedDoctor, setSelectedDoctor] = useState<SelectedDoctor | null>(null);
 
-  // Motivo de Consulta state
   const [motivoData, setMotivoData] = useState({
     numPaciente: '',
     descripcion: '',
@@ -136,7 +154,6 @@ export function CitasPage() {
     observacion: '',
   });
 
-  // Cita Médica fullscreen state
   const [citaNumber, setCitaNumber] = useState('');
   const now = new Date();
   const [calMonth, setCalMonth] = useState(now.getMonth());
@@ -182,7 +199,6 @@ export function CitasPage() {
     setConfirmAction(null);
   };
 
-  // Open Motivo modal from a doctor card
   const handleAsignarCita = (doctor: SelectedDoctor) => {
     setSelectedDoctor(doctor);
     setMotivoData({
@@ -209,7 +225,6 @@ export function CitasPage() {
     const nuevoNumero = `CITA-${Date.now().toString().slice(-6)}`;
     setCitaNumber(nuevoNumero);
     setMotivoTexto(motivoData.descripcion);
-    // Set calendar to motivo's date if provided
     const d = new Date(motivoData.fecha);
     if (!isNaN(d.getTime())) {
       setCalMonth(d.getMonth());
@@ -261,7 +276,6 @@ export function CitasPage() {
     setAppointments(prev => [...prev, newApt]);
     setDayAvailability(prev => ({ ...prev, [selectedDate]: 'reserved' }));
     toast.success('Cita agendada exitosamente');
-    // Reset everything
     setModalStep('closed');
     setSelectedPatient(null);
     setSelectedDoctor(null);
@@ -403,7 +417,6 @@ export function CitasPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Minor without CI - relocated to top */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <input
@@ -432,7 +445,6 @@ export function CitasPage() {
             )}
           </div>
 
-          {/* Section 1: Datos Personales */}
           <div className="space-y-4 mt-2">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               Datos Personales
@@ -501,7 +513,6 @@ export function CitasPage() {
             </div>
           </div>
 
-          {/* Section 2: Ubicación */}
           <div className="space-y-4 mt-4">
             <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
               Ubicación
@@ -526,7 +537,6 @@ export function CitasPage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-2 justify-end pt-4 mt-4 border-t border-border">
             <Button
               type="button"
@@ -586,26 +596,48 @@ export function CitasPage() {
                   {group.specialty}
                 </h3>
                 <div className="space-y-2">
-                  {group.doctors.map(doc => (
-                    <div
-                      key={doc.id}
-                      className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
-                    >
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{doc.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {doc.mpps} · Carga actual: {doc.carga}
-                        </span>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
-                        onClick={() => handleAsignarCita({ ...doc, specialty: group.specialty })}
+                  {group.doctors.map(doc => {
+                    // ── AÑADIDO: calcular disponibilidad visual ──────────────
+                    const { occupied, capacity, pct } = parseCarga(doc.carga);
+                    const isFull = pct >= 100;
+                    const barColor  = getCargaBarColor(pct);
+                    const textColor = getCargaTextColor(pct);
+                    // ─────────────────────────────────────────────────────────
+                    return (
+                      <div
+                        key={doc.id}
+                        className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
                       >
-                        Asignar Cita
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="flex flex-col flex-1 mr-4">
+                          <span className="font-medium text-foreground">{doc.name}</span>
+                          <span className="text-xs text-muted-foreground mb-2">
+                            {doc.mpps} · Carga actual: {doc.carga}
+                          </span>
+                          {/* ── AÑADIDO: barra de disponibilidad ── */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                              <div
+                                className={cn('h-full rounded-full transition-all', barColor)}
+                                style={{ width: `${Math.min(pct, 100)}%` }}
+                              />
+                            </div>
+                            <span className={cn('text-xs font-medium whitespace-nowrap', textColor)}>
+                              {capacity - occupied}/{capacity} disponibles
+                            </span>
+                          </div>
+                          {/* ─────────────────────────────────────── */}
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={isFull}
+                          className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
+                          onClick={() => handleAsignarCita({ ...doc, specialty: group.specialty })}
+                        >
+                          Asignar Cita
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -682,13 +714,11 @@ export function CitasPage() {
       {/* Step 5: Cita Médica - Fullscreen */}
       <Dialog open={modalStep === 'fullCita'} onOpenChange={(o) => !o && setModalStep('motivo')}>
         <DialogContent className="bg-card border border-border max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col">
-          {/* Hidden header for accessibility */}
           <DialogHeader className="sr-only">
             <DialogTitle>Cita Médica</DialogTitle>
             <DialogDescription>Seleccione fecha, hora y tipo de cita</DialogDescription>
           </DialogHeader>
 
-          {/* Sticky top bar with Volver button */}
           <div className="flex items-center px-6 py-3 border-b border-border bg-card shrink-0">
             <Button
               variant="ghost"
@@ -701,9 +731,7 @@ export function CitasPage() {
             </Button>
           </div>
 
-          {/* Body: 70/30 grid */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-10 overflow-hidden">
-            {/* Left column 70% */}
             <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-border">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-foreground">Cita Médica</h2>
@@ -712,7 +740,6 @@ export function CitasPage() {
                 </p>
               </div>
 
-              {/* Month/Year selectors */}
               <div className="flex gap-3 mb-4">
                 <div className="flex-1 space-y-2">
                   <Label className="text-foreground">Mes</Label>
@@ -738,7 +765,6 @@ export function CitasPage() {
                 </div>
               </div>
 
-              {/* Calendar */}
               <div className="rounded-lg border border-border p-4 bg-background/50">
                 <div className="grid grid-cols-7 gap-2 mb-2">
                   {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
@@ -772,7 +798,6 @@ export function CitasPage() {
                   })}
                 </div>
 
-                {/* Selected day number bottom-right */}
                 <div className="flex justify-end mt-3">
                   {selectedDayNumber !== null && (
                     <span className="text-sm text-muted-foreground">
@@ -783,7 +808,6 @@ export function CitasPage() {
                 </div>
               </div>
 
-              {/* Legend */}
               <div className="flex flex-wrap gap-4 mt-4 text-sm">
                 <div className="flex items-center gap-2">
                   <span className="w-4 h-4 rounded-full bg-background border border-border" />
@@ -800,7 +824,6 @@ export function CitasPage() {
               </div>
             </div>
 
-            {/* Right column 30% */}
             <div className="lg:col-span-3 p-6 overflow-y-auto bg-background/30">
               {!selectedDate ? (
                 <div className="h-full flex items-center justify-center text-center">
@@ -810,7 +833,6 @@ export function CitasPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Top: 3 controls */}
                   <div className="space-y-3">
                     <div className="space-y-2">
                       <Label className="text-foreground">Tipo de Cita</Label>
@@ -844,7 +866,6 @@ export function CitasPage() {
                     </div>
                   </div>
 
-                  {/* Resumen card */}
                   {isResumenReady && selectedPatient && selectedDoctor && (
                     <div className="rounded-lg border border-border p-4 bg-card space-y-3">
                       <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
@@ -908,7 +929,6 @@ export function CitasPage() {
                     </div>
                   )}
 
-                  {/* Bottom buttons */}
                   <div className="flex flex-col gap-2 pt-2">
                     <Button
                       variant="outline"
