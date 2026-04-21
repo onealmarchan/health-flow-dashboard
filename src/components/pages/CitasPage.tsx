@@ -52,7 +52,17 @@ export function CitasPage() {
     ci: '', nombres: '', apellidos: '', fechaNac: '', sexo: '',
     direccion: '', telefono: '', nacionalidad: '', estado: 'Activo', estadoCivil: '',
     ciRepresentante: '',
+    comunidad: '', estadoUbic: '', municipio: '', parroquia: '',
   });
+
+  const [confirmAction, setConfirmAction] = useState<'save' | 'saveContinue' | 'cancel' | null>(null);
+
+  const emptyPatient = {
+    ci: '', nombres: '', apellidos: '', fechaNac: '', sexo: '',
+    direccion: '', telefono: '', nacionalidad: '', estado: 'Activo', estadoCivil: '',
+    ciRepresentante: '',
+    comunidad: '', estadoUbic: '', municipio: '', parroquia: '',
+  };
 
   const filteredPatients = allPatients.filter(p =>
     p.nombres.toLowerCase().includes(patientSearch.toLowerCase()) ||
