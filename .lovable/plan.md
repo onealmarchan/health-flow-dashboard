@@ -1,112 +1,122 @@
 
 
-## Rediseño del Modal "Agregar Jornada" — Layout de 4 cuadrantes con bloqueos
+## Cambios: Especialidades dinámicas + Nueva página "Control de Diagnósticos"
 
-Reemplazaré el modal actual de `JornadasPage.tsx` (formulario simple) por una pantalla amplia organizada en 4 cuadrantes con calendario visual, edición semanal y gestión de bloqueos.
+### 1. Modal "Nuevo Especialista" — Selector de especialidad dinámico
 
-### Estructura general del modal
+**Archivo:** `src/components/pages/EspecialistasPage.tsx`
 
-- `DialogContent` ampliado: `max-w-[95vw] w-[95vw] h-[92vh] flex flex-col` + botón **X** nativo en esquina superior derecha (ya provisto por shadcn `Dialog`).
-- **Header (sticky superior)**: dos selectores alineados a la izquierda en una fila, separados con `gap-6`:
-  1. **Médico** (`Select` con lista de doctores existentes; muestra MPPS + Nombre + Especialidad).
-  2. **Mes / Año** (dos `Select` lado a lado: meses Enero–Diciembre, años actual a +2).
-- **Body**: grid `grid-cols-2 grid-rows-2 gap-4 flex-1 overflow-hidden` con los 4 cuadrantes. Cada cuadrante usa `bg-card border border-border rounded-lg p-4 overflow-auto`.
-- **Footer (sticky inferior)**: alineado a la derecha → botones **Guardar todo** (primario) y **Cancelar** (outline). Cada uno dispara `ConfirmDialog` ("¿Estás seguro?").
+- Convertir el campo **Especialidad** (actualmente `Input`) en un `Select` (combobox) con shadcn `Select`.
+- Al lado del select, botón **"+"** (icono `Plus`, variant `outline`, tamaño `icon`) que abre el modal anidado **"Registro de Especialidad Médica"**.
+- Catálogo inicial mock (estado `useState<string[]>`): `['Cardiología', 'Pediatría', 'Dermatología', 'Neurología', 'Traumatología', 'Ginecología']`.
 
-### Cuadrante 1 (superior izq.) — Calendario mensual visual
-
-- Tabla `grid-cols-7` con encabezado **Dom Lun Mar Mié Jue Vie Sáb**.
-- Cada celda = botón circular `w-10 h-10 rounded-full border border-border` con el número del día.
-- Colores (única leyenda):
-  - **Blanco** (`bg-background`) = disponible.
-  - **Rojo** (`bg-destructive text-destructive-foreground`) = bloqueado.
-- Click en día rojo → abre el modal secundario "Bloquear Día" precargado con esos datos para editar/eliminar.
-- Click en día blanco → sin acción.
-- Cambio de mes/año en el header → recálculo automático de colores leyendo `bloqueos[]`.
-- **Leyenda** debajo del calendario: dos chips (Disponible / Bloqueado).
-
-### Cuadrante 2 (superior der.) — Edición de jornada por semana
-
-- Selector de semana en la parte superior: `◀  "Semana del 6 al 12 de Abril 2026"  ▶` (botones ghost con `ChevronLeft`/`ChevronRight`).
-- Tabla con columnas: **Día | Turno | Hora Inicio | Hora Fin | Acciones**.
-- 7 filas (Lun → Dom), cada una con:
-  - Día abreviado + número (ej. "Lun 6").
-  - `Select` Turno (Mañana / Tarde / Noche / vacío).
-  - `Input type="time"` Hora Inicio (habilitado solo si hay turno).
-  - `Input type="time"` Hora Fin (habilitado solo si hay hora inicio).
-  - **Acciones**: ✏️ `Edit` (guarda cambios de la fila al estado `weekSchedule`) y 🚫 `Ban` (abre modal secundario "Bloquear Día").
-
-### Modal secundario "Bloquear Día"
-
-- `Dialog` anidado, `max-w-md`, con su propia X.
+**Modal "Registro de Especialidad Médica"** (`Dialog` anidado, `max-w-md`):
 - Campos:
-  - **Fecha Inicio**: `Input type="date"` precargado con la fecha de la fila, `readOnly`/`disabled`.
-  - **Fecha Fin**: `Input type="date"` libre (mínimo = fecha inicio).
-  - **Razón**: `Select` (Vacaciones, Permiso, Reposo, Cirugía, Capacitación, Congreso, Mantenimiento, Rotación, Otro).
-  - **Observaciones**: `Textarea` opcional.
-- Footer: **Guardar** + **Cancelar**.
-- Al guardar:
-  1. Inserta/actualiza objeto en estado `bloqueos[]`.
-  2. Calendario (Cuadrante 1) repinta en rojo todas las fechas en el rango.
-  3. Cuadrante 4 (lista) refresca automáticamente.
+  - **Nombre** (`Input`, requerido).
+  - **Descripción** (`Textarea`, opcional).
+- Footer alineado a la derecha: **Guardar** (primario) + **Cancelar** (outline). El **X** nativo de shadcn cierra como Cancelar.
+- Al **Guardar**: valida nombre no vacío, agrega al array `especialidades`, autoselecciona la nueva en el formulario padre, cierra el modal y muestra `toast.success`.
 
-### Cuadrante 3 (inferior izq.) — Resumen estadístico (placeholder)
+---
 
-- 4 filas con etiquetas y valor vacío (`—`):
-  - Horas regulares
-  - Horas semanales
-  - Días bloqueados
-  - Días hábiles
-- Estilo: lista con `flex justify-between` por fila, separadores sutiles. Reservado para lógica futura.
+### 2. Nueva página "Control de Diagnósticos"
 
-### Cuadrante 4 (inferior der.) — Lista de bloqueos programados
+**2.1 Registro en el sistema**
 
-- Vacío inicialmente (mensaje "Sin bloqueos registrados") hasta que se cree uno.
-- Tabla con columnas: **Fecha Inicio | Fecha Fin | Razón | Observaciones | Acciones**.
-- Acciones por fila:
-  - ✏️ `Edit` → reabre el modal "Bloquear Día" con datos cargados.
-  - 🗑️ `Trash2` → elimina del array `bloqueos[]` (con `ConfirmDialog`); calendario refresca (días vuelven a blanco si no hay otro bloqueo cubriéndolos).
+- Crear `src/components/pages/DiagnosticosPage.tsx`.
+- Registrar en `src/pages/Index.tsx` con clave `diagnosticos`.
+- Añadir entrada en `src/components/layout/Sidebar.tsx`: `{ id: 'diagnosticos', label: 'Control de Diagnósticos', icon: Stethoscope }` (de `lucide-react`).
 
-### Diagrama del layout
+**2.2 Tabla principal**
+
+Columnas: **Nº | Paciente | Nº Cita Origen | Enfermedad | Crítico | Etapa | Fecha | Estado | Acciones**.
+- `Crítico` → badge "Sí" (rojo) / "No" (gris).
+- `Estado` → badge según valor (Activo verde / Resuelto azul).
+- `Acciones` → botón **"Ver diagnóstico"** (icono `Eye` + texto).
+
+Botón **"Registrar Diagnóstico"** arriba a la derecha del header de la página.
+
+Estado: `useState<Diagnostico[]>` con 2-3 mocks iniciales.
+
+**2.3 Modal "Registrar Diagnóstico"** (`max-w-3xl`, scroll interno)
+
+Layout en grid de 2 columnas para campos básicos:
 
 ```text
-┌─ Modal Agregar Jornada ─────────────────────────────── X ─┐
-│ [Médico ▼]   [Mes ▼] [Año ▼]                              │
-├──────────────────────────┬────────────────────────────────┤
-│ 1. Calendario mensual    │ 2. ◀ Semana 6-12 Abr 2026 ▶   │
-│   D L M M J V S          │ ┌──────────────────────────┐  │
-│   ○ ● ○ ○ ○ ○ ○          │ │Día│Turno│Ini│Fin│Acción │  │
-│   ○ ○ ○ ● ○ ○ ○          │ │Lun│ ▼   │   │   │✏️ 🚫  │  │
-│   ...                    │ │...│     │   │   │       │  │
-│   ⚪ Disp · 🔴 Bloq       │ └──────────────────────────┘  │
-├──────────────────────────┼────────────────────────────────┤
-│ 3. Resumen               │ 4. Bloqueos programados        │
-│   Horas regulares: —     │  Fec.Ini│Fec.Fin│Razón│Obs│Act │
-│   Horas semanales: —     │  ...                           │
-│   Días bloqueados: —     │                                │
-│   Días hábiles:    —     │                                │
-├──────────────────────────┴────────────────────────────────┤
-│                          [Guardar todo]  [Cancelar]       │
-└───────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│ Nº Cita Paciente [Select▼]   Fecha de Cita [auto]   │
+│ C.I.            [Input]      Nombres   [Input]      │
+│ Apellidos       [Input]      Urgencia  [Sí/No radio]│
+│ Motivo de la Cita     [Textarea col-span-2]         │
+│ Tratamiento Previo    [Textarea col-span-2]         │
+│ ── Síntomas Detectados ──── [+ Agregar síntoma]     │
+│  ┌ Síntoma 1 ──────────────────────── [🗑️]         │
+│  │ Nombre [_] Descripción [_] Gravedad [1-5 ▼]      │
+│  └─────                                             │
+│ ── Diagnóstico Final ──────────────                 │
+│  Nombre [_]   Descripción [Textarea]                │
+│  Crónico: ○ Sí  ○ No                                │
+│                          [Guardar] [Cancelar]       │
+└─────────────────────────────────────────────────────┘
 ```
+
+- Al seleccionar **Nº Cita**: auto-rellena C.I., Nombres, Apellidos y Fecha de Cita desde un mock de citas (`mockCitas`).
+- **Síntomas Detectados**: lista repetible (`useState<Sintoma[]>`); cada bloque con botón ✕ para eliminar; botón "+ Agregar síntoma" añade entrada vacía. Gravedad = `Select` 1–5.
+- **Diagnóstico Final**: bloque único con Nombre, Descripción y `RadioGroup` Sí/No para Crónico.
+- Footer abajo a la derecha: **Guardar** + **Cancelar**, con `ConfirmDialog` ("¿Estás seguro?") según estándar CRUD.
+- Al guardar: añade al array `diagnosticos`, cierra modal, `toast.success`, refresca tabla.
+
+**2.4 Modal "Ver diagnóstico"** (`max-w-5xl`, layout 4 cuadrantes)
+
+Header superior (fila): `Nº Cita Paciente: XXX` · `Fecha de Diagnóstico: YYYY-MM-DD`. X nativo arriba derecha.
+
+Body en `grid grid-cols-2 grid-rows-2 gap-4`:
+
+```text
+┌── A: Datos del Paciente ──┬── B: Medidor de Salud ──┐
+│ Nº Paciente: ...          │      ╔═══╗              │
+│ C.I.: ...                 │      ║   ║  😊          │
+│ Nombre / Apellido         │      ║▓▓▓║   (nivel)    │
+│ Diagnóstico Presuntivo    │      ║▓▓▓║              │
+│ Tratamiento               │      ╚═══╝              │
+│ Urgencia: Sí/No           │   Gravedad: 4/5         │
+├── C: Síntomas detectados ─┼── D: Enfermedad ────────┤
+│ Tabla:                    │ Nombre: ...             │
+│ Nombre│Descripción│Grav.  │ Descripción: ...        │
+│ ...                       │ Crónica: Sí / No        │
+└───────────────────────────┴─────────────────────────┘
+```
+
+**Cuadrante B — Medidor de Salud (termómetro vertical)**:
+- Componente custom `<HealthMeter value={1-5} />`.
+- Barra vertical `w-12 h-48 rounded-full border bg-muted overflow-hidden` con relleno interior `absolute bottom-0 w-full transition-all` cuya altura = `value*20%`.
+- Mapa color/emoji:
+  - 1 → `bg-red-500`     😫
+  - 2 → `bg-orange-500`  😟
+  - 3 → `bg-yellow-400`  😐
+  - 4 → `bg-blue-500`    🙂
+  - 5 → `bg-green-500`   😁
+- Emoji grande al lado del termómetro + label "Gravedad: X/5".
+- Valor: del Diagnóstico Final si existe; si no, promedio de gravedad de síntomas; default `3`.
+
+---
 
 ### Detalles técnicos
 
-- **Archivo único modificado**: `src/components/pages/JornadasPage.tsx`. La tabla principal "Jornadas Registradas" y el botón "Agregar Jornada" se mantienen.
-- Nuevos estados (todos `useState` locales, mock):
-  - `selectedMpps: string`
-  - `calMonth: number`, `calYear: number`
-  - `weekOffset: number` (índice de semana dentro del mes)
-  - `weekSchedule: Record<string, { turno, horaInicio, horaFin }>` (clave = `YYYY-MM-DD`)
-  - `bloqueos: Bloqueo[]` con `{ id, fechaInicio, fechaFin, razon, observaciones }`
-  - `blockModal: { open, editingId, fechaInicio (locked), fechaFin, razon, observaciones }`
-- **Helpers**:
-  - `buildMonthGrid(year, month)` → matriz 6×7 con padding de días vacíos al inicio.
-  - `isDateBlocked(dateStr, bloqueos)` → recorre rangos.
-  - `getWeekRange(year, month, offset)` → devuelve `{ start, end, days[] }` para el cuadrante 2.
-  - `formatRange()` para el subtítulo "Semana del X al Y de Mes Año".
-- **UI components reutilizados**: `Dialog`, `Select`, `Input`, `Textarea`, `Button`, `Label`, `ConfirmDialog`. Iconos: `ChevronLeft`, `ChevronRight`, `Edit`, `Ban`, `Trash2`, `X` (de `lucide-react`).
-- **Integración con calendario**: cada cambio en `bloqueos` recalcula colores del cuadrante 1 vía función pura (sin `useEffect` adicional).
-- **Confirmaciones**: "Guardar todo", "Cancelar", eliminación de bloqueo y guardado de bloqueo individual usan `ConfirmDialog` ("¿Estás seguro?") según estándar CRUD del proyecto.
-- **Sin cambios** en otras páginas, en la tabla principal, ni en el sidebar.
+- **Tipos** (definidos en `DiagnosticosPage.tsx`):
+  ```ts
+  type Sintoma = { nombre: string; descripcion: string; gravedad: number };
+  type Diagnostico = {
+    id: number; numCitaOrigen: string; paciente: string; ci: string;
+    nombres: string; apellidos: string; fechaCita: string; fechaDiagnostico: string;
+    motivo: string; tratamientoPrevio: string; urgencia: boolean;
+    sintomas: Sintoma[];
+    enfermedad: { nombre: string; descripcion: string; cronico: boolean };
+    critico: boolean; etapa: string; estado: string;
+  };
+  ```
+- **Mocks**: `mockCitas` (3-4 citas con datos de paciente) y 2-3 diagnósticos de ejemplo precargados.
+- **Componentes UI reutilizados**: `Dialog`, `Select`, `Input`, `Textarea`, `RadioGroup`, `Button`, `Label`, `Table`, `ConfirmDialog`, `toast` (sonner).
+- **Iconos** (`lucide-react`): `Plus`, `Eye`, `Trash2`, `Stethoscope`, `X` (nativo del Dialog).
+- **Sin cambios** en otras páginas/módulos. La nueva página queda accesible desde el sidebar.
 
