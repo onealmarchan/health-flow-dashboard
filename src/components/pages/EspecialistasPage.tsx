@@ -175,7 +175,27 @@ export function EspecialistasPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">Especialidad</Label>
-              <Input value={newSpec.especialidad} onChange={e => setNewSpec({ ...newSpec, especialidad: e.target.value })} />
+              <div className="flex gap-2">
+                <Select value={newSpec.especialidad} onValueChange={v => setNewSpec({ ...newSpec, especialidad: v })}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Seleccione una especialidad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {especialidades.map(e => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setSpecModalOpen(true)}
+                  title="Agregar especialidad"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -184,6 +204,52 @@ export function EspecialistasPage() {
             onSaveAndAnother={() => { handleSave(); setModalView('new'); }}
             onCancel={() => setModalView('search')}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Nested: Registro de Especialidad Médica */}
+      <Dialog open={specModalOpen} onOpenChange={setSpecModalOpen}>
+        <DialogContent className="bg-card border border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Registro de Especialidad Médica</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Agregue una nueva especialidad al catálogo
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-foreground">Nombre <span className="text-destructive">*</span></Label>
+              <Input
+                value={newEspecialidad.nombre}
+                onChange={e => setNewEspecialidad({ ...newEspecialidad, nombre: e.target.value })}
+                placeholder="Ej. Oftalmología"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Descripción</Label>
+              <Textarea
+                value={newEspecialidad.descripcion}
+                onChange={e => setNewEspecialidad({ ...newEspecialidad, descripcion: e.target.value })}
+                placeholder="Descripción opcional"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setNewEspecialidad({ nombre: '', descripcion: '' }); setSpecModalOpen(false); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              onClick={handleSaveEspecialidad}
+            >
+              Guardar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
