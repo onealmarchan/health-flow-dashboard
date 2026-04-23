@@ -1,113 +1,112 @@
 
 
-## Rediseño del Flujo "Agendar Cita" — 3 nuevos modales encadenados
+## Rediseño del Modal "Agregar Jornada" — Layout de 4 cuadrantes con bloqueos
 
-Voy a reemplazar el actual modal "Agendar Cita" (paso 3) por un flujo de tres pantallas conectadas dentro de `src/components/pages/CitasPage.tsx`, manteniendo los pasos 1 (Buscar) y 2 (Registrar) intactos.
+Reemplazaré el modal actual de `JornadasPage.tsx` (formulario simple) por una pantalla amplia organizada en 4 cuadrantes con calendario visual, edición semanal y gestión de bloqueos.
 
-### Cambios principales
+### Estructura general del modal
 
-**1. Modal "Agendar Cita" (rediseñado) — agrupación por especialidad**
+- `DialogContent` ampliado: `max-w-[95vw] w-[95vw] h-[92vh] flex flex-col` + botón **X** nativo en esquina superior derecha (ya provisto por shadcn `Dialog`).
+- **Header (sticky superior)**: dos selectores alineados a la izquierda en una fila, separados con `gap-6`:
+  1. **Médico** (`Select` con lista de doctores existentes; muestra MPPS + Nombre + Especialidad).
+  2. **Mes / Año** (dos `Select` lado a lado: meses Enero–Diciembre, años actual a +2).
+- **Body**: grid `grid-cols-2 grid-rows-2 gap-4 flex-1 overflow-hidden` con los 4 cuadrantes. Cada cuadrante usa `bg-card border border-border rounded-lg p-4 overflow-auto`.
+- **Footer (sticky inferior)**: alineado a la derecha → botones **Guardar todo** (primario) y **Cancelar** (outline). Cada uno dispara `ConfirmDialog` ("¿Estás seguro?").
 
-Sustituyo la lista plana de `scheduleBlocks` por una vista agrupada:
-- Acordeones/secciones por especialidad (Cardiología, Pediatría, Dermatología, Neurología…).
-- Cada doctor se muestra como una tarjeta con: nombre, MPPS, carga actual y un botón **"Asignar Cita"** a la derecha.
-- Al pulsar "Asignar Cita" → se abre el modal **Motivo de Consulta** y se guarda el doctor seleccionado en estado.
+### Cuadrante 1 (superior izq.) — Calendario mensual visual
 
-**2. Nuevo modal "Motivo de Consulta"**
+- Tabla `grid-cols-7` con encabezado **Dom Lun Mar Mié Jue Vie Sáb**.
+- Cada celda = botón circular `w-10 h-10 rounded-full border border-border` con el número del día.
+- Colores (única leyenda):
+  - **Blanco** (`bg-background`) = disponible.
+  - **Rojo** (`bg-destructive text-destructive-foreground`) = bloqueado.
+- Click en día rojo → abre el modal secundario "Bloquear Día" precargado con esos datos para editar/eliminar.
+- Click en día blanco → sin acción.
+- Cambio de mes/año en el header → recálculo automático de colores leyendo `bloqueos[]`.
+- **Leyenda** debajo del calendario: dos chips (Disponible / Bloqueado).
 
-Modal mediano (`max-w-lg`) con 5 campos en orden:
-1. **Nº Paciente** (precargado y readonly desde el paciente seleccionado).
-2. **Descripción** (`Textarea`).
-3. **Nivel de Urgencia** (`Select`: Bajo / Medio / Alto).
-4. **Fecha** (input `type="date"`).
-5. **Observación** (`Textarea`).
+### Cuadrante 2 (superior der.) — Edición de jornada por semana
 
-Botón **"Siguiente"** abajo a la derecha; queda `disabled` hasta que TODOS los campos requeridos tengan valor (validación derivada). Al hacer click → cierra este modal, abre el modal a pantalla completa y genera un **Nº de Cita** (ej: `CITA-{timestamp}` ).
+- Selector de semana en la parte superior: `◀  "Semana del 6 al 12 de Abril 2026"  ▶` (botones ghost con `ChevronLeft`/`ChevronRight`).
+- Tabla con columnas: **Día | Turno | Hora Inicio | Hora Fin | Acciones**.
+- 7 filas (Lun → Dom), cada una con:
+  - Día abreviado + número (ej. "Lun 6").
+  - `Select` Turno (Mañana / Tarde / Noche / vacío).
+  - `Input type="time"` Hora Inicio (habilitado solo si hay turno).
+  - `Input type="time"` Hora Fin (habilitado solo si hay hora inicio).
+  - **Acciones**: ✏️ `Edit` (guarda cambios de la fila al estado `weekSchedule`) y 🚫 `Ban` (abre modal secundario "Bloquear Día").
 
-**3. Nuevo modal a pantalla completa "Cita Médica"**
+### Modal secundario "Bloquear Día"
 
-`DialogContent` con `max-w-[95vw] w-[95vw] h-[90vh]`. Layout:
+- `Dialog` anidado, `max-w-md`, con su propia X.
+- Campos:
+  - **Fecha Inicio**: `Input type="date"` precargado con la fecha de la fila, `readOnly`/`disabled`.
+  - **Fecha Fin**: `Input type="date"` libre (mínimo = fecha inicio).
+  - **Razón**: `Select` (Vacaciones, Permiso, Reposo, Cirugía, Capacitación, Congreso, Mantenimiento, Rotación, Otro).
+  - **Observaciones**: `Textarea` opcional.
+- Footer: **Guardar** + **Cancelar**.
+- Al guardar:
+  1. Inserta/actualiza objeto en estado `bloqueos[]`.
+  2. Calendario (Cuadrante 1) repinta en rojo todas las fechas en el rango.
+  3. Cuadrante 4 (lista) refresca automáticamente.
 
-- **Header (sticky)**: botón **"← Volver"** en la esquina superior izquierda → cierra este modal y reabre "Motivo de Consulta" preservando los datos.
-- **Grid 70/30** debajo del header.
+### Cuadrante 3 (inferior izq.) — Resumen estadístico (placeholder)
 
-**Columna izquierda (70%)**:
-- Título "Cita Médica" + subtítulo `Nº de Cita Médica: CITA-XXXX`.
-- Dos `Select`: **Mes** (Enero–Diciembre) y **Año** (actual a +5 años).
-- **Calendario personalizado** (no `react-day-picker` — necesitamos celdas circulares con colores por estado). Se construirá con un grid `grid-cols-7`:
-  - Encabezado L M M J V S D.
-  - Cada celda: botón circular (`rounded-full w-10 h-10`) con el número del día.
-  - Color de fondo: blanco (disponible), rojo (reservado), azul (seleccionado).
-  - Estado de cupos vendrá de un mock `dayAvailability: Record<string, 'available' | 'reserved'>`.
-- **Nº del día seleccionado** mostrado abajo a la derecha del calendario.
-- **Leyenda** debajo: 3 chips con colores y texto (Blanco/Rojo/Azul).
+- 4 filas con etiquetas y valor vacío (`—`):
+  - Horas regulares
+  - Horas semanales
+  - Días bloqueados
+  - Días hábiles
+- Estilo: lista con `flex justify-between` por fila, separadores sutiles. Reservado para lógica futura.
 
-**Columna derecha (30%)** — dos estados:
-- **Sin fecha seleccionada**: mensaje "Seleccione una fecha disponible".
-- **Con fecha seleccionada**:
-  - Bloque superior con 3 controles:
-    - **Tipo de Cita** (`Select`: Primera vez / Control / Urgencia).
-    - **Motivo** (`Input`, precargado desde la Descripción del modal anterior).
-    - **Hora Disponible** (`Select` con horarios mock filtrados por la fecha).
-  - Cuando los 3 campos estén llenos → aparece el bloque **"Resumen de Cita Asignada"**:
+### Cuadrante 4 (inferior der.) — Lista de bloqueos programados
 
-```text
-┌─ Resumen de Cita Asignada ─────────────────────────┐
-│ Nº de Cita: CITA-001        Médico: Dr. López      │
-│ Paciente:   María García    Especialidad: Cardio.  │
-│ Edad:       34 años         Remitido: ○ Sí  ○ No   │
-│ Motivo:     Dolor torácico  Tipo: Control          │
-│ Día:        2025-04-22      Hora: 09:30            │
-└────────────────────────────────────────────────────┘
-```
-   Implementado con `grid grid-cols-2 gap-x-6 gap-y-2`. Cada par usa `<span class="font-medium">label:</span> <span>valor</span>`. **Remitido** usa `RadioGroup` (Sí/No).
-  - Debajo, dos botones a ancho completo: **"Regresar"** (vuelve a Motivo) y **"Agendar Cita"** (primario).
+- Vacío inicialmente (mensaje "Sin bloqueos registrados") hasta que se cree uno.
+- Tabla con columnas: **Fecha Inicio | Fecha Fin | Razón | Observaciones | Acciones**.
+- Acciones por fila:
+  - ✏️ `Edit` → reabre el modal "Bloquear Día" con datos cargados.
+  - 🗑️ `Trash2` → elimina del array `bloqueos[]` (con `ConfirmDialog`); calendario refresca (días vuelven a blanco si no hay otro bloqueo cubriéndolos).
 
-### Comportamiento al confirmar
-
-Al pulsar **"Agendar Cita"**:
-1. Se construye el objeto cita con todos los datos (paciente, doctor, especialidad, fecha, hora, motivo, urgencia, tipo, remitido, observación).
-2. Se agrega a un `useState<Appointment[]>` que reemplazará el `appointments` constante actual (estado interno del componente, mock).
-3. Se marca el cupo (`dayAvailability[fecha]`) como `'reserved'` para que el calendario lo muestre en rojo.
-4. Se cierran los 3 modales (`modalStep = 'closed'`).
-5. Se muestra `toast.success('Cita agendada exitosamente')` (sonner).
-6. La nueva cita aparece en la tabla principal de Citas.
-
-### Diagrama de navegación
+### Diagrama del layout
 
 ```text
-[Tabla Citas] → [Buscar Paciente] → (paciente seleccionado)
-                                          ↓
-                                   [Agendar Cita]
-                                   (doctores por
-                                    especialidad)
-                                          ↓ "Asignar Cita"
-                                   [Motivo de Consulta]
-                                          ↓ "Siguiente" (cuando válido)
-                                   [Cita Médica - fullscreen]
-                                          ↓ "Agendar Cita"
-                                   toast + cierra todo
-                                   + actualiza tabla
+┌─ Modal Agregar Jornada ─────────────────────────────── X ─┐
+│ [Médico ▼]   [Mes ▼] [Año ▼]                              │
+├──────────────────────────┬────────────────────────────────┤
+│ 1. Calendario mensual    │ 2. ◀ Semana 6-12 Abr 2026 ▶   │
+│   D L M M J V S          │ ┌──────────────────────────┐  │
+│   ○ ● ○ ○ ○ ○ ○          │ │Día│Turno│Ini│Fin│Acción │  │
+│   ○ ○ ○ ● ○ ○ ○          │ │Lun│ ▼   │   │   │✏️ 🚫  │  │
+│   ...                    │ │...│     │   │   │       │  │
+│   ⚪ Disp · 🔴 Bloq       │ └──────────────────────────┘  │
+├──────────────────────────┼────────────────────────────────┤
+│ 3. Resumen               │ 4. Bloqueos programados        │
+│   Horas regulares: —     │  Fec.Ini│Fec.Fin│Razón│Obs│Act │
+│   Horas semanales: —     │  ...                           │
+│   Días bloqueados: —     │                                │
+│   Días hábiles:    —     │                                │
+├──────────────────────────┴────────────────────────────────┤
+│                          [Guardar todo]  [Cancelar]       │
+└───────────────────────────────────────────────────────────┘
 ```
 
-### Detalles Técnicos
+### Detalles técnicos
 
-- **Archivo único modificado**: `src/components/pages/CitasPage.tsx`.
-- Ampliar `ModalStep` a: `'closed' | 'search' | 'register' | 'schedule' | 'motivo' | 'fullCita'`.
-- Nuevos estados:
-  - `selectedDoctor: { name, specialty, mpps } | null`
-  - `motivoData: { numPaciente, descripcion, urgencia, fecha, observacion }`
-  - `citaNumber: string` (generado al pulsar "Siguiente")
-  - `calMonth, calYear, selectedDate, tipoCita, motivoTexto, horaSeleccionada, remitido`
-  - `appointments` migra de constante a `useState`.
-  - `dayAvailability: Record<string,'available'|'reserved'>` mock con algunas fechas pre-reservadas.
-- **Calendario custom** (no react-day-picker): función `buildMonthGrid(year, month)` que devuelve matriz de días con padding inicial; render con `grid-cols-7`. Esto permite controlar los círculos de color exigidos.
-- **Validación de "Siguiente"**: `isMotivoValid = Object.values(motivoData).every(v => v.trim() !== '')`.
-- **Mock de doctores agrupados** (nuevo array `doctorsBySpecialty`): array con `{ specialty, doctors: [{ id, name, mpps, carga }] }`.
-- **Mock de horarios por fecha**: array fijo `['08:00','08:30','09:00','09:30','10:00','10:30','11:00']` filtrando los ya tomados.
-- **UI components reutilizados**: `Dialog`, `Select`, `Input`, `Textarea`, `RadioGroup`, `Button`, `Label` (todos existentes en `@/components/ui/`).
-- **Toast**: `import { toast } from 'sonner'` (ya disponible globalmente).
-- **Cálculo de edad**: helper `calcAge(fechaNac)` a partir de `selectedPatient.fechaNac`.
-- **Botón "Volver"** en pantalla completa: simplemente hace `setModalStep('motivo')` sin limpiar `motivoData`.
-- **Sin cambios** en: pasos 1 (Buscar Paciente), 2 (Registrar Nuevo Paciente), tabla principal de citas, ni en otros módulos.
+- **Archivo único modificado**: `src/components/pages/JornadasPage.tsx`. La tabla principal "Jornadas Registradas" y el botón "Agregar Jornada" se mantienen.
+- Nuevos estados (todos `useState` locales, mock):
+  - `selectedMpps: string`
+  - `calMonth: number`, `calYear: number`
+  - `weekOffset: number` (índice de semana dentro del mes)
+  - `weekSchedule: Record<string, { turno, horaInicio, horaFin }>` (clave = `YYYY-MM-DD`)
+  - `bloqueos: Bloqueo[]` con `{ id, fechaInicio, fechaFin, razon, observaciones }`
+  - `blockModal: { open, editingId, fechaInicio (locked), fechaFin, razon, observaciones }`
+- **Helpers**:
+  - `buildMonthGrid(year, month)` → matriz 6×7 con padding de días vacíos al inicio.
+  - `isDateBlocked(dateStr, bloqueos)` → recorre rangos.
+  - `getWeekRange(year, month, offset)` → devuelve `{ start, end, days[] }` para el cuadrante 2.
+  - `formatRange()` para el subtítulo "Semana del X al Y de Mes Año".
+- **UI components reutilizados**: `Dialog`, `Select`, `Input`, `Textarea`, `Button`, `Label`, `ConfirmDialog`. Iconos: `ChevronLeft`, `ChevronRight`, `Edit`, `Ban`, `Trash2`, `X` (de `lucide-react`).
+- **Integración con calendario**: cada cambio en `bloqueos` recalcula colores del cuadrante 1 vía función pura (sin `useEffect` adicional).
+- **Confirmaciones**: "Guardar todo", "Cancelar", eliminación de bloqueo y guardado de bloqueo individual usan `ConfirmDialog` ("¿Estás seguro?") según estándar CRUD del proyecto.
+- **Sin cambios** en otras páginas, en la tabla principal, ni en el sidebar.
 
