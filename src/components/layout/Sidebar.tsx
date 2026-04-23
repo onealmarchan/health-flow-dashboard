@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
-  CalendarDays, Clock, UserCog, Users, FileSearch, 
+  CalendarDays, Clock, UserCog, Users, FileSearch, Stethoscope,
   ChevronLeft, ChevronRight, Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'citas', label: 'Citas', icon: CalendarDays },
   { id: 'jornadas', label: 'Planificación de Jornadas', icon: Clock },
   { id: 'especialistas', label: 'Especialistas Médicos', icon: UserCog },
+  { id: 'diagnosticos', label: 'Control de Diagnósticos', icon: Stethoscope },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
   { id: 'auditorias', label: 'Auditorías', icon: FileSearch },
 ];

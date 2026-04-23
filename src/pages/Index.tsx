@@ -7,12 +7,14 @@ import { JornadasPage } from '@/components/pages/JornadasPage';
 import { EspecialistasPage } from '@/components/pages/EspecialistasPage';
 import { UsuariosPage } from '@/components/pages/UsuariosPage';
 import { AuditoriasPage } from '@/components/pages/AuditoriasPage';
+import { DiagnosticosPage } from '@/components/pages/DiagnosticosPage';
 
 const pageComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardContent,
   citas: CitasPage,
   jornadas: JornadasPage,
   especialistas: EspecialistasPage,
+  diagnosticos: DiagnosticosPage,
   usuarios: UsuariosPage,
   auditorias: AuditoriasPage,
 };
