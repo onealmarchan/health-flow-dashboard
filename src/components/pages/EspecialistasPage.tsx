@@ -24,6 +24,11 @@ export function EspecialistasPage() {
   const [modalView, setModalView] = useState<ModalView>('closed');
   const [searchQuery, setSearchQuery] = useState('');
   const [newSpec, setNewSpec] = useState({ mpps: '', nombre: '', apellido: '', telefono: '', especialidad: '' });
+  const [especialidades, setEspecialidades] = useState<string[]>([
+    'Cardiología', 'Pediatría', 'Dermatología', 'Neurología', 'Traumatología', 'Ginecología',
+  ]);
+  const [specModalOpen, setSpecModalOpen] = useState(false);
+  const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
 
   const filteredSpecialists = specialists.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -33,6 +38,23 @@ export function EspecialistasPage() {
   const handleSave = () => {
     setModalView('closed');
     setNewSpec({ mpps: '', nombre: '', apellido: '', telefono: '', especialidad: '' });
+  };
+
+  const handleSaveEspecialidad = () => {
+    const nombre = newEspecialidad.nombre.trim();
+    if (!nombre) {
+      toast.error('El nombre de la especialidad es obligatorio');
+      return;
+    }
+    if (especialidades.some(e => e.toLowerCase() === nombre.toLowerCase())) {
+      toast.error('Esa especialidad ya existe');
+      return;
+    }
+    setEspecialidades([...especialidades, nombre]);
+    setNewSpec(s => ({ ...s, especialidad: nombre }));
+    setNewEspecialidad({ nombre: '', descripcion: '' });
+    setSpecModalOpen(false);
+    toast.success('Especialidad registrada');
   };
 
   return (
