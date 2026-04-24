@@ -175,6 +175,17 @@ export function CitasPage() {
     setModalStep('search');
   };
 
+  const handleMinorChange = (checked: boolean) => {
+    setIsMinor(checked);
+
+    if (checked) {
+      setNewPatient(prev => ({
+        ...prev,
+        ci: '',
+      }));
+    }
+  };
+
   const handleConfirmAction = () => {
     if (confirmAction === 'save') handleSavePatient();
     else if (confirmAction === 'saveContinue') handleSaveAndContinue();
@@ -410,7 +421,7 @@ export function CitasPage() {
                 type="checkbox"
                 id="isMinor"
                 checked={isMinor}
-                onChange={e => setIsMinor(e.target.checked)}
+                onChange={e => handleMinorChange(e.target.checked)}
                 className="rounded border-border"
               />
               <Label htmlFor="isMinor" className="text-foreground text-sm">
@@ -440,7 +451,19 @@ export function CitasPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-foreground">Cédula de Identidad</Label>
-                <Input value={newPatient.ci} onChange={e => setNewPatient({ ...newPatient, ci: e.target.value })} placeholder="Ej: 12345678" />
+                <Input
+                  value={isMinor ? '' : newPatient.ci}
+                  disabled={isMinor}
+                  onChange={e => {
+                    if (!isMinor) setNewPatient({ ...newPatient, ci: e.target.value });
+                  }}
+                  placeholder={isMinor ? 'Se usará la cédula del representante' : 'Ej: 12345678'}
+                />
+                {isMinor && (
+                  <p className="text-xs text-muted-foreground">
+                    Campo anulado: se usará la Cédula del Representante como documento de identificación.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Nombres</Label>
@@ -615,15 +638,15 @@ export function CitasPage() {
 
       {/* Step 4: Motivo de Consulta */}
       <Dialog open={modalStep === 'motivo'} onOpenChange={(o) => !o && setModalStep('schedule')}>
-        <DialogContent className="bg-card border border-border max-w-lg">
-          <DialogHeader>
+        <DialogContent className="bg-card border border-border w-[92vw] max-w-2xl max-h-[82vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-foreground">Motivo de Consulta</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {selectedDoctor?.name} · {selectedDoctor?.specialty}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 pr-8 space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Nº Paciente</Label>
               <Input value={motivoData.numPaciente} readOnly className="bg-muted" />
@@ -667,7 +690,7 @@ export function CitasPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-border">
+          <div className="shrink-0 flex justify-end px-6 py-4 border-t border-border bg-card">
             <Button
               disabled={!isMotivoValid}
               onClick={handleSiguienteMotivo}
