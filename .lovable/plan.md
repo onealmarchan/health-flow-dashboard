@@ -1,122 +1,154 @@
 
+## Implementación: Icono de notificaciones en el header principal
 
-## Cambios: Especialidades dinámicas + Nueva página "Control de Diagnósticos"
+Se agregará un módulo visual e interactivo de notificaciones dentro del header principal de la aplicación, sin conexión a backend y manteniendo el estilo existente.
 
-### 1. Modal "Nuevo Especialista" — Selector de especialidad dinámico
+### Archivo a modificar
 
-**Archivo:** `src/components/pages/EspecialistasPage.tsx`
+- `src/components/layout/Header.tsx`
 
-- Convertir el campo **Especialidad** (actualmente `Input`) en un `Select` (combobox) con shadcn `Select`.
-- Al lado del select, botón **"+"** (icono `Plus`, variant `outline`, tamaño `icon`) que abre el modal anidado **"Registro de Especialidad Médica"**.
-- Catálogo inicial mock (estado `useState<string[]>`): `['Cardiología', 'Pediatría', 'Dermatología', 'Neurología', 'Traumatología', 'Ginecología']`.
+### Cambios principales
 
-**Modal "Registro de Especialidad Médica"** (`Dialog` anidado, `max-w-md`):
-- Campos:
-  - **Nombre** (`Input`, requerido).
-  - **Descripción** (`Textarea`, opcional).
-- Footer alineado a la derecha: **Guardar** (primario) + **Cancelar** (outline). El **X** nativo de shadcn cierra como Cancelar.
-- Al **Guardar**: valida nombre no vacío, agrega al array `especialidades`, autoselecciona la nueva en el formulario padre, cierra el modal y muestra `toast.success`.
+#### 1. Nuevo icono de notificaciones
 
----
+- Importar el icono `Bell` desde `lucide-react`.
+- Insertar el botón de notificaciones dentro del grupo derecho del header, antes del botón de temas/colores y antes del perfil de usuario.
+- Mantener el mismo patrón visual de los botones actuales:
+  - `rounded-lg`
+  - `bg-secondary`
+  - `hover:bg-secondary/80`
+  - transición suave
+  - alineación horizontal con `gap-3`
 
-### 2. Nueva página "Control de Diagnósticos"
-
-**2.1 Registro en el sistema**
-
-- Crear `src/components/pages/DiagnosticosPage.tsx`.
-- Registrar en `src/pages/Index.tsx` con clave `diagnosticos`.
-- Añadir entrada en `src/components/layout/Sidebar.tsx`: `{ id: 'diagnosticos', label: 'Control de Diagnósticos', icon: Stethoscope }` (de `lucide-react`).
-
-**2.2 Tabla principal**
-
-Columnas: **Nº | Paciente | Nº Cita Origen | Enfermedad | Crítico | Etapa | Fecha | Estado | Acciones**.
-- `Crítico` → badge "Sí" (rojo) / "No" (gris).
-- `Estado` → badge según valor (Activo verde / Resuelto azul).
-- `Acciones` → botón **"Ver diagnóstico"** (icono `Eye` + texto).
-
-Botón **"Registrar Diagnóstico"** arriba a la derecha del header de la página.
-
-Estado: `useState<Diagnostico[]>` con 2-3 mocks iniciales.
-
-**2.3 Modal "Registrar Diagnóstico"** (`max-w-3xl`, scroll interno)
-
-Layout en grid de 2 columnas para campos básicos:
+El orden quedará así:
 
 ```text
-┌─────────────────────────────────────────────────────┐
-│ Nº Cita Paciente [Select▼]   Fecha de Cita [auto]   │
-│ C.I.            [Input]      Nombres   [Input]      │
-│ Apellidos       [Input]      Urgencia  [Sí/No radio]│
-│ Motivo de la Cita     [Textarea col-span-2]         │
-│ Tratamiento Previo    [Textarea col-span-2]         │
-│ ── Síntomas Detectados ──── [+ Agregar síntoma]     │
-│  ┌ Síntoma 1 ──────────────────────── [🗑️]         │
-│  │ Nombre [_] Descripción [_] Gravedad [1-5 ▼]      │
-│  └─────                                             │
-│ ── Diagnóstico Final ──────────────                 │
-│  Nombre [_]   Descripción [Textarea]                │
-│  Crónico: ○ Sí  ○ No                                │
-│                          [Guardar] [Cancelar]       │
-└─────────────────────────────────────────────────────┘
+[Notificaciones] [Temas/Colores] [Perfil]
 ```
 
-- Al seleccionar **Nº Cita**: auto-rellena C.I., Nombres, Apellidos y Fecha de Cita desde un mock de citas (`mockCitas`).
-- **Síntomas Detectados**: lista repetible (`useState<Sintoma[]>`); cada bloque con botón ✕ para eliminar; botón "+ Agregar síntoma" añade entrada vacía. Gravedad = `Select` 1–5.
-- **Diagnóstico Final**: bloque único con Nombre, Descripción y `RadioGroup` Sí/No para Crónico.
-- Footer abajo a la derecha: **Guardar** + **Cancelar**, con `ConfirmDialog` ("¿Estás seguro?") según estándar CRUD.
-- Al guardar: añade al array `diagnosticos`, cierra modal, `toast.success`, refresca tabla.
+#### 2. Badge rojo con contador
 
-**2.4 Modal "Ver diagnóstico"** (`max-w-5xl`, layout 4 cuadrantes)
+- Crear un estado local para notificaciones simuladas.
+- El contador inicial será `3`, calculado desde las notificaciones no leídas.
+- El badge se mostrará en la esquina superior derecha del botón de campana.
+- Si el contador llega a `0`, el badge se ocultará.
 
-Header superior (fila): `Nº Cita Paciente: XXX` · `Fecha de Diagnóstico: YYYY-MM-DD`. X nativo arriba derecha.
-
-Body en `grid grid-cols-2 grid-rows-2 gap-4`:
+Estilo previsto:
 
 ```text
-┌── A: Datos del Paciente ──┬── B: Medidor de Salud ──┐
-│ Nº Paciente: ...          │      ╔═══╗              │
-│ C.I.: ...                 │      ║   ║  😊          │
-│ Nombre / Apellido         │      ║▓▓▓║   (nivel)    │
-│ Diagnóstico Presuntivo    │      ║▓▓▓║              │
-│ Tratamiento               │      ╚═══╝              │
-│ Urgencia: Sí/No           │   Gravedad: 4/5         │
-├── C: Síntomas detectados ─┼── D: Enfermedad ────────┤
-│ Tabla:                    │ Nombre: ...             │
-│ Nombre│Descripción│Grav.  │ Descripción: ...        │
-│ ...                       │ Crónica: Sí / No        │
-└───────────────────────────┴─────────────────────────┘
+absolute -top-1 -right-1
+min-w-5 h-5
+rounded-full
+bg-red-600
+text-white
+text-xs
+font-bold
 ```
 
-**Cuadrante B — Medidor de Salud (termómetro vertical)**:
-- Componente custom `<HealthMeter value={1-5} />`.
-- Barra vertical `w-12 h-48 rounded-full border bg-muted overflow-hidden` con relleno interior `absolute bottom-0 w-full transition-all` cuya altura = `value*20%`.
-- Mapa color/emoji:
-  - 1 → `bg-red-500`     😫
-  - 2 → `bg-orange-500`  😟
-  - 3 → `bg-yellow-400`  😐
-  - 4 → `bg-blue-500`    🙂
-  - 5 → `bg-green-500`   😁
-- Emoji grande al lado del termómetro + label "Gravedad: X/5".
-- Valor: del Diagnóstico Final si existe; si no, promedio de gravedad de síntomas; default `3`.
+#### 3. Dropdown de notificaciones
 
----
+- Reutilizar el componente existente `DropdownMenu`.
+- Agregar un nuevo estado:
+  - `notificationsOpen`
+- El dropdown se abrirá/cerrará al hacer clic en el icono y se cerrará automáticamente al hacer clic fuera, siguiendo el comportamiento de Radix/shadcn.
+- El panel tendrá un ancho mayor que los menús existentes, por ejemplo `w-80`, para permitir título, descripción y hora.
+
+Contenido simulado inicial:
+
+```text
+1. Nuevo mensaje recibido
+   Tienes un mensaje pendiente de revisión.
+   Hace 5 min
+
+2. Evento próximo
+   Jornada médica programada para mañana.
+   Hace 20 min
+
+3. Actualización del sistema
+   Se actualizaron los módulos de diagnóstico.
+   Hace 1 h
+
+4. Alerta de seguridad
+   Inicio de sesión detectado desde nuevo dispositivo.
+   Hace 2 h
+```
+
+Cada ítem tendrá:
+- título
+- descripción corta
+- hora ficticia
+- tipo
+- estado `read/unread`
+
+#### 4. Estado visual leído/no leído
+
+- Las notificaciones no leídas se mostrarán con mayor énfasis:
+  - título en `font-semibold`
+  - fondo sutil `bg-accent/40` o similar
+- Las notificaciones leídas se verán más discretas:
+  - texto en `text-muted-foreground`
+  - sin fondo destacado
+  - sin negrita fuerte
+
+Al hacer clic en una notificación individual:
+- se mostrará un mensaje emergente con `alert("Notificación seleccionada: [título]")`
+- opcionalmente se marcará esa notificación como leída para reducir el contador.
+
+#### 5. Acciones de gestión dentro del panel
+
+En la parte inferior del dropdown se agregará una zona de acciones con separador visual.
+
+Acciones:
+
+1. **Marcar todo como leído**
+   - Cambia todas las notificaciones a estado leído.
+   - El badge se oculta porque el contador pasa a `0`.
+
+2. **Borrar todo**
+   - Vacía la lista de notificaciones.
+   - El badge se oculta.
+   - El panel muestra un mensaje tipo:
+     ```text
+     No hay notificaciones.
+     ```
+
+3. **Configuración de alertas**
+   - Mostrará una simulación con:
+     ```text
+     Personalización de alertas – próximamente
+     ```
+   - Se implementará con `alert()` para mantenerlo simple y sin agregar un modal adicional innecesario.
+
+#### 6. Persistencia visual dentro de la app
+
+Como `Header` está montado en `src/pages/Index.tsx` por encima del contenido dinámico de páginas, el nuevo icono:
+- permanecerá visible al cambiar entre módulos internos;
+- no dependerá de la página actual;
+- no afectará el comportamiento del selector de temas ni del menú de perfil.
 
 ### Detalles técnicos
 
-- **Tipos** (definidos en `DiagnosticosPage.tsx`):
-  ```ts
-  type Sintoma = { nombre: string; descripcion: string; gravedad: number };
-  type Diagnostico = {
-    id: number; numCitaOrigen: string; paciente: string; ci: string;
-    nombres: string; apellidos: string; fechaCita: string; fechaDiagnostico: string;
-    motivo: string; tratamientoPrevio: string; urgencia: boolean;
-    sintomas: Sintoma[];
-    enfermedad: { nombre: string; descripcion: string; cronico: boolean };
-    critico: boolean; etapa: string; estado: string;
-  };
-  ```
-- **Mocks**: `mockCitas` (3-4 citas con datos de paciente) y 2-3 diagnósticos de ejemplo precargados.
-- **Componentes UI reutilizados**: `Dialog`, `Select`, `Input`, `Textarea`, `RadioGroup`, `Button`, `Label`, `Table`, `ConfirmDialog`, `toast` (sonner).
-- **Iconos** (`lucide-react`): `Plus`, `Eye`, `Trash2`, `Stethoscope`, `X` (nativo del Dialog).
-- **Sin cambios** en otras páginas/módulos. La nueva página queda accesible desde el sidebar.
+- Se mantendrá todo dentro de `Header.tsx` para evitar crear archivos innecesarios.
+- Se agregará un tipo local:
 
+```ts
+type NotificationItem = {
+  id: number;
+  title: string;
+  description: string;
+  time: string;
+  type: 'message' | 'event' | 'update' | 'security';
+  read: boolean;
+};
+```
+
+- Nuevos estados:
+  - `notifications`
+  - `notificationsOpen`
+- El contador se calculará con:
+  ```ts
+  notifications.filter((item) => !item.read).length
+  ```
+- Se usará `DropdownMenuContent align="end"` para que el panel quede correctamente alineado con el grupo de iconos.
+- No se modificará navegación, rutas, páginas ni backend.
+- No se alterará el funcionamiento existente del menú de temas ni del menú de usuario.
