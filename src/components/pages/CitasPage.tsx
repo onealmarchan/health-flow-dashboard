@@ -175,6 +175,17 @@ export function CitasPage() {
     setModalStep('search');
   };
 
+  const handleMinorChange = (checked: boolean) => {
+    setIsMinor(checked);
+
+    if (checked) {
+      setNewPatient(prev => ({
+        ...prev,
+        ci: '',
+      }));
+    }
+  };
+
   const handleConfirmAction = () => {
     if (confirmAction === 'save') handleSavePatient();
     else if (confirmAction === 'saveContinue') handleSaveAndContinue();
@@ -410,7 +421,7 @@ export function CitasPage() {
                 type="checkbox"
                 id="isMinor"
                 checked={isMinor}
-                onChange={e => setIsMinor(e.target.checked)}
+                onChange={e => handleMinorChange(e.target.checked)}
                 className="rounded border-border"
               />
               <Label htmlFor="isMinor" className="text-foreground text-sm">
@@ -440,7 +451,19 @@ export function CitasPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-foreground">Cédula de Identidad</Label>
-                <Input value={newPatient.ci} onChange={e => setNewPatient({ ...newPatient, ci: e.target.value })} placeholder="Ej: 12345678" />
+                <Input
+                  value={isMinor ? '' : newPatient.ci}
+                  disabled={isMinor}
+                  onChange={e => {
+                    if (!isMinor) setNewPatient({ ...newPatient, ci: e.target.value });
+                  }}
+                  placeholder={isMinor ? 'Se usará la cédula del representante' : 'Ej: 12345678'}
+                />
+                {isMinor && (
+                  <p className="text-xs text-muted-foreground">
+                    Campo anulado: se usará la Cédula del Representante como documento de identificación.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Nombres</Label>
