@@ -1,154 +1,156 @@
 
-## Implementación: Icono de notificaciones en el header principal
+## Ajuste del modal "Motivo de Consulta" y validación de menor sin C.I.
 
-Se agregará un módulo visual e interactivo de notificaciones dentro del header principal de la aplicación, sin conexión a backend y manteniendo el estilo existente.
-
-### Archivo a modificar
-
-- `src/components/layout/Header.tsx`
-
-### Cambios principales
-
-#### 1. Nuevo icono de notificaciones
-
-- Importar el icono `Bell` desde `lucide-react`.
-- Insertar el botón de notificaciones dentro del grupo derecho del header, antes del botón de temas/colores y antes del perfil de usuario.
-- Mantener el mismo patrón visual de los botones actuales:
-  - `rounded-lg`
-  - `bg-secondary`
-  - `hover:bg-secondary/80`
-  - transición suave
-  - alineación horizontal con `gap-3`
-
-El orden quedará así:
+Se modificará exclusivamente `src/components/pages/CitasPage.tsx`, manteniendo intacto el flujo actual de apertura/cierre entre:
 
 ```text
-[Notificaciones] [Temas/Colores] [Perfil]
+Buscar Paciente / Agendar Cita → Motivo de Consulta → Cita Médica pantalla completa
 ```
 
-#### 2. Badge rojo con contador
+### 1. Modal "Motivo de Consulta" — dimensiones más equilibradas
 
-- Crear un estado local para notificaciones simuladas.
-- El contador inicial será `3`, calculado desde las notificaciones no leídas.
-- El badge se mostrará en la esquina superior derecha del botón de campana.
-- Si el contador llega a `0`, el badge se ocultará.
+Actualmente el modal usa `max-w-lg` y no tiene control de altura/scroll interno. Se ajustará para que tenga un aspecto menos alargado verticalmente y más cómodo visualmente.
 
-Estilo previsto:
+Cambios previstos:
+
+- Ampliar el ancho del modal:
+  - de `max-w-lg`
+  - a algo como `w-[92vw] max-w-2xl`
+- Limitar la altura máxima:
+  - `max-h-[82vh]`
+- Convertir el contenido en layout flexible:
+  - `flex flex-col`
+  - `overflow-hidden`
+- Agregar scroll interno únicamente al cuerpo del formulario:
+  - `overflow-y-auto`
+  - `pr-2`
+  - altura flexible
+- Mantener el header fijo en la parte superior del modal.
+- Mantener el footer con el botón **Siguiente** visible en la parte inferior.
+- Agregar separación interna armoniosa:
+  - `p-6`
+  - `gap-4`
+  - bordes/separadores consistentes con el diseño actual.
+
+Estructura resultante:
 
 ```text
-absolute -top-1 -right-1
-min-w-5 h-5
-rounded-full
-bg-red-600
-text-white
-text-xs
-font-bold
+┌─ Motivo de Consulta ─────────────── X ┐
+│ Dr. / Especialidad                    │
+├───────────────────────────────────────┤
+│ Nº Paciente                           │
+│ Descripción                           │
+│ Nivel de Urgencia                     │  ← zona scrolleable si hace falta
+│ Fecha                                 │
+│ Observación                           │
+├───────────────────────────────────────┤
+│                            [Siguiente]│
+└───────────────────────────────────────┘
 ```
 
-#### 3. Dropdown de notificaciones
+### 2. Botón "Siguiente"
 
-- Reutilizar el componente existente `DropdownMenu`.
-- Agregar un nuevo estado:
-  - `notificationsOpen`
-- El dropdown se abrirá/cerrará al hacer clic en el icono y se cerrará automáticamente al hacer clic fuera, siguiendo el comportamiento de Radix/shadcn.
-- El panel tendrá un ancho mayor que los menús existentes, por ejemplo `w-80`, para permitir título, descripción y hora.
+Se conservará el comportamiento existente:
 
-Contenido simulado inicial:
+- El botón seguirá ubicado abajo a la derecha.
+- Seguirá deshabilitado hasta completar todos los campos requeridos:
+  - Nº Paciente
+  - Descripción
+  - Nivel de Urgencia
+  - Fecha
+  - Observación
+- Al hacer clic, seguirá abriendo el modal/pantalla completa de la cita médica.
+- No se modificará la lógica de `isMotivoValid`.
+- No se modificará `handleSiguienteMotivo`.
+
+### 3. Scroll del modal "Motivo de Consulta"
+
+Se agregará barra de scroll interna para el formulario, evitando que el modal se corte en pantallas pequeñas.
+
+La barra de scroll estará dentro del contenido del modal, no sobre toda la pantalla, para que:
+
+- el header permanezca visible;
+- el botón **Siguiente** permanezca visible;
+- los campos no queden cortados ni solapados;
+- no haya scroll excesivo para llegar al botón.
+
+### 4. Modal "Registrar Nuevo Paciente" — validación de menor sin C.I.
+
+Se agregará la validación solicitada para el caso:
 
 ```text
-1. Nuevo mensaje recibido
-   Tienes un mensaje pendiente de revisión.
-   Hace 5 min
-
-2. Evento próximo
-   Jornada médica programada para mañana.
-   Hace 20 min
-
-3. Actualización del sistema
-   Se actualizaron los módulos de diagnóstico.
-   Hace 1 h
-
-4. Alerta de seguridad
-   Inicio de sesión detectado desde nuevo dispositivo.
-   Hace 2 h
+Paciente menor de edad sin C.I. = marcado
 ```
 
-Cada ítem tendrá:
-- título
-- descripción corta
-- hora ficticia
-- tipo
-- estado `read/unread`
+Cuando el usuario marque la casilla:
 
-#### 4. Estado visual leído/no leído
+- El campo **Cédula de Identidad** de la sección **Datos Personales** se limpiará automáticamente.
+- El campo **Cédula de Identidad** quedará deshabilitado.
+- Se mostrará un placeholder o ayuda visual indicando que se usará la cédula del representante.
+- El campo **Cédula del Representante** seguirá activo y será el documento de identificación usado para este caso.
 
-- Las notificaciones no leídas se mostrarán con mayor énfasis:
-  - título en `font-semibold`
-  - fondo sutil `bg-accent/40` o similar
-- Las notificaciones leídas se verán más discretas:
-  - texto en `text-muted-foreground`
-  - sin fondo destacado
-  - sin negrita fuerte
+Cuando el usuario desmarque la casilla:
 
-Al hacer clic en una notificación individual:
-- se mostrará un mensaje emergente con `alert("Notificación seleccionada: [título]")`
-- opcionalmente se marcará esa notificación como leída para reducir el contador.
+- El campo **Cédula de Identidad** volverá a habilitarse.
+- El usuario podrá escribir la C.I. del paciente normalmente.
+- Se conservará el comportamiento actual del formulario.
 
-#### 5. Acciones de gestión dentro del panel
+### 5. Ajuste del checkbox "Paciente menor de edad sin C.I."
 
-En la parte inferior del dropdown se agregará una zona de acciones con separador visual.
-
-Acciones:
-
-1. **Marcar todo como leído**
-   - Cambia todas las notificaciones a estado leído.
-   - El badge se oculta porque el contador pasa a `0`.
-
-2. **Borrar todo**
-   - Vacía la lista de notificaciones.
-   - El badge se oculta.
-   - El panel muestra un mensaje tipo:
-     ```text
-     No hay notificaciones.
-     ```
-
-3. **Configuración de alertas**
-   - Mostrará una simulación con:
-     ```text
-     Personalización de alertas – próximamente
-     ```
-   - Se implementará con `alert()` para mantenerlo simple y sin agregar un modal adicional innecesario.
-
-#### 6. Persistencia visual dentro de la app
-
-Como `Header` está montado en `src/pages/Index.tsx` por encima del contenido dinámico de páginas, el nuevo icono:
-- permanecerá visible al cambiar entre módulos internos;
-- no dependerá de la página actual;
-- no afectará el comportamiento del selector de temas ni del menú de perfil.
-
-### Detalles técnicos
-
-- Se mantendrá todo dentro de `Header.tsx` para evitar crear archivos innecesarios.
-- Se agregará un tipo local:
+Se reemplazará el `onChange` actual por una función controlada, por ejemplo:
 
 ```ts
-type NotificationItem = {
-  id: number;
-  title: string;
-  description: string;
-  time: string;
-  type: 'message' | 'event' | 'update' | 'security';
-  read: boolean;
+const handleMinorChange = (checked: boolean) => {
+  setIsMinor(checked);
+
+  if (checked) {
+    setNewPatient(prev => ({
+      ...prev,
+      ci: '',
+    }));
+  }
 };
 ```
 
-- Nuevos estados:
-  - `notifications`
-  - `notificationsOpen`
-- El contador se calculará con:
-  ```ts
-  notifications.filter((item) => !item.read).length
-  ```
-- Se usará `DropdownMenuContent align="end"` para que el panel quede correctamente alineado con el grupo de iconos.
-- No se modificará navegación, rutas, páginas ni backend.
-- No se alterará el funcionamiento existente del menú de temas ni del menú de usuario.
+Luego el checkbox usará esa función para garantizar que el campo C.I. se anule inmediatamente al marcar la opción.
+
+### 6. Campo "Cédula de Identidad" en Datos Personales
+
+El `Input` de C.I. se ajustará así:
+
+- `disabled={isMinor}`
+- `value={isMinor ? '' : newPatient.ci}`
+- `onChange` solo actualizará si `!isMinor`
+- `placeholder` dinámico:
+  - normal: `"Ej: 12345678"`
+  - menor sin C.I.: `"Se usará la cédula del representante"`
+
+También se agregará un texto breve bajo el campo cuando `isMinor` esté activo:
+
+```text
+Campo anulado: se usará la Cédula del Representante como documento de identificación.
+```
+
+### 7. Alcance técnico
+
+Archivo a modificar:
+
+- `src/components/pages/CitasPage.tsx`
+
+No se modificarán:
+
+- otros modales;
+- la pantalla completa de cita médica;
+- la búsqueda de pacientes;
+- la tabla principal;
+- rutas;
+- sidebar;
+- backend;
+- datos mock existentes.
+
+### 8. Resultado esperado
+
+- El modal **Motivo de Consulta** se verá más ancho, menos estirado verticalmente y con scroll interno.
+- El botón **Siguiente** permanecerá visible abajo a la derecha.
+- El flujo hacia la pantalla completa de cita médica seguirá funcionando igual.
+- En **Registrar Nuevo Paciente**, al marcar **Paciente menor de edad sin C.I.**, el campo **Cédula de Identidad** quedará anulado/deshabilitado y se usará la **Cédula del Representante** como documento pertinente.
