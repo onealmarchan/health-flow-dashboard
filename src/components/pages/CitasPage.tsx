@@ -638,15 +638,15 @@ export function CitasPage() {
 
       {/* Step 4: Motivo de Consulta */}
       <Dialog open={modalStep === 'motivo'} onOpenChange={(o) => !o && setModalStep('schedule')}>
-        <DialogContent className="bg-card border border-border max-w-lg">
-          <DialogHeader>
+        <DialogContent className="bg-card border border-border w-[92vw] max-w-2xl max-h-[82vh] p-0 overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-foreground">Motivo de Consulta</DialogTitle>
             <DialogDescription className="text-muted-foreground">
               {selectedDoctor?.name} · {selectedDoctor?.specialty}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-4 pr-8 space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">Nº Paciente</Label>
               <Input value={motivoData.numPaciente} readOnly className="bg-muted" />
@@ -690,7 +690,7 @@ export function CitasPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-border">
+          <div className="shrink-0 flex justify-end px-6 py-4 border-t border-border bg-card">
             <Button
               disabled={!isMotivoValid}
               onClick={handleSiguienteMotivo}
