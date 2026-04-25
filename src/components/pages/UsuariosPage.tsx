@@ -1,22 +1,36 @@
 import { useState } from 'react';
-import { Plus, Search, MoreVertical } from 'lucide-react';
+import { Plus, Search, MoreVertical, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 const users = [
-  { id: 1, nombre: 'Roberto', apellido: 'García', email: 'rgarcia@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2022-03-15', actualizadoEn: '2024-01-20' },
-  { id: 2, nombre: 'Carmen', apellido: 'Ruiz', email: 'cruiz@medicitas.com', rol: 'Recepcionista', estado: 'Activo', creadoEn: '2021-08-20', actualizadoEn: '2024-01-18' },
-  { id: 3, nombre: 'Miguel', apellido: 'Torres', email: 'mtorres@medicitas.com', rol: 'Médico', estado: 'Activo', creadoEn: '2020-01-10', actualizadoEn: '2024-01-15' },
-  { id: 4, nombre: 'Patricia', apellido: 'López', email: 'plopez@medicitas.com', rol: 'Enfermera', estado: 'Inhabilitado', creadoEn: '2019-05-22', actualizadoEn: '2023-12-01' },
-  { id: 5, nombre: 'Fernando', apellido: 'Díaz', email: 'fdiaz@medicitas.com', rol: 'Técnico', estado: 'Activo', creadoEn: '2023-02-01', actualizadoEn: '2024-01-22' },
-  { id: 6, nombre: 'Sandra', apellido: 'Moreno', email: 'smoreno@medicitas.com', rol: 'Recepcionista', estado: 'Activo', creadoEn: '2022-11-30', actualizadoEn: '2024-01-10' },
+  { id: 1, nombre: 'Roberto', apellido: 'García', email: 'rgarcia@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2022-03-15 09:14', actualizadoEn: '2024-01-20 16:42' },
+  { id: 2, nombre: 'Carmen', apellido: 'Ruiz', email: 'cruiz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2021-08-20 11:05', actualizadoEn: '2024-01-18 10:21' },
+  { id: 3, nombre: 'Miguel', apellido: 'Torres', email: 'mtorres@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2020-01-10 08:30', actualizadoEn: '2024-01-15 14:55' },
+  { id: 4, nombre: 'Patricia', apellido: 'López', email: 'plopez@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Inhabilitado', creadoEn: '2019-05-22 13:18', actualizadoEn: '2023-12-01 09:00' },
+  { id: 5, nombre: 'Fernando', apellido: 'Díaz', email: 'fdiaz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2023-02-01 07:45', actualizadoEn: '2024-01-22 18:10' },
+  { id: 6, nombre: 'Sandra', apellido: 'Moreno', email: 'smoreno@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2022-11-30 12:20', actualizadoEn: '2024-01-10 15:30' },
 ];
+
+type UserRow = (typeof users)[number];
 
 const statusColors: Record<string, string> = {
   Activo: 'bg-success/20 text-success',
@@ -27,6 +41,7 @@ export function UsuariosPage() {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
   const [confirmDisable, setConfirmDisable] = useState<number | null>(null);
+  const [registroUser, setRegistroUser] = useState<UserRow | null>(null);
   const [newUser, setNewUser] = useState({ nombre: '', apellido: '', email: '', rol: '' });
 
   const filteredUsers = users.filter(u =>
@@ -65,7 +80,7 @@ export function UsuariosPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {['ID', 'Nombre', 'Apellido', 'Email', 'Rol', 'Estado', 'Creado en', 'Actualizado en', 'Acciones'].map(h => (
+                {['ID', 'Nombre', 'Apellido', 'Email', 'Rol', 'Estado', 'Control de Registro', 'Acciones'].map(h => (
                   <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -83,8 +98,16 @@ export function UsuariosPage() {
                       {user.estado}
                     </span>
                   </td>
-                  <td className="p-3 text-sm text-muted-foreground">{user.creadoEn}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{user.actualizadoEn}</td>
+                  <td className="p-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Ver control de registro"
+                      onClick={() => setRegistroUser(user)}
+                    >
+                      <Clock className="w-4 h-4" />
+                    </Button>
+                  </td>
                   <td className="p-3">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -136,10 +159,7 @@ export function UsuariosPage() {
                 <SelectTrigger><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
                   <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Médico">Médico</SelectItem>
-                  <SelectItem value="Enfermera">Enfermera</SelectItem>
-                  <SelectItem value="Recepcionista">Recepcionista</SelectItem>
-                  <SelectItem value="Técnico">Técnico</SelectItem>
+                  <SelectItem value="Auxiliar Administrativo">Auxiliar Administrativo</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -161,6 +181,37 @@ export function UsuariosPage() {
         title="¿Inhabilitar usuario?"
         description="El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
       />
+
+      {/* Control de Registro Modal */}
+      <Dialog open={registroUser !== null} onOpenChange={(o) => !o && setRegistroUser(null)}>
+        <DialogContent className="bg-card border border-border max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Control de Registro</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              {registroUser ? `${registroUser.nombre} ${registroUser.apellido}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <div className="rounded-lg border border-border bg-secondary/40 p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Creado en</p>
+              <p className="text-sm font-medium text-foreground mt-1">
+                {registroUser?.creadoEn ?? '—'}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-secondary/40 p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Actualizado en</p>
+              <p className="text-sm font-medium text-foreground mt-1">
+                {registroUser?.actualizadoEn ?? '—'}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRegistroUser(null)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
