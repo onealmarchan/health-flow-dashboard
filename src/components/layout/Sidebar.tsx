@@ -17,7 +17,7 @@ const menuItems = [
   { id: 'especialistas', label: 'Especialistas Médicos', icon: UserCog },
   { id: 'diagnosticos', label: 'Control de Diagnósticos', icon: Stethoscope },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
-  { id: 'auditorias', label: 'Auditorías', icon: FileSearch },
+  { id: 'auditorias', label: 'Historias de Cambios', icon: FileSearch },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
