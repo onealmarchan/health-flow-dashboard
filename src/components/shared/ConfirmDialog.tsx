@@ -8,6 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   title?: string;
   description?: string;
+  isLoading?: boolean;
 }
 
 export function ConfirmDialog({
@@ -23,6 +25,7 @@ export function ConfirmDialog({
   onConfirm,
   title = '¿Estás seguro?',
   description = 'Esta acción no se puede deshacer.',
+  isLoading = false,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -38,8 +41,16 @@ export function ConfirmDialog({
           <AlertDialogAction
             onClick={onConfirm}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isLoading}
           >
-            Confirmar
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Procesando...
+              </>
+            ) : (
+              'Confirmar'
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

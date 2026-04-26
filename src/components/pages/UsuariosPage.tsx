@@ -1,217 +1,175 @@
 import { useState } from 'react';
-import { Plus, Search, MoreVertical, Clock } from 'lucide-react';
+import { Plus, Search, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioStatus, useDeleteUsuario } from '@/hooks/useUsuarios';
+import { Usuario, CreateUsuarioDto } from '@/types';
+import { UserTable } from './usuarios/UserTable';
+import { UserModals } from './usuarios/UserModals';
 
-const users = [
-  { id: 1, nombre: 'Roberto', apellido: 'García', email: 'rgarcia@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2022-03-15 09:14', actualizadoEn: '2024-01-20 16:42' },
-  { id: 2, nombre: 'Carmen', apellido: 'Ruiz', email: 'cruiz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2021-08-20 11:05', actualizadoEn: '2024-01-18 10:21' },
-  { id: 3, nombre: 'Miguel', apellido: 'Torres', email: 'mtorres@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2020-01-10 08:30', actualizadoEn: '2024-01-15 14:55' },
-  { id: 4, nombre: 'Patricia', apellido: 'López', email: 'plopez@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Inhabilitado', creadoEn: '2019-05-22 13:18', actualizadoEn: '2023-12-01 09:00' },
-  { id: 5, nombre: 'Fernando', apellido: 'Díaz', email: 'fdiaz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2023-02-01 07:45', actualizadoEn: '2024-01-22 18:10' },
-  { id: 6, nombre: 'Sandra', apellido: 'Moreno', email: 'smoreno@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2022-11-30 12:20', actualizadoEn: '2024-01-10 15:30' },
-];
-
-type UserRow = (typeof users)[number];
-
-const statusColors: Record<string, string> = {
-  Activo: 'bg-success/20 text-success',
-  Inhabilitado: 'bg-destructive/20 text-destructive',
-};
-
+/**
+ * UsuariosPage
+ * Componente principal para la gestión de usuarios.
+ * Utiliza hooks personalizados para la lógica de API y subcomponentes para la UI.
+ */
 export function UsuariosPage() {
-  const [showModal, setShowModal] = useState(false);
+  // ─── Estads Locales para UI ───
   const [search, setSearch] = useState('');
-  const [confirmDisable, setConfirmDisable] = useState<number | null>(null);
-  const [registroUser, setRegistroUser] = useState<UserRow | null>(null);
-  const [newUser, setNewUser] = useState({ nombre: '', apellido: '', email: '', rol: '' });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editUser, setEditUser] = useState<Usuario | null>(null);
+  const [registroUser, setRegistroUser] = useState<Usuario | null>(null);
+  const [confirmDisableId, setConfirmDisableId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
-  const filteredUsers = users.filter(u =>
-    u.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    u.apellido.toLowerCase().includes(search.toLowerCase()) ||
+  // ─── Hooks de Datos (API) ───
+  const { data: users = [], isLoading, isError, error, refetch } = useUsuarios();
+  const createMutation = useCreateUsuario();
+  const updateMutation = useUpdateUsuario();
+  const toggleStatusMutation = useToggleUsuarioStatus();
+  const deleteMutation = useDeleteUsuario();
+
+  // ─── Filtrado ───
+  const filteredUsers = users.filter((u) =>
+    (u.nombre?.toLowerCase() || '').includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleSave = () => {
-    setShowModal(false);
-    setNewUser({ nombre: '', apellido: '', email: '', rol: '' });
+  // ─── Handlers de Acciones ───
+  const handleCreate = (data: CreateUsuarioDto) => {
+    createMutation.mutate(data, {
+      onSuccess: () => setShowCreateModal(false),
+    });
   };
+
+  const handleCreateAndAnother = (data: CreateUsuarioDto) => {
+    createMutation.mutate(data);
+  };
+
+  const handleUpdate = (id: number, data: Partial<CreateUsuarioDto>) => {
+    updateMutation.mutate({ id, data }, {
+      onSuccess: () => setEditUser(null),
+    });
+  };
+
+  const handleToggleStatus = (id: number) => {
+    toggleStatusMutation.mutate(id, {
+      onSuccess: () => setConfirmDisableId(null),
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    deleteMutation.mutate(id, {
+      onSuccess: () => setConfirmDeleteId(null),
+    });
+  };
+
+  // ─── Estados de Carga y Error ───
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 animate-fade-in">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <p className="text-muted-foreground text-lg">Cargando usuarios...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 animate-fade-in">
+        <div className="p-4 rounded-full bg-destructive/10">
+          <AlertCircle className="w-10 h-10 text-destructive" />
+        </div>
+        <p className="text-foreground text-lg font-semibold">Error al cargar usuarios</p>
+        <p className="text-muted-foreground text-sm max-w-md text-center">
+          {error instanceof Error ? error.message : 'Error desconocido al conectar con el servidor.'}
+        </p>
+        <Button onClick={() => refetch()} variant="outline" className="gap-2">
+          <RefreshCw className="w-4 h-4" />
+          Reintentar
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Cabecera */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Usuarios</h1>
-          <p className="text-muted-foreground">Gestión de usuarios del sistema</p>
+          <p className="text-muted-foreground">
+            Gestión interna de accesos y roles
+            <span className="ml-2 text-xs bg-secondary/50 px-2 py-0.5 rounded-full border border-border">
+              {users.length} registros totales
+            </span>
+          </p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setShowModal(true)}>
+        <Button 
+          className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20" 
+          onClick={() => setShowCreateModal(true)}
+        >
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Usuario
         </Button>
       </div>
 
+      {/* Buscador y Filtros */}
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar usuarios..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-        </div>
-      </div>
-
-      <div className="chart-container">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {['ID', 'Nombre', 'Apellido', 'Email', 'Rol', 'Estado', 'Control de Registro', 'Acciones'].map(h => (
-                  <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
-                  <td className="p-3 text-sm font-mono text-foreground">{user.id}</td>
-                  <td className="p-3 text-sm font-medium text-foreground">{user.nombre}</td>
-                  <td className="p-3 text-sm text-foreground">{user.apellido}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{user.email}</td>
-                  <td className="p-3 text-sm text-foreground">{user.rol}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[user.estado] || ''}`}>
-                      {user.estado}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Ver control de registro"
-                      onClick={() => setRegistroUser(user)}
-                    >
-                      <Clock className="w-4 h-4" />
-                    </Button>
-                  </td>
-                  <td className="p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm"><MoreVertical className="w-4 h-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-popover border border-border z-50">
-                        <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-destructive" onClick={() => setConfirmDisable(user.id)}>
-                          Inhabilitar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* New User Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="bg-card border border-border max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Nuevo Usuario</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              ID: #{users.length + 1} — Los campos de auditoría se llenan automáticamente
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">Nombre</Label>
-                <Input value={newUser.nombre} onChange={e => setNewUser({ ...newUser, nombre: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Apellido</Label>
-                <Input value={newUser.apellido} onChange={e => setNewUser({ ...newUser, apellido: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Email</Label>
-              <Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">Rol</Label>
-              <Select value={newUser.rol} onValueChange={v => setNewUser({ ...newUser, rol: v })}>
-                <SelectTrigger><SelectValue placeholder="Seleccionar rol" /></SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
-                  <SelectItem value="Administrador">Administrador</SelectItem>
-                  <SelectItem value="Auxiliar Administrativo">Auxiliar Administrativo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <ModalFormButtons
-            onSave={handleSave}
-            onSaveAndAnother={() => { handleSave(); setShowModal(true); }}
-            onCancel={() => setShowModal(false)}
+          <Input 
+            placeholder="Buscar por nombre o email..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="pl-9 bg-card border-border hover:border-primary/50 transition-colors" 
           />
-        </DialogContent>
-      </Dialog>
+        </div>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => refetch()} 
+          title="Refrescar datos"
+          className="hover:text-primary transition-colors"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </Button>
+      </div>
 
-      {/* Disable Confirmation */}
-      <ConfirmDialog
-        open={confirmDisable !== null}
-        onOpenChange={(o) => !o && setConfirmDisable(null)}
-        onConfirm={() => setConfirmDisable(null)}
-        title="¿Inhabilitar usuario?"
-        description="El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
+      {/* Tabla de Usuarios */}
+      <UserTable 
+        users={filteredUsers} 
+        onEdit={setEditUser} 
+        onViewRegistry={setRegistroUser}
+        onToggleStatus={setConfirmDisableId}
+        onDelete={setConfirmDeleteId}
       />
 
-      {/* Control de Registro Modal */}
-      <Dialog open={registroUser !== null} onOpenChange={(o) => !o && setRegistroUser(null)}>
-        <DialogContent className="bg-card border border-border max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Control de Registro</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              {registroUser ? `${registroUser.nombre} ${registroUser.apellido}` : ''}
-            </DialogDescription>
-          </DialogHeader>
+      {/* Modales Embebidos */}
+      <UserModals 
+        showCreate={showCreateModal}
+        setShowCreate={setShowCreateModal}
+        onCreate={handleCreate}
+        onCreateAndAnother={handleCreateAndAnother}
+        isCreating={createMutation.isPending}
 
-          <div className="space-y-3 py-2">
-            <div className="rounded-lg border border-border bg-secondary/40 p-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Creado en</p>
-              <p className="text-sm font-medium text-foreground mt-1">
-                {registroUser?.creadoEn ?? '—'}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border bg-secondary/40 p-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Actualizado en</p>
-              <p className="text-sm font-medium text-foreground mt-1">
-                {registroUser?.actualizadoEn ?? '—'}
-              </p>
-            </div>
-          </div>
+        editUser={editUser}
+        setEditUser={setEditUser}
+        onUpdate={handleUpdate}
+        isUpdating={updateMutation.isPending}
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRegistroUser(null)}>Cerrar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        registroUser={registroUser}
+        setRegistroUser={setRegistroUser}
+
+        confirmDisableId={confirmDisableId}
+        setConfirmDisableId={setConfirmDisableId}
+        onConfirmDisable={handleToggleStatus}
+        isDisabling={toggleStatusMutation.isPending}
+
+        confirmDeleteId={confirmDeleteId}
+        setConfirmDeleteId={setConfirmDeleteId}
+        onConfirmDelete={handleDelete}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }
