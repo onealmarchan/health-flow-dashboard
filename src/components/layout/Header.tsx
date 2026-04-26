@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { User, Palette, Sun, Moon, Check, Bell } from 'lucide-react';
+import { User, Palette, Sun, Moon, Check, Bell, LogOut } from 'lucide-react';
 import { useTheme, ThemeType } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +11,7 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { UserRole } from '@/types';
 
 const lightThemes: { id: ThemeType; name: string; color: string }[] = [
   { id: 'light-blue', name: 'Azul Celeste', color: 'bg-sky-300' },
@@ -69,8 +71,28 @@ const initialNotifications: NotificationItem[] = [
   },
 ];
 
+const getRolLabel = (rol: UserRole): string => {
+  switch (rol) {
+    case UserRole.ADMIN:
+      return 'Administrador';
+    case UserRole.MEDICO:
+      return 'Médico';
+    default:
+      return rol;
+  }
+};
+
+const getUserInitials = (email: string): string => {
+  const parts = email.split('@')[0];
+  if (parts.length >= 2) {
+    return parts.substring(0, 2).toUpperCase();
+  }
+  return parts.toUpperCase();
+};
+
 export function Header() {
   const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
@@ -90,6 +112,11 @@ export function Header() {
 
   const clearAllNotifications = () => {
     setNotifications([]);
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/login';
   };
 
   return (
@@ -219,17 +246,36 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
               <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
-                <User className="w-4 h-4 text-primary-foreground" />
+                <span className="text-xs font-bold text-primary-foreground">
+                  {user ? getUserInitials(user.email) : <User className="w-4 h-4 text-primary-foreground" />}
+                </span>
               </div>
+              {user && (
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-sm font-medium text-foreground">{user.email}</span>
+                  <span className="text-xs text-muted-foreground">{getRolLabel(user.rol)}</span>
+                </div>
+              )}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
-            <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">{user?.email || 'Usuario'}</span>
+                {user && (
+                  <span className="text-xs text-muted-foreground">{getRolLabel(user.rol)}</span>
+                )}
+              </div>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
             <DropdownMenuItem className="cursor-pointer">Configuración</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive">
+            <DropdownMenuItem 
+              className="cursor-pointer text-destructive focus:text-destructive" 
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
               Cerrar Sesión
             </DropdownMenuItem>
           </DropdownMenuContent>

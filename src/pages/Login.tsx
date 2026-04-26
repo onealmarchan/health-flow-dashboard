@@ -20,14 +20,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { AxiosError } from 'axios';
 
 type Mode = 'login' | 'recover';
 
-const VALID_EMAIL = 'admin@ejemplo.com';
-const VALID_PASSWORD = 'admin123';
-
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -42,30 +42,34 @@ export default function Login() {
     window.setTimeout(() => setShake(false), 450);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
 
-    if (email.trim().toLowerCase() === VALID_EMAIL && password === VALID_PASSWORD) {
+    try {
+      await login({ email: email.trim().toLowerCase(), password });
       toast.success('Autenticación exitosa', {
         icon: <CheckCircle2 className="w-4 h-4 text-success" />,
       });
       window.setTimeout(() => {
         navigate('/');
       }, 600);
-      return;
+    } catch (error) {
+      triggerShake();
+      const errorMessage = error instanceof AxiosError 
+        ? error.response?.data?.message || 'Credenciales inválidas'
+        : 'Credenciales inválidas';
+      toast.error(errorMessage, {
+        style: {
+          background: 'hsl(var(--destructive) / 0.12)',
+          borderColor: 'hsl(var(--destructive) / 0.4)',
+          color: 'hsl(var(--destructive))',
+        },
+      });
+    } finally {
+      setLoading(false);
     }
-
-    triggerShake();
-    toast.error('Correo o contraseña incorrectos', {
-      style: {
-        background: 'hsl(var(--destructive) / 0.12)',
-        borderColor: 'hsl(var(--destructive) / 0.4)',
-        color: 'hsl(var(--destructive))',
-      },
-    });
-    setLoading(false);
   };
 
   const handleRecover = (e: React.FormEvent) => {

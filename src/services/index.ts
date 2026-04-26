@@ -1,0 +1,10 @@
+export { api } from './api';
+export { pacienteService } from './paciente.service';
+export { medicoService } from './medico.service';
+export { especialidadService } from './especialidad.service';
+export { citaMedicaService } from './cita-medica.service';
+export { sesionMedicaService } from './sesion-medica.service';
+export { motivoConsultaService } from './motivo-consulta.service';
+export { usuarioService } from './usuario.service';
+export { auditoriaService } from './auditoria.service';
+export { indicadoresService } from './indicadores.service';
