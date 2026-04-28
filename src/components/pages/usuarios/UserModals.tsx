@@ -39,12 +39,6 @@ interface UserModalsProps {
   setConfirmDisableId: (id: number | null) => void;
   onConfirmDisable: (id: number) => void;
   isDisabling: boolean;
-
-  // Delete
-  confirmDeleteId: number | null;
-  setConfirmDeleteId: (id: number | null) => void;
-  onConfirmDelete: (id: number) => void;
-  isDeleting: boolean;
 }
 
 export function UserModals({
@@ -63,14 +57,10 @@ export function UserModals({
   setConfirmDisableId,
   onConfirmDisable,
   isDisabling,
-  confirmDeleteId,
-  setConfirmDeleteId,
-  onConfirmDelete,
-  isDeleting,
 }: UserModalsProps) {
   // Local states for forms
-  const [newUser, setNewUser] = useState<CreateUsuarioDto>({ nombre: '', email: '', password: '', rol: UserRole.MEDICO });
-  const [editForm, setEditForm] = useState<Partial<CreateUsuarioDto>>({ nombre: '', email: '', rol: UserRole.MEDICO });
+  const [newUser, setNewUser] = useState<CreateUsuarioDto>({ nombre: '', email: '', password: '', rol: UserRole.ADMIN_AUXILIAR });
+  const [editForm, setEditForm] = useState<Partial<CreateUsuarioDto>>({ nombre: '', email: '', rol: UserRole.ADMIN_AUXILIAR });
 
   useEffect(() => {
     if (editUser) {
@@ -140,7 +130,7 @@ export function UserModals({
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
                   <SelectItem value={UserRole.ADMIN}>Administrador</SelectItem>
-                  <SelectItem value={UserRole.MEDICO}>Médico</SelectItem>
+                  <SelectItem value={UserRole.ADMIN_AUXILIAR}>Auxiliar Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -151,7 +141,7 @@ export function UserModals({
             onSaveAndAnother={() => onCreateAndAnother(newUser)}
             onCancel={() => {
               setShowCreate(false);
-              setNewUser({ nombre: '', email: '', password: '', rol: UserRole.MEDICO });
+              setNewUser({ nombre: '', email: '', password: '', rol: UserRole.ADMIN_AUXILIAR });
             }}
             saving={isCreating}
           />
@@ -190,7 +180,7 @@ export function UserModals({
                 </SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
                   <SelectItem value={UserRole.ADMIN}>Administrador</SelectItem>
-                  <SelectItem value={UserRole.MEDICO}>Médico</SelectItem>
+                  <SelectItem value={UserRole.ADMIN_AUXILIAR}>Auxiliar Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -219,20 +209,14 @@ export function UserModals({
         open={confirmDisableId !== null}
         onOpenChange={(o) => !o && setConfirmDisableId(null)}
         onConfirm={() => confirmDisableId && onConfirmDisable(confirmDisableId)}
-        title="¿Inhabilitar usuario?"
-        description="El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
+        title={editUser?.status ? "¿Inhabilitar usuario?" : "¿Habilitar usuario?"}
+        description={editUser?.status 
+          ? "El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
+          : "El usuario recuperará el acceso al sistema inmediatamente."
+        }
         isLoading={isDisabling}
       />
 
-      {/* ─── Delete Confirmation ─── */}
-      <ConfirmDialog
-        open={confirmDeleteId !== null}
-        onOpenChange={(o) => !o && setConfirmDeleteId(null)}
-        onConfirm={() => confirmDeleteId && onConfirmDelete(confirmDeleteId)}
-        title="¿Eliminar usuario permanentemente?"
-        description="Esta acción no se puede deshacer y borrará al usuario de la base de datos."
-        isLoading={isDeleting}
-      />
 
       {/* ─── Control de Registro Modal ─── */}
       <Dialog open={registroUser !== null} onOpenChange={(o) => !o && setRegistroUser(null)}>

@@ -10,35 +10,39 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+import { SocketProvider } from "@/contexts/SocketContext";
+
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Ruta de login - pública */}
-              <Route path="/login" element={<Login />} />
-              
-              {/* Rutas protegidas */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Redireccionar rutas desconocidas */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <SocketProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Ruta de login - pública */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Rutas protegidas */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* Redireccionar rutas desconocidas */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </SocketProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>

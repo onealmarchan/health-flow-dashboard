@@ -13,20 +13,19 @@ interface UserTableProps {
   onEdit: (user: Usuario) => void;
   onViewRegistry: (user: Usuario) => void;
   onToggleStatus: (id: number) => void;
-  onDelete: (id: number) => void;
 }
 
 const statusColors: Record<string, string> = {
   ADMIN: 'bg-primary/20 text-primary',
-  MEDICO: 'bg-accent/20 text-accent-foreground',
+  ADMIN_AUXILIAR: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
 };
 
 const rolLabels: Record<string, string> = {
   ADMIN: 'Administrador',
-  MEDICO: 'Médico',
+  ADMIN_AUXILIAR: 'Auxiliar Admin',
 };
 
-export function UserTable({ users, onEdit, onViewRegistry, onToggleStatus, onDelete }: UserTableProps) {
+export function UserTable({ users, onEdit, onViewRegistry, onToggleStatus }: UserTableProps) {
   return (
     <div className="chart-container">
       <div className="overflow-x-auto">
@@ -57,13 +56,18 @@ export function UserTable({ users, onEdit, onViewRegistry, onToggleStatus, onDel
                   <td className="p-3 text-sm font-medium text-foreground">{user.nombre || '—'}</td>
                   <td className="p-3 text-sm text-muted-foreground">{user.email}</td>
                   <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        statusColors[user.rol] || 'bg-secondary text-foreground'
-                      }`}
-                    >
-                      {rolLabels[user.rol] || user.rol}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium w-fit ${
+                          statusColors[user.rol] || 'bg-secondary text-foreground'
+                        }`}
+                      >
+                        {rolLabels[user.rol] || user.rol}
+                      </span>
+                      <span className={`text-[10px] font-bold uppercase ml-1 ${user.status ? 'text-emerald-500' : 'text-destructive'}`}>
+                        {user.status ? '● Activo' : '● Inactivo'}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-3">
                     <Button
@@ -87,16 +91,10 @@ export function UserTable({ users, onEdit, onViewRegistry, onToggleStatus, onDel
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="cursor-pointer text-warning"
+                          className={`cursor-pointer ${user.status ? 'text-warning' : 'text-emerald-500 font-medium'}`}
                           onClick={() => onToggleStatus(user.id)}
                         >
-                          Inhabilitar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer text-destructive font-semibold"
-                          onClick={() => onDelete(user.id)}
-                        >
-                          Eliminar
+                          {user.status ? 'Inhabilitar' : 'Habilitar'}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

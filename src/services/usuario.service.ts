@@ -17,8 +17,6 @@ export const usuarioService = {
 
   // Inhabilitar/cambiar estado de usuario
   toggleStatus: (id: number) =>
-    api.patch<Usuario>(`/usuario/${id}/toggle-status`, {}),
+    api.patch<Usuario>(`/usuario/${id}/estado`, {}),
 
-  // Eliminar usuario
-  delete: (id: number) => api.delete(`/usuario/${id}`),
 };

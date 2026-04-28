@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Plus, Search, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioStatus, useDeleteUsuario } from '@/hooks/useUsuarios';
+import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioStatus } from '@/hooks/useUsuarios';
 import { Usuario, CreateUsuarioDto } from '@/types';
 import { UserTable } from './usuarios/UserTable';
 import { UserModals } from './usuarios/UserModals';
@@ -19,14 +19,12 @@ export function UsuariosPage() {
   const [editUser, setEditUser] = useState<Usuario | null>(null);
   const [registroUser, setRegistroUser] = useState<Usuario | null>(null);
   const [confirmDisableId, setConfirmDisableId] = useState<number | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   // ─── Hooks de Datos (API) ───
   const { data: users = [], isLoading, isError, error, refetch } = useUsuarios();
   const createMutation = useCreateUsuario();
   const updateMutation = useUpdateUsuario();
   const toggleStatusMutation = useToggleUsuarioStatus();
-  const deleteMutation = useDeleteUsuario();
 
   // ─── Filtrado ───
   const filteredUsers = users.filter((u) =>
@@ -57,11 +55,6 @@ export function UsuariosPage() {
     });
   };
 
-  const handleDelete = (id: number) => {
-    deleteMutation.mutate(id, {
-      onSuccess: () => setConfirmDeleteId(null),
-    });
-  };
 
   // ─── Estados de Carga y Error ───
   if (isLoading) {
@@ -141,7 +134,6 @@ export function UsuariosPage() {
         onEdit={setEditUser} 
         onViewRegistry={setRegistroUser}
         onToggleStatus={setConfirmDisableId}
-        onDelete={setConfirmDeleteId}
       />
 
       {/* Modales Embebidos */}
@@ -164,11 +156,6 @@ export function UsuariosPage() {
         setConfirmDisableId={setConfirmDisableId}
         onConfirmDisable={handleToggleStatus}
         isDisabling={toggleStatusMutation.isPending}
-
-        confirmDeleteId={confirmDeleteId}
-        setConfirmDeleteId={setConfirmDeleteId}
-        onConfirmDelete={handleDelete}
-        isDeleting={deleteMutation.isPending}
       />
     </div>
   );

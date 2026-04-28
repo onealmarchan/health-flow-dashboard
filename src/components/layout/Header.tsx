@@ -11,7 +11,11 @@ import {
   DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import { UserRole } from '@/types';
+import { UserRole, Notificacion } from '@/types';
+import { useNotifications } from '@/contexts/SocketContext';
+import { notificacionService } from '@/services/notificacion.service';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 const lightThemes: { id: ThemeType; name: string; color: string }[] = [
   { id: 'light-blue', name: 'Azul Celeste', color: 'bg-sky-300' },
@@ -27,91 +31,61 @@ const darkThemes: { id: ThemeType; name: string; color: string }[] = [
   { id: 'dark-white-gray', name: 'Blanco/Gris', color: 'bg-gray-400' },
 ];
 
-type NotificationItem = {
-  id: number;
-  title: string;
-  description: string;
-  time: string;
-  type: 'message' | 'event' | 'update' | 'security';
-  read: boolean;
-};
-
-const initialNotifications: NotificationItem[] = [
-  {
-    id: 1,
-    title: 'Nuevo mensaje recibido',
-    description: 'Tienes un mensaje pendiente de revisión.',
-    time: 'Hace 5 min',
-    type: 'message',
-    read: false,
-  },
-  {
-    id: 2,
-    title: 'Evento próximo',
-    description: 'Jornada médica programada para mañana.',
-    time: 'Hace 20 min',
-    type: 'event',
-    read: false,
-  },
-  {
-    id: 3,
-    title: 'Actualización del sistema',
-    description: 'Se actualizaron los módulos de diagnóstico.',
-    time: 'Hace 1 h',
-    type: 'update',
-    read: false,
-  },
-  {
-    id: 4,
-    title: 'Alerta de seguridad',
-    description: 'Inicio de sesión detectado desde nuevo dispositivo.',
-    time: 'Hace 2 h',
-    type: 'security',
-    read: true,
-  },
-];
 
 const getRolLabel = (rol: UserRole): string => {
   switch (rol) {
     case UserRole.ADMIN:
       return 'Administrador';
-    case UserRole.MEDICO:
-      return 'Médico';
+    case UserRole.ADMIN_AUXILIAR:
+      return 'Auxiliar Admin';
     default:
       return rol;
   }
 };
 
-const getUserInitials = (email: string): string => {
-  const parts = email.split('@')[0];
+const getUserInitials = (nombre: string): string => {
+  if (!nombre) return 'U';
+  const parts = nombre.split(' ');
   if (parts.length >= 2) {
-    return parts.substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   }
-  return parts.toUpperCase();
+  return nombre.substring(0, 2).toUpperCase();
 };
 
 export function Header() {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { notificaciones, unreadCount, deleteNotificacion } = useNotifications();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
 
-  const unreadCount = notifications.filter((item) => !item.read).length;
-
-  const handleSelectNotification = (notification: NotificationItem) => {
-    alert(`Notificación seleccionada: ${notification.title}`);
-    setNotifications((current) =>
-      current.map((item) => (item.id === notification.id ? { ...item, read: true } : item)),
-    );
+  const handleSelectNotification = async (notification: Notificacion) => {
+    if (!notification.leida) {
+      try {
+        await notificacionService.markAsRead(notification.pk_num_notificacion);
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    }
+    // Opcional: Redirigir según el tipo de notificación
   };
 
-  const markAllAsRead = () => {
-    setNotifications((current) => current.map((item) => ({ ...item, read: true })));
+  const markAllAsRead = async () => {
+    try {
+      await notificacionService.markAllAsRead();
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
-  const clearAllNotifications = () => {
-    setNotifications([]);
+  const handleDeleteNotification = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      await notificacionService.delete(id);
+      deleteNotificacion(id);
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   const handleLogout = () => {
@@ -146,27 +120,37 @@ export function Header() {
             </div>
 
             <div className="max-h-80 overflow-y-auto p-1">
-              {notifications.length === 0 ? (
+              {notificaciones.length === 0 ? (
                 <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                   No hay notificaciones.
                 </div>
               ) : (
-                notifications.map((notification) => (
+                notificaciones.map((notification) => (
                   <DropdownMenuItem
-                    key={notification.id}
+                    key={notification.pk_num_notificacion}
                     onClick={() => handleSelectNotification(notification)}
                     className={cn(
-                      'flex flex-col items-start gap-1 cursor-pointer rounded-md px-3 py-2',
-                      notification.read ? 'text-muted-foreground' : 'bg-accent/40 text-accent-foreground',
+                      'flex flex-col items-start gap-1 cursor-pointer rounded-md px-3 py-2 group',
+                      notification.leida ? 'text-muted-foreground opacity-70' : 'bg-accent/40 text-accent-foreground',
                     )}
                   >
                     <div className="flex w-full items-start justify-between gap-3">
-                      <span className={cn('text-sm', !notification.read && 'font-semibold')}>
-                        {notification.title}
+                      <span className={cn('text-sm leading-tight', !notification.leida && 'font-semibold')}>
+                        {notification.titulo}
                       </span>
-                      <span className="shrink-0 text-xs text-muted-foreground">{notification.time}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                          {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true, locale: es })}
+                        </span>
+                        <button 
+                          onClick={(e) => handleDeleteNotification(e, notification.pk_num_notificacion)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-destructive/10 hover:text-destructive rounded transition-all"
+                        >
+                          <LogOut className="w-3 h-3 rotate-180" />
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">{notification.description}</span>
+                    <span className="text-xs line-clamp-2 text-muted-foreground">{notification.mensaje}</span>
                   </DropdownMenuItem>
                 ))
               )}
@@ -178,22 +162,9 @@ export function Header() {
                 type="button"
                 onClick={markAllAsRead}
                 className="rounded-md px-2 py-1.5 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                disabled={unreadCount === 0}
               >
                 Marcar todo como leído
-              </button>
-              <button
-                type="button"
-                onClick={clearAllNotifications}
-                className="rounded-md px-2 py-1.5 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                Borrar todo
-              </button>
-              <button
-                type="button"
-                onClick={() => alert('Personalización de alertas – próximamente')}
-                className="rounded-md px-2 py-1.5 text-left text-xs text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              >
-                Configuración de alertas
               </button>
             </div>
           </DropdownMenuContent>
@@ -244,35 +215,48 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 p-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors">
-              <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center">
+            <button className="flex items-center gap-3 pl-1 pr-3 py-1.5 rounded-full hover:bg-secondary/80 transition-all duration-200 group">
+              <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center shadow-sm border border-border/20 group-hover:shadow-md transition-shadow">
                 <span className="text-xs font-bold text-primary-foreground">
-                  {user ? getUserInitials(user.email) : <User className="w-4 h-4 text-primary-foreground" />}
+                  {user ? getUserInitials(user.nombre || user.email.split('@')[0]) : <User className="w-4 h-4 text-primary-foreground" />}
                 </span>
               </div>
               {user && (
-                <div className="hidden md:flex flex-col items-start">
-                  <span className="text-sm font-medium text-foreground">{user.email}</span>
-                  <span className="text-xs text-muted-foreground">{getRolLabel(user.rol)}</span>
+                <div className="hidden md:flex flex-col items-start leading-tight">
+                  <span className="text-sm font-semibold text-foreground capitalize tracking-tight">
+                    {user.nombre || user.email.split('@')[0]}
+                  </span>
+                  <span className="text-[10px] font-medium text-muted-foreground truncate max-w-[150px]">
+                    {user.email}
+                  </span>
                 </div>
               )}
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-1">
-                <span className="text-sm font-medium">{user?.email || 'Usuario'}</span>
+          <DropdownMenuContent align="end" className="w-60 mt-2 bg-popover border border-border z-50 p-1.5 shadow-xl glass-effect">
+            <DropdownMenuLabel className="px-3 py-3 mb-1">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-bold text-foreground capitalize">
+                  {user?.nombre || user?.email.split('@')[0] || 'Usuario'}
+                </span>
                 {user && (
-                  <span className="text-xs text-muted-foreground">{getRolLabel(user.rol)}</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">
+                    {getRolLabel(user.rol)}
+                  </span>
                 )}
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">Configuración</DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer rounded-md py-2">
+              <User className="w-4 h-4 mr-2 opacity-70" />
+              Perfil
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer rounded-md py-2">
+              <Palette className="w-4 h-4 mr-2 opacity-70" />
+              Configuración
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="my-1" />
             <DropdownMenuItem 
-              className="cursor-pointer text-destructive focus:text-destructive" 
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 rounded-md py-2" 
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4 mr-2" />

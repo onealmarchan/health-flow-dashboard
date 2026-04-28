@@ -11,18 +11,20 @@ export interface AuthResponse {
   user: {
     id: number;
     email: string;
+    nombre: string;
     rol: UserRole;
   };
 }
 
 export enum UserRole {
   ADMIN = 'ADMIN',
-  MEDICO = 'MEDICO',
+  ADMIN_AUXILIAR = 'ADMIN_AUXILIAR',
 }
 
 export interface User {
   id: number;
   email: string;
+  nombre: string;
   rol: UserRole;
 }
 
@@ -34,6 +36,7 @@ export interface Usuario {
   email: string;
   nombre: string;
   rol: UserRole;
+  status: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -389,4 +392,41 @@ export interface IndicadorConcentracion {
   rango: string;
   casos: number;
   porcentaje: number;
+}
+
+// ==========================================
+// Tipos de Notificación
+// ==========================================
+export enum RolDestinatario {
+  ADMIN = 'admin',
+  ADMIN_AUXILIAR = 'admin_auxiliar',
+  TODOS = 'todos',
+}
+
+export enum TipoNotificacion {
+  CITA_HOY = 'cita_hoy',
+  CITA_INCOMPLETA = 'cita_incompleta',
+  RECORDATORIO_ESTADISTICO = 'recordatorio_estadistico',
+  BLOQUEO_PROXIMO = 'bloqueo_proximo',
+  SISTEMA = 'sistema',
+}
+
+export enum PrioridadNotificacion {
+  BAJA = 'baja',
+  MEDIA = 'media',
+  ALTA = 'alta',
+}
+
+export interface Notificacion {
+  pk_num_notificacion: number;
+  tipo: TipoNotificacion;
+  titulo: string;
+  mensaje: string;
+  prioridad: PrioridadNotificacion;
+  leida: boolean;
+  referencia_id: number | null;
+  referencia_tipo: string | null;
+  rol_destinatario: RolDestinatario;
+  usuario_id: number | null;
+  createdAt: string;
 }
