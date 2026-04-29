@@ -289,6 +289,7 @@ export function CitasPage() {
     setTipoCita('');
     setMotivoTexto('');
     setHoraSeleccionada('');
+    setTurno('');
     setCitaNumber('');
   };
 
