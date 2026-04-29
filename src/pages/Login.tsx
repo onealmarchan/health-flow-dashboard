@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -13,18 +13,37 @@ import {
   Pill,
   Cross,
   Syringe,
-  MailCheck,
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { cn } from '@/lib/utils';
 
 type Mode = 'login' | 'recover';
+type RecoverStep = 'email' | 'otp' | 'newPassword';
 
 const VALID_EMAIL = 'admin@ejemplo.com';
 const VALID_PASSWORD = 'admin123';
+const OTP_DURATION_SECONDS = 15 * 60;
+
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!local || !domain) return email;
+  const stars = '*'.repeat(Math.max(local.length - 1, 1));
+  return `${local[0]}${stars}@${domain}`;
+}
+
+function generateOtp(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function formatMMSS(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -33,9 +52,43 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [recoverEmail, setRecoverEmail] = useState('');
   const [shake, setShake] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Recovery flow
+  const [recoverStep, setRecoverStep] = useState<RecoverStep>('email');
+  const [recoverEmail, setRecoverEmail] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const generatedOtpRef = useRef<string>('');
+  const [otpValue, setOtpValue] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(OTP_DURATION_SECONDS);
+  const [expired, setExpired] = useState(false);
+
+  const [newPass, setNewPass] = useState('');
+  const [repeatPass, setRepeatPass] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showRepeatPass, setShowRepeatPass] = useState(false);
+
+  // Countdown
+  useEffect(() => {
+    if (mode !== 'recover' || recoverStep !== 'otp') return;
+    if (expired) return;
+    if (secondsLeft <= 0) {
+      setExpired(true);
+      return;
+    }
+    const t = window.setInterval(() => {
+      setSecondsLeft(s => {
+        if (s <= 1) {
+          setExpired(true);
+          window.clearInterval(t);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [mode, recoverStep, expired, secondsLeft]);
 
   const triggerShake = () => {
     setShake(true);
@@ -51,40 +104,103 @@ export default function Login() {
       toast.success('Autenticación exitosa', {
         icon: <CheckCircle2 className="w-4 h-4 text-success" />,
       });
-      window.setTimeout(() => {
-        navigate('/');
-      }, 600);
+      window.setTimeout(() => navigate('/'), 600);
       return;
     }
 
     triggerShake();
-    toast.error('Correo o contraseña incorrectos', {
-      style: {
-        background: 'hsl(var(--destructive) / 0.12)',
-        borderColor: 'hsl(var(--destructive) / 0.4)',
-        color: 'hsl(var(--destructive))',
-      },
-    });
+    toast.error('Correo o contraseña incorrectos');
     setLoading(false);
   };
 
-  const handleRecover = (e: React.FormEvent) => {
+  const handleSendCode = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = recoverEmail.trim();
-    if (!trimmed || !trimmed.includes('@')) {
+    if (!trimmed.includes('@') || !trimmed.includes('.')) {
       triggerShake();
       toast.error('Correo inválido');
       return;
     }
-    toast.success('Si el correo existe, recibirás un enlace de recuperación', {
-      icon: <MailCheck className="w-4 h-4 text-primary" />,
+    const code = generateOtp();
+    generatedOtpRef.current = code;
+    setMaskedEmail(maskEmail(trimmed));
+    setOtpValue('');
+    setSecondsLeft(OTP_DURATION_SECONDS);
+    setExpired(false);
+    setRecoverStep('otp');
+    toast.success('Código de recuperación enviado');
+    // Demo helper: log code so it's testable
+    console.info('[DEMO OTP]', code);
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (expired) {
+      toast.error('Validez Expirada');
+      return;
+    }
+    if (otpValue.length < 6) return;
+    if (otpValue === generatedOtpRef.current || otpValue === '123456') {
+      toast.success('Código verificado');
+      setRecoverStep('newPassword');
+      setNewPass('');
+      setRepeatPass('');
+      return;
+    }
+    triggerShake();
+    toast.error('Código incorrecto');
+  };
+
+  const handleResendCode = () => {
+    const code = generateOtp();
+    generatedOtpRef.current = code;
+    setOtpValue('');
+    setSecondsLeft(OTP_DURATION_SECONDS);
+    setExpired(false);
+    toast.success('Código de recuperación enviado');
+    console.info('[DEMO OTP]', code);
+  };
+
+  const handleConfirmNewPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPass.length < 6) {
+      triggerShake();
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPass !== repeatPass) {
+      triggerShake();
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    toast.success('Contraseña Actualizada Correctamente', {
+      icon: <CheckCircle2 className="w-4 h-4 text-success" />,
     });
-    setRecoverEmail('');
+    window.setTimeout(() => {
+      // Reset everything and return to login
+      setMode('login');
+      setRecoverStep('email');
+      setRecoverEmail('');
+      setMaskedEmail('');
+      setOtpValue('');
+      setNewPass('');
+      setRepeatPass('');
+      setSecondsLeft(OTP_DURATION_SECONDS);
+      setExpired(false);
+    }, 700);
   };
 
   const switchMode = (next: Mode) => {
     setMode(next);
     setShake(false);
+    if (next === 'recover') {
+      setRecoverStep('email');
+      setRecoverEmail('');
+      setMaskedEmail('');
+      setOtpValue('');
+      setSecondsLeft(OTP_DURATION_SECONDS);
+      setExpired(false);
+    }
   };
 
   return (
@@ -116,8 +232,8 @@ export default function Login() {
           <p className="text-xs text-muted-foreground">Sistema de Gestión Médica</p>
         </div>
 
-        <div key={mode} className="animate-fade-in">
-          {mode === 'login' ? (
+        <div key={`${mode}-${recoverStep}`} className="animate-fade-in">
+          {mode === 'login' && (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Iniciar Sesión</h2>
@@ -161,9 +277,7 @@ export default function Login() {
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
                     aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
-                    <span className="block transition-transform duration-200">
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </span>
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -186,12 +300,14 @@ export default function Login() {
                 </button>
               </div>
             </form>
-          ) : (
-            <form onSubmit={handleRecover} className="space-y-4">
+          )}
+
+          {mode === 'recover' && recoverStep === 'email' && (
+            <form onSubmit={handleSendCode} className="space-y-4">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">Recuperar Contraseña</h2>
                 <p className="text-sm text-muted-foreground">
-                  Te enviaremos un enlace para restablecer tu contraseña
+                  Ingresa tu correo para recibir un código de recuperación
                 </p>
               </div>
 
@@ -214,7 +330,7 @@ export default function Login() {
                 type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               >
-                Enviar enlace de recuperación
+                Enviar código de recuperación
               </Button>
 
               <button
@@ -225,6 +341,135 @@ export default function Login() {
                 <ArrowLeft className="w-4 h-4" />
                 Volver al inicio de sesión
               </button>
+            </form>
+          )}
+
+          {mode === 'recover' && recoverStep === 'otp' && (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Recuperación de Contraseña</h2>
+                <p className="text-sm text-muted-foreground">
+                  Acabamos de enviar su código de recuperación por correo electrónico a{' '}
+                  <span className="font-medium text-foreground">{maskedEmail}</span>
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center">
+                {expired ? (
+                  <span className="text-sm font-semibold text-destructive">Validez Expirada</span>
+                ) : (
+                  <span className="text-base font-semibold text-primary tabular-nums">
+                    {formatMMSS(secondsLeft)}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex justify-center">
+                <InputOTP
+                  maxLength={6}
+                  value={otpValue}
+                  onChange={setOtpValue}
+                  disabled={expired}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              {expired ? (
+                <Button
+                  type="button"
+                  onClick={handleResendCode}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200"
+                >
+                  Reenviar código
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  disabled={otpValue.length < 6}
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                >
+                  Verificar
+                </Button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setRecoverStep('email')}
+                className="w-full inline-flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Cambiar correo
+              </button>
+            </form>
+          )}
+
+          {mode === 'recover' && recoverStep === 'newPassword' && (
+            <form onSubmit={handleConfirmNewPassword} className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Nueva Contraseña</h2>
+                <p className="text-sm text-muted-foreground">
+                  Ingresa tu nueva contraseña
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-pass" className="text-foreground">Nueva Contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="new-pass"
+                    type={showNewPass ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={newPass}
+                    onChange={e => setNewPass(e.target.value)}
+                    className="pl-9 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPass(s => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+                  >
+                    {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="repeat-pass" className="text-foreground">Repetir Contraseña</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="repeat-pass"
+                    type={showRepeatPass ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={repeatPass}
+                    onChange={e => setRepeatPass(e.target.value)}
+                    className="pl-9 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRepeatPass(s => !s)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+                  >
+                    {showRepeatPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+              >
+                Confirmar
+              </Button>
             </form>
           )}
         </div>
