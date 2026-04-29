@@ -250,8 +250,15 @@ export function CitasPage() {
   }, [selectedDate, appointments]);
 
   const availableHours = useMemo(() => {
-    return baseTimeSlots.filter(h => !usedHoursForDate.has(h));
-  }, [usedHoursForDate]);
+    const filtered = baseTimeSlots.filter(h => !usedHoursForDate.has(h));
+    if (!turno) return filtered;
+    return filtered.filter(h => {
+      const hour = parseInt(h.split(':')[0], 10);
+      if (turno === 'Mañana') return hour >= 6 && hour < 12;
+      if (turno === 'Tarde') return hour >= 12 && hour < 18;
+      return hour >= 18 && hour < 24;
+    });
+  }, [usedHoursForDate, turno]);
 
   const isResumenReady = tipoCita && motivoTexto && horaSeleccionada;
 
