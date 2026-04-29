@@ -862,9 +862,22 @@ export function CitasPage() {
                       <Input value={motivoTexto} onChange={e => setMotivoTexto(e.target.value)} />
                     </div>
                     <div className="space-y-2">
+                      <Label className="text-foreground">Turno</Label>
+                      <Select value={turno} onValueChange={(v) => { setTurno(v as 'Mañana' | 'Tarde' | 'Noche'); setHoraSeleccionada(''); }}>
+                        <SelectTrigger><SelectValue placeholder="Seleccionar turno" /></SelectTrigger>
+                        <SelectContent className="bg-popover border border-border z-50">
+                          <SelectItem value="Mañana">Mañana</SelectItem>
+                          <SelectItem value="Tarde">Tarde</SelectItem>
+                          <SelectItem value="Noche">Noche</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
                       <Label className="text-foreground">Hora Disponible</Label>
-                      <Select value={horaSeleccionada} onValueChange={setHoraSeleccionada}>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <Select value={horaSeleccionada} onValueChange={setHoraSeleccionada} disabled={!turno}>
+                        <SelectTrigger>
+                          <SelectValue placeholder={turno ? 'Seleccionar' : 'Seleccione un turno primero'} />
+                        </SelectTrigger>
                         <SelectContent className="bg-popover border border-border z-50">
                           {availableHours.length === 0 ? (
                             <SelectItem value="none" disabled>Sin horarios</SelectItem>
