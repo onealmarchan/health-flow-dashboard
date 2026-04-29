@@ -892,68 +892,144 @@ export function CitasPage() {
                   </div>
 
                   {/* Resumen card */}
-                  {isResumenReady && selectedPatient && selectedDoctor && (
-                    <div className="rounded-lg border border-border p-4 bg-card space-y-3">
-                      <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
-                        Resumen de Cita Asignada
-                      </h3>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                        <div>
-                          <span className="font-medium text-muted-foreground">Nº de Cita:</span>{' '}
-                          <span className="text-foreground font-mono">{citaNumber}</span>
+                  {isResumenReady && selectedPatient && selectedDoctor && (() => {
+                    const generarComprobantePDF = () => {
+                      const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+                      const W = doc.internal.pageSize.getWidth();
+                      let y = 40;
+                      const line = () => { doc.setLineWidth(0.5); doc.line(40, y, W - 40, y); y += 12; };
+                      const row = (left: string, right?: string) => {
+                        doc.setFontSize(10);
+                        doc.text(left, 44, y);
+                        if (right) doc.text(right, W / 2 + 10, y);
+                        y += 14;
+                      };
+                      const section = (title: string) => {
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(10);
+                        doc.text(title, 44, y);
+                        doc.setFont('helvetica', 'normal');
+                        y += 14;
+                      };
+
+                      doc.setFont('helvetica', 'bold');
+                      doc.setFontSize(12);
+                      doc.text('Centro Ambulatorio Dr Salvador Allende', 44, y);
+                      doc.text(`N° cita: ${citaNumber}`, W - 200, y);
+                      y += 16;
+                      doc.setFontSize(11);
+                      doc.text('Comprobante de Cita Médica', 44, y);
+                      y += 8;
+                      line();
+                      doc.setFont('helvetica', 'normal');
+
+                      row(`Fecha de Cita: ${selectedDate || ''}`, `Hora Asignada: ${horaSeleccionada || ''}`);
+                      row(`Turno: ${turno || ''}    Tipo de Cita: ${tipoCita || ''}    Caso: ${remitido === 'si' ? 'Remitido' : 'Directo'}`);
+                      line();
+
+                      section('DATOS DEL PACIENTE');
+                      row(`Cédula: ${selectedPatient.ci}`, `Nombres: ${selectedPatient.nombres}`);
+                      row(`Apellidos: ${selectedPatient.apellidos}`, `Fecha Nac.: ${selectedPatient.fechaNac}`);
+                      row(`Sexo: ${selectedPatient.sexo}`, `Teléfono: ${selectedPatient.telefono}`);
+                      row(`Comunidad: —`, `Estado: ${selectedPatient.estado}`);
+                      row(`Parroquia: —`);
+                      line();
+
+                      section('MÉDICO TRATANTE');
+                      row(`N° Ministerio de Salud: ${selectedDoctor.mpps}`, `Especialidad: ${selectedDoctor.specialty}`);
+                      row(`Nombres y Apellidos: ${selectedDoctor.name}`, `Horario de Sesión: —`);
+                      line();
+
+                      section('MOTIVO DE CONSULTA');
+                      doc.setFontSize(10);
+                      const split = doc.splitTextToSize(motivoTexto || '—', W - 88);
+                      doc.text(split, 44, y);
+                      y += split.length * 12 + 4;
+                      row(`Nivel de Urgencia: ${motivoData.urgencia || '—'}`, `Remisión: ${remitido === 'si' ? 'Sí' : 'No'}`);
+                      line();
+
+                      doc.save(`Comprobante_${citaNumber}.pdf`);
+                    };
+
+                    return (
+                      <div className="rounded-lg border border-border p-4 bg-card space-y-3">
+                        <div className="flex items-start justify-between border-b border-border pb-2">
+                          <div>
+                            <h3 className="text-xs font-semibold text-foreground">Centro Ambulatorio Dr Salvador Allende</h3>
+                            <p className="text-sm font-bold text-foreground">Comprobante de Cita Médica</p>
+                          </div>
+                          <div className="text-right text-xs">
+                            <div className="text-muted-foreground">N° cita</div>
+                            <div className="font-mono font-semibold text-foreground">{citaNumber}</div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Médico:</span>{' '}
-                          <span className="text-foreground">{selectedDoctor.name}</span>
+
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs pb-2 border-b border-border/60">
+                          <div><span className="text-muted-foreground">Fecha de Cita:</span> <span className="text-foreground">{selectedDate}</span></div>
+                          <div><span className="text-muted-foreground">Hora Asignada:</span> <span className="text-foreground">{horaSeleccionada}</span></div>
+                          <div><span className="text-muted-foreground">Turno:</span> <span className="text-foreground">{turno || '—'}</span></div>
+                          <div><span className="text-muted-foreground">Tipo de Cita:</span> <span className="text-foreground">{tipoCita}</span></div>
+                          <div className="col-span-2 flex items-center gap-2">
+                            <span className="text-muted-foreground">Caso:</span>
+                            <RadioGroup value={remitido} onValueChange={(v) => setRemitido(v as 'si' | 'no')} className="flex gap-3">
+                              <div className="flex items-center gap-1">
+                                <RadioGroupItem value="si" id="rem-si" />
+                                <Label htmlFor="rem-si" className="text-foreground text-xs">Remitido</Label>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <RadioGroupItem value="no" id="rem-no" />
+                                <Label htmlFor="rem-no" className="text-foreground text-xs">Directo</Label>
+                              </div>
+                            </RadioGroup>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Paciente:</span>{' '}
-                          <span className="text-foreground">{selectedPatient.nombres} {selectedPatient.apellidos}</span>
+
+                        <div className="space-y-1.5 pb-2 border-b border-border/60">
+                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Datos del Paciente</h4>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <div><span className="text-muted-foreground">Cédula:</span> <span className="text-foreground">{selectedPatient.ci}</span></div>
+                            <div><span className="text-muted-foreground">Nombres:</span> <span className="text-foreground">{selectedPatient.nombres}</span></div>
+                            <div><span className="text-muted-foreground">Apellidos:</span> <span className="text-foreground">{selectedPatient.apellidos}</span></div>
+                            <div><span className="text-muted-foreground">F. Nac.:</span> <span className="text-foreground">{selectedPatient.fechaNac}</span></div>
+                            <div><span className="text-muted-foreground">Sexo:</span> <span className="text-foreground">{selectedPatient.sexo}</span></div>
+                            <div><span className="text-muted-foreground">Teléfono:</span> <span className="text-foreground">{selectedPatient.telefono}</span></div>
+                            <div><span className="text-muted-foreground">Comunidad:</span> <span className="text-foreground">—</span></div>
+                            <div><span className="text-muted-foreground">Estado:</span> <span className="text-foreground">{selectedPatient.estado}</span></div>
+                            <div className="col-span-2"><span className="text-muted-foreground">Parroquia:</span> <span className="text-foreground">—</span></div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Especialidad:</span>{' '}
-                          <span className="text-foreground">{selectedDoctor.specialty}</span>
+
+                        <div className="space-y-1.5 pb-2 border-b border-border/60">
+                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Médico Tratante</h4>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            <div><span className="text-muted-foreground">N° MPPS:</span> <span className="text-foreground font-mono">{selectedDoctor.mpps}</span></div>
+                            <div><span className="text-muted-foreground">Especialidad:</span> <span className="text-foreground">{selectedDoctor.specialty}</span></div>
+                            <div><span className="text-muted-foreground">Nombres y Apellidos:</span> <span className="text-foreground">{selectedDoctor.name}</span></div>
+                            <div><span className="text-muted-foreground">Horario de Sesión:</span> <span className="text-foreground">—</span></div>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Edad:</span>{' '}
-                          <span className="text-foreground">{calcAge(selectedPatient.fechaNac)} años</span>
+
+                        <div className="space-y-1.5">
+                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Motivo de Consulta</h4>
+                          <p className="text-xs text-muted-foreground">Descripción del motivo</p>
+                          <p className="text-xs text-foreground whitespace-pre-wrap">{motivoTexto || '—'}</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-1">
+                            <div><span className="text-muted-foreground">Nivel de Urgencia:</span> <span className="text-foreground">{motivoData.urgencia || '—'}</span></div>
+                            <div><span className="text-muted-foreground">Remisión:</span> <span className="text-foreground">{remitido === 'si' ? 'Sí' : 'No'}</span></div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-muted-foreground">Remitido:</span>
-                          <RadioGroup
-                            value={remitido}
-                            onValueChange={(v) => setRemitido(v as 'si' | 'no')}
-                            className="flex gap-3"
-                          >
-                            <div className="flex items-center gap-1">
-                              <RadioGroupItem value="si" id="rem-si" />
-                              <Label htmlFor="rem-si" className="text-foreground text-xs">Sí</Label>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <RadioGroupItem value="no" id="rem-no" />
-                              <Label htmlFor="rem-no" className="text-foreground text-xs">No</Label>
-                            </div>
-                          </RadioGroup>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="font-medium text-muted-foreground">Motivo:</span>{' '}
-                          <span className="text-foreground">{motivoTexto}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Tipo de Cita:</span>{' '}
-                          <span className="text-foreground">{tipoCita}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Día:</span>{' '}
-                          <span className="text-foreground">{selectedDate}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-muted-foreground">Hora:</span>{' '}
-                          <span className="text-foreground">{horaSeleccionada}</span>
-                        </div>
+
+                        <Button
+                          variant="outline"
+                          className="w-full mt-2"
+                          onClick={generarComprobantePDF}
+                        >
+                          <FileDown className="w-4 h-4 mr-2" />
+                          Generar Comprobante de Cita
+                        </Button>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Bottom buttons */}
                   <div className="flex flex-col gap-2 pt-2">
