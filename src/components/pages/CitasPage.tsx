@@ -146,6 +146,7 @@ export function CitasPage() {
   const [tipoCita, setTipoCita] = useState('');
   const [motivoTexto, setMotivoTexto] = useState('');
   const [horaSeleccionada, setHoraSeleccionada] = useState('');
+  const [turno, setTurno] = useState<'Mañana' | 'Tarde' | 'Noche' | ''>('');
   const [remitido, setRemitido] = useState<'si' | 'no'>('no');
 
   const emptyPatient = {
