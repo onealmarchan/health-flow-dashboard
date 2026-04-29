@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
