@@ -233,6 +233,7 @@ export function CitasPage() {
     }
     setTipoCita('');
     setHoraSeleccionada('');
+    setTurno('');
     setRemitido('no');
     setModalStep('fullCita');
   };
