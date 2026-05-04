@@ -316,6 +316,32 @@ export function CitasPage() {
     setHoraSeleccionada('');
   };
 
+  // Reports module for appointments table
+  const appointmentsModule: ReportableModule<typeof appointments[number]> = useMemo(() => ({
+    name: 'Citas',
+    itemSingular: 'cita',
+    itemPlural: 'citas',
+    rows: appointments,
+    getId: r => r.id,
+    fields: [
+      { key: 'patient', label: 'Paciente', accessor: r => r.patient },
+      { key: 'doctor', label: 'Doctor', accessor: r => r.doctor },
+      { key: 'specialty', label: 'Especialidad', accessor: r => r.specialty },
+      { key: 'date', label: 'Fecha', accessor: r => r.date },
+      { key: 'time', label: 'Hora', accessor: r => r.time },
+      { key: 'status', label: 'Estado', accessor: r => r.status },
+    ],
+    dateField: { accessor: r => r.date, label: 'Fecha' },
+    metrics: rows => ({
+      'Total exportadas': rows.length,
+      'Confirmadas': rows.filter(r => r.status === 'confirmada').length,
+      'Pendientes': rows.filter(r => r.status === 'pendiente').length,
+      'Canceladas': rows.filter(r => r.status === 'cancelada').length,
+    }),
+  }), [appointments]);
+
+  const appointmentsReports = useReportableTable({ module: appointmentsModule, visibleRows: appointments });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -342,37 +368,47 @@ export function CitasPage() {
 
       {/* Appointments Table */}
       <div className="chart-container">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-foreground">Próximas Citas Médicas</h3>
+          {appointmentsReports.SplitButton}
+        </div>
+        {appointmentsReports.ContextBar}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado', 'Acciones'].map(h => (
+                <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
+                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado'].map(h => (
                   <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {appointments.map(apt => (
-                <tr key={apt.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
-                  <td className="p-3 text-sm font-medium text-foreground">{apt.patient}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.doctor}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{apt.specialty}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.date}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.time}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[apt.status]}`}>
-                      {apt.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Button variant="ghost" size="sm">Editar</Button>
-                  </td>
-                </tr>
-              ))}
+              {appointments.map(apt => {
+                const selected = appointmentsReports.isRowSelected(apt.id);
+                return (
+                  <tr key={apt.id}
+                    className={cn('border-b border-border/50 transition-colors hover:bg-secondary/50',
+                      selected && 'bg-primary/10')}>
+                    <td className="p-3"><appointmentsReports.RowCheckbox id={apt.id} /></td>
+                    <td className="p-3 text-sm font-medium text-foreground">{apt.patient}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.doctor}</td>
+                    <td className="p-3 text-sm text-muted-foreground">{apt.specialty}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.date}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.time}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[apt.status]}`}>
+                        {apt.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+      {appointmentsReports.ReportSheet}
 
       {/* Step 1: Search Patient */}
       <Dialog open={modalStep === 'search'} onOpenChange={(o) => !o && setModalStep('closed')}>
