@@ -12,22 +12,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
-
-// Mock data
-const initialAppointments = [
-  { id: 1, patient: 'María García', doctor: 'Dr. López', specialty: 'Cardiología', date: '2024-01-28', time: '09:00', status: 'confirmada' },
-  { id: 2, patient: 'Carlos Ruiz', doctor: 'Dra. Martínez', specialty: 'Pediatría', date: '2024-01-28', time: '09:30', status: 'pendiente' },
-  { id: 3, patient: 'Ana Torres', doctor: 'Dr. Sánchez', specialty: 'Dermatología', date: '2024-01-28', time: '10:00', status: 'confirmada' },
-  { id: 4, patient: 'Pedro Fernández', doctor: 'Dra. Díaz', specialty: 'Neurología', date: '2024-01-28', time: '10:30', status: 'cancelada' },
-  { id: 5, patient: 'Laura Jiménez', doctor: 'Dr. López', specialty: 'Cardiología', date: '2024-01-28', time: '11:00', status: 'confirmada' },
-];
-
-const allPatients = [
-  { num: 1, ci: '12345678', nombres: 'María', apellidos: 'García López', fechaNac: '1990-05-15', sexo: 'F', direccion: 'Calle 1', telefono: '555-0101', nacionalidad: 'Venezolana', estado: 'Activo', estadoCivil: 'Soltera' },
-  { num: 2, ci: '23456789', nombres: 'Carlos', apellidos: 'Ruiz Pérez', fechaNac: '1985-08-22', sexo: 'M', direccion: 'Calle 2', telefono: '555-0102', nacionalidad: 'Venezolano', estado: 'Activo', estadoCivil: 'Casado' },
-  { num: 3, ci: '34567890', nombres: 'Ana', apellidos: 'Torres Díaz', fechaNac: '1978-12-03', sexo: 'F', direccion: 'Calle 3', telefono: '555-0103', nacionalidad: 'Venezolana', estado: 'Activo', estadoCivil: 'Casada' },
-  { num: 4, ci: '45678901', nombres: 'Pedro', apellidos: 'Fernández Gil', fechaNac: '1995-03-10', sexo: 'M', direccion: 'Calle 4', telefono: '555-0104', nacionalidad: 'Venezolano', estado: 'Activo', estadoCivil: 'Soltero' },
-];
+import { usePatients, addPatient, type Patient } from '@/data/patientsStore';
+import { useAppointments, addAppointment } from '@/data/appointmentsStore';
+import { useReportableTable } from '@/components/reports/useReportableTable';
+import type { ReportableModule } from '@/components/reports/types';
 
 // Doctors grouped by specialty
 const doctorsBySpecialty = [
