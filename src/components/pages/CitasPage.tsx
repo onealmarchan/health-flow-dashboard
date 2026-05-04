@@ -92,11 +92,12 @@ function formatDateKey(year: number, month: number, day: number): string {
 export function CitasPage() {
   const [modalStep, setModalStep] = useState<ModalStep>('closed');
   const [patientSearch, setPatientSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<typeof allPatients[0] | null>(null);
+  const allPatients = usePatients();
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isMinor, setIsMinor] = useState(false);
 
-  // Appointments (mutable mock)
-  const [appointments, setAppointments] = useState(initialAppointments);
+  // Appointments come from shared store
+  const appointments = useAppointments();
 
   // Day availability mock
   const [dayAvailability, setDayAvailability] = useState<Record<string, 'available' | 'reserved'>>({
@@ -258,16 +259,14 @@ export function CitasPage() {
 
   const handleAgendarCitaFinal = () => {
     if (!selectedPatient || !selectedDoctor || !selectedDate) return;
-    const newApt = {
-      id: appointments.length + 1,
+    addAppointment({
       patient: `${selectedPatient.nombres} ${selectedPatient.apellidos}`,
       doctor: selectedDoctor.name,
       specialty: selectedDoctor.specialty,
       date: selectedDate,
       time: horaSeleccionada,
       status: 'confirmada',
-    };
-    setAppointments(prev => [...prev, newApt]);
+    });
     setDayAvailability(prev => ({ ...prev, [selectedDate]: 'reserved' }));
     toast.success('Cita agendada exitosamente');
     // Reset everything
