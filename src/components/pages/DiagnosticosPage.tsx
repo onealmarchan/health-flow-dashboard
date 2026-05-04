@@ -23,6 +23,8 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
+import { useReportableTable } from '@/components/reports/useReportableTable';
+import type { ReportableModule } from '@/components/reports/types';
 
 type Sintoma = { nombre: string; descripcion: string; gravedad: number };
 
@@ -223,6 +225,37 @@ export function DiagnosticosPage() {
     return 3;
   }, [viewing]);
 
+  const diagModule: ReportableModule<Diagnostico> = useMemo(() => ({
+    name: 'Diagnósticos',
+    itemSingular: 'diagnóstico',
+    itemPlural: 'diagnósticos',
+    rows: diagnosticos,
+    getId: r => r.id,
+    fields: [
+      { key: 'paciente', label: 'Paciente', accessor: r => r.paciente },
+      { key: 'ci', label: 'C.I.', accessor: r => r.ci },
+      { key: 'numCitaOrigen', label: 'Nº Cita Origen', accessor: r => r.numCitaOrigen },
+      { key: 'enfermedad', label: 'Enfermedad', accessor: r => r.enfermedad.nombre },
+      { key: 'motivo', label: 'Motivo', accessor: r => r.motivo },
+      { key: 'critico', label: 'Crítico', accessor: r => (r.critico ? 'Sí' : 'No') },
+      { key: 'etapa', label: 'Etapa', accessor: r => r.etapa },
+      { key: 'fechaDiagnostico', label: 'Fecha Diagnóstico', accessor: r => r.fechaDiagnostico },
+      { key: 'estado', label: 'Estado', accessor: r => r.estado },
+    ],
+    dateField: { accessor: r => r.fechaDiagnostico, label: 'Fecha Diagnóstico' },
+    metrics: rows => {
+      const total = rows.length;
+      const criticos = rows.filter(r => r.critico).length;
+      return {
+        'Total exportados': total,
+        'Casos críticos': criticos,
+        '% Críticos': total > 0 ? `${((criticos / total) * 100).toFixed(1)}%` : '0%',
+      };
+    },
+  }), [diagnosticos]);
+
+  const diagReports = useReportableTable({ module: diagModule, visibleRows: diagnosticos });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -233,20 +266,26 @@ export function DiagnosticosPage() {
           </h1>
           <p className="text-muted-foreground">Registro y seguimiento de diagnósticos médicos</p>
         </div>
-        <Button
-          className="bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => { setForm(emptyForm()); setRegisterOpen(true); }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Registrar Diagnóstico
-        </Button>
+        <div className="flex items-center gap-2">
+          {diagReports.SplitButton}
+          <Button
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => { setForm(emptyForm()); setRegisterOpen(true); }}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Registrar Diagnóstico
+          </Button>
+        </div>
       </div>
+
+      {diagReports.ContextBar}
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-secondary/50">
               <tr>
+                <th className="w-10 px-3 py-2">{diagReports.HeaderCheckbox}</th>
                 {['Nº', 'Paciente', 'Nº Cita Origen', 'Enfermedad', 'Crítico', 'Etapa', 'Fecha', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
@@ -255,49 +294,54 @@ export function DiagnosticosPage() {
             <tbody>
               {diagnosticos.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                  <td colSpan={10} className="text-center py-8 text-muted-foreground">
                     Sin diagnósticos registrados
                   </td>
                 </tr>
               )}
-              {diagnosticos.map((d, i) => (
-                <tr key={d.id} className="border-t border-border hover:bg-secondary/30">
-                  <td className="px-3 py-2 text-foreground">{i + 1}</td>
-                  <td className="px-3 py-2 text-foreground">{d.paciente}</td>
-                  <td className="px-3 py-2 text-foreground font-mono">{d.numCitaOrigen}</td>
-                  <td className="px-3 py-2 text-foreground">{d.enfermedad.nombre}</td>
-                  <td className="px-3 py-2">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
-                      d.critico ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground'
-                    )}>
-                      {d.critico ? 'Sí' : 'No'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-foreground">{d.etapa}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{d.fechaDiagnostico}</td>
-                  <td className="px-3 py-2">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
-                      d.estado === 'Activo' ? 'bg-success/20 text-success' :
-                      d.estado === 'Resuelto' ? 'bg-primary/20 text-primary' :
-                      'bg-muted text-muted-foreground'
-                    )}>
-                      {d.estado}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2">
-                    <Button size="sm" variant="outline" onClick={() => setViewing(d)}>
-                      <Eye className="w-4 h-4 mr-1" />
-                      Ver diagnóstico
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {diagnosticos.map((d, i) => {
+                const selected = diagReports.isRowSelected(d.id);
+                return (
+                  <tr key={d.id} className={cn('border-t border-border hover:bg-secondary/30', selected && 'bg-primary/10')}>
+                    <td className="px-3 py-2"><diagReports.RowCheckbox id={d.id} /></td>
+                    <td className="px-3 py-2 text-foreground">{i + 1}</td>
+                    <td className="px-3 py-2 text-foreground">{d.paciente}</td>
+                    <td className="px-3 py-2 text-foreground font-mono">{d.numCitaOrigen}</td>
+                    <td className="px-3 py-2 text-foreground">{d.enfermedad.nombre}</td>
+                    <td className="px-3 py-2">
+                      <span className={cn(
+                        'px-2 py-0.5 rounded-full text-xs font-medium',
+                        d.critico ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground'
+                      )}>
+                        {d.critico ? 'Sí' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-foreground">{d.etapa}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.fechaDiagnostico}</td>
+                    <td className="px-3 py-2">
+                      <span className={cn(
+                        'px-2 py-0.5 rounded-full text-xs font-medium',
+                        d.estado === 'Activo' ? 'bg-success/20 text-success' :
+                        d.estado === 'Resuelto' ? 'bg-primary/20 text-primary' :
+                        'bg-muted text-muted-foreground'
+                      )}>
+                        {d.estado}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Button size="sm" variant="outline" onClick={() => setViewing(d)}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        Ver diagnóstico
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+      {diagReports.ReportSheet}
 
       {/* Registrar Diagnóstico */}
       <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>

@@ -12,22 +12,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
-
-// Mock data
-const initialAppointments = [
-  { id: 1, patient: 'María García', doctor: 'Dr. López', specialty: 'Cardiología', date: '2024-01-28', time: '09:00', status: 'confirmada' },
-  { id: 2, patient: 'Carlos Ruiz', doctor: 'Dra. Martínez', specialty: 'Pediatría', date: '2024-01-28', time: '09:30', status: 'pendiente' },
-  { id: 3, patient: 'Ana Torres', doctor: 'Dr. Sánchez', specialty: 'Dermatología', date: '2024-01-28', time: '10:00', status: 'confirmada' },
-  { id: 4, patient: 'Pedro Fernández', doctor: 'Dra. Díaz', specialty: 'Neurología', date: '2024-01-28', time: '10:30', status: 'cancelada' },
-  { id: 5, patient: 'Laura Jiménez', doctor: 'Dr. López', specialty: 'Cardiología', date: '2024-01-28', time: '11:00', status: 'confirmada' },
-];
-
-const allPatients = [
-  { num: 1, ci: '12345678', nombres: 'María', apellidos: 'García López', fechaNac: '1990-05-15', sexo: 'F', direccion: 'Calle 1', telefono: '555-0101', nacionalidad: 'Venezolana', estado: 'Activo', estadoCivil: 'Soltera' },
-  { num: 2, ci: '23456789', nombres: 'Carlos', apellidos: 'Ruiz Pérez', fechaNac: '1985-08-22', sexo: 'M', direccion: 'Calle 2', telefono: '555-0102', nacionalidad: 'Venezolano', estado: 'Activo', estadoCivil: 'Casado' },
-  { num: 3, ci: '34567890', nombres: 'Ana', apellidos: 'Torres Díaz', fechaNac: '1978-12-03', sexo: 'F', direccion: 'Calle 3', telefono: '555-0103', nacionalidad: 'Venezolana', estado: 'Activo', estadoCivil: 'Casada' },
-  { num: 4, ci: '45678901', nombres: 'Pedro', apellidos: 'Fernández Gil', fechaNac: '1995-03-10', sexo: 'M', direccion: 'Calle 4', telefono: '555-0104', nacionalidad: 'Venezolano', estado: 'Activo', estadoCivil: 'Soltero' },
-];
+import { usePatients, addPatient, type Patient } from '@/data/patientsStore';
+import { useAppointments, addAppointment } from '@/data/appointmentsStore';
+import { useReportableTable } from '@/components/reports/useReportableTable';
+import type { ReportableModule } from '@/components/reports/types';
 
 // Doctors grouped by specialty
 const doctorsBySpecialty = [
@@ -104,11 +92,12 @@ function formatDateKey(year: number, month: number, day: number): string {
 export function CitasPage() {
   const [modalStep, setModalStep] = useState<ModalStep>('closed');
   const [patientSearch, setPatientSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<typeof allPatients[0] | null>(null);
+  const allPatients = usePatients();
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isMinor, setIsMinor] = useState(false);
 
-  // Appointments (mutable mock)
-  const [appointments, setAppointments] = useState(initialAppointments);
+  // Appointments come from shared store
+  const appointments = useAppointments();
 
   // Day availability mock
   const [dayAvailability, setDayAvailability] = useState<Record<string, 'available' | 'reserved'>>({
@@ -162,13 +151,41 @@ export function CitasPage() {
     p.ci.includes(patientSearch)
   );
 
+  const persistNewPatient = () => {
+    if (!newPatient.nombres.trim() || !newPatient.apellidos.trim()) return;
+    const ciFinal = isMinor && newPatient.ciRepresentante
+      ? `${newPatient.ciRepresentante}-R01`
+      : newPatient.ci;
+    addPatient({
+      ci: ciFinal,
+      nombres: newPatient.nombres,
+      apellidos: newPatient.apellidos,
+      fechaNac: newPatient.fechaNac,
+      sexo: (newPatient.sexo === 'M' ? 'M' : 'F'),
+      direccion: newPatient.direccion,
+      telefono: newPatient.telefono,
+      nacionalidad: newPatient.nacionalidad || 'Venezolano',
+      estadoCivil: newPatient.estadoCivil,
+      estado: newPatient.estado === 'Activo' ? 'Activo' : 'Encamado',
+      comunidad: newPatient.comunidad,
+      estadoGeo: newPatient.estadoUbic,
+      municipio: newPatient.municipio,
+      parroquia: newPatient.parroquia,
+    });
+    toast.success('Paciente registrado');
+  };
+
   const handleSavePatient = () => {
+    persistNewPatient();
     setModalStep('search');
     setNewPatient(emptyPatient);
+    setIsMinor(false);
   };
 
   const handleSaveAndContinue = () => {
+    persistNewPatient();
     setNewPatient(emptyPatient);
+    setIsMinor(false);
   };
 
   const handleCancelRegister = () => {
@@ -270,16 +287,14 @@ export function CitasPage() {
 
   const handleAgendarCitaFinal = () => {
     if (!selectedPatient || !selectedDoctor || !selectedDate) return;
-    const newApt = {
-      id: appointments.length + 1,
+    addAppointment({
       patient: `${selectedPatient.nombres} ${selectedPatient.apellidos}`,
       doctor: selectedDoctor.name,
       specialty: selectedDoctor.specialty,
       date: selectedDate,
       time: horaSeleccionada,
       status: 'confirmada',
-    };
-    setAppointments(prev => [...prev, newApt]);
+    });
     setDayAvailability(prev => ({ ...prev, [selectedDate]: 'reserved' }));
     toast.success('Cita agendada exitosamente');
     // Reset everything
@@ -300,6 +315,32 @@ export function CitasPage() {
     setSelectedDate(key);
     setHoraSeleccionada('');
   };
+
+  // Reports module for appointments table
+  const appointmentsModule: ReportableModule<typeof appointments[number]> = useMemo(() => ({
+    name: 'Citas',
+    itemSingular: 'cita',
+    itemPlural: 'citas',
+    rows: appointments,
+    getId: r => r.id,
+    fields: [
+      { key: 'patient', label: 'Paciente', accessor: r => r.patient },
+      { key: 'doctor', label: 'Doctor', accessor: r => r.doctor },
+      { key: 'specialty', label: 'Especialidad', accessor: r => r.specialty },
+      { key: 'date', label: 'Fecha', accessor: r => r.date },
+      { key: 'time', label: 'Hora', accessor: r => r.time },
+      { key: 'status', label: 'Estado', accessor: r => r.status },
+    ],
+    dateField: { accessor: r => r.date, label: 'Fecha' },
+    metrics: rows => ({
+      'Total exportadas': rows.length,
+      'Confirmadas': rows.filter(r => r.status === 'confirmada').length,
+      'Pendientes': rows.filter(r => r.status === 'pendiente').length,
+      'Canceladas': rows.filter(r => r.status === 'cancelada').length,
+    }),
+  }), [appointments]);
+
+  const appointmentsReports = useReportableTable({ module: appointmentsModule, visibleRows: appointments });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -327,37 +368,47 @@ export function CitasPage() {
 
       {/* Appointments Table */}
       <div className="chart-container">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-semibold text-foreground">Próximas Citas Médicas</h3>
+          {appointmentsReports.SplitButton}
+        </div>
+        {appointmentsReports.ContextBar}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado', 'Acciones'].map(h => (
+                <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
+                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado'].map(h => (
                   <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {appointments.map(apt => (
-                <tr key={apt.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
-                  <td className="p-3 text-sm font-medium text-foreground">{apt.patient}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.doctor}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{apt.specialty}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.date}</td>
-                  <td className="p-3 text-sm text-foreground">{apt.time}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[apt.status]}`}>
-                      {apt.status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Button variant="ghost" size="sm">Editar</Button>
-                  </td>
-                </tr>
-              ))}
+              {appointments.map(apt => {
+                const selected = appointmentsReports.isRowSelected(apt.id);
+                return (
+                  <tr key={apt.id}
+                    className={cn('border-b border-border/50 transition-colors hover:bg-secondary/50',
+                      selected && 'bg-primary/10')}>
+                    <td className="p-3"><appointmentsReports.RowCheckbox id={apt.id} /></td>
+                    <td className="p-3 text-sm font-medium text-foreground">{apt.patient}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.doctor}</td>
+                    <td className="p-3 text-sm text-muted-foreground">{apt.specialty}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.date}</td>
+                    <td className="p-3 text-sm text-foreground">{apt.time}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[apt.status]}`}>
+                        {apt.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+      {appointmentsReports.ReportSheet}
 
       {/* Step 1: Search Patient */}
       <Dialog open={modalStep === 'search'} onOpenChange={(o) => !o && setModalStep('closed')}>
@@ -508,7 +559,13 @@ export function CitasPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Nacionalidad</Label>
-                <Input value={newPatient.nacionalidad} onChange={e => setNewPatient({ ...newPatient, nacionalidad: e.target.value })} />
+                <Select value={newPatient.nacionalidad} onValueChange={v => setNewPatient({ ...newPatient, nacionalidad: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                    <SelectItem value="Venezolano">Venezolano</SelectItem>
+                    <SelectItem value="Extranjero">Extranjero</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Estado del Paciente</Label>
