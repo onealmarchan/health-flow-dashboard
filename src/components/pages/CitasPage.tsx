@@ -151,13 +151,41 @@ export function CitasPage() {
     p.ci.includes(patientSearch)
   );
 
+  const persistNewPatient = () => {
+    if (!newPatient.nombres.trim() || !newPatient.apellidos.trim()) return;
+    const ciFinal = isMinor && newPatient.ciRepresentante
+      ? `${newPatient.ciRepresentante}-R01`
+      : newPatient.ci;
+    addPatient({
+      ci: ciFinal,
+      nombres: newPatient.nombres,
+      apellidos: newPatient.apellidos,
+      fechaNac: newPatient.fechaNac,
+      sexo: (newPatient.sexo === 'M' ? 'M' : 'F'),
+      direccion: newPatient.direccion,
+      telefono: newPatient.telefono,
+      nacionalidad: newPatient.nacionalidad || 'Venezolano',
+      estadoCivil: newPatient.estadoCivil,
+      estado: newPatient.estado === 'Activo' ? 'Activo' : 'Encamado',
+      comunidad: newPatient.comunidad,
+      estadoGeo: newPatient.estadoUbic,
+      municipio: newPatient.municipio,
+      parroquia: newPatient.parroquia,
+    });
+    toast.success('Paciente registrado');
+  };
+
   const handleSavePatient = () => {
+    persistNewPatient();
     setModalStep('search');
     setNewPatient(emptyPatient);
+    setIsMinor(false);
   };
 
   const handleSaveAndContinue = () => {
+    persistNewPatient();
     setNewPatient(emptyPatient);
+    setIsMinor(false);
   };
 
   const handleCancelRegister = () => {
@@ -495,7 +523,13 @@ export function CitasPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Nacionalidad</Label>
-                <Input value={newPatient.nacionalidad} onChange={e => setNewPatient({ ...newPatient, nacionalidad: e.target.value })} />
+                <Select value={newPatient.nacionalidad} onValueChange={v => setNewPatient({ ...newPatient, nacionalidad: v })}>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                  <SelectContent className="bg-popover border border-border z-50">
+                    <SelectItem value="Venezolano">Venezolano</SelectItem>
+                    <SelectItem value="Extranjero">Extranjero</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Estado del Paciente</Label>
