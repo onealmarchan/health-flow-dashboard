@@ -1,114 +1,137 @@
-## Plan: Dashboard Pacientes, Buscar Paciente y Componente de Reportes
+## Plan: Sistema de Exportación/Reportes + Rediseño Dashboard
 
-### 1) Dashboard — Tabla de Pacientes rediseñada
+### Parte A — Componente de Exportación y Reportes (4 módulos)
 
-Archivo: `src/components/dashboard/PatientTable.tsx` (reescrito).
+**A1. Refactor del sistema actual de reportes** (`src/components/reports/`)
 
-**Fuente de datos compartida**: extraer `allPatients` de `CitasPage.tsx` a un nuevo módulo `src/data/patientsStore.ts`:
+Reescribir/extender los componentes existentes (`SplitExportButton`, `ContextActionBar`, `AdvancedReportSheet`, `exporters.ts`) para cumplir la nueva especificación, conservando la integración con `useTableSelection` y `useReportableTable` ya funcional.
 
-```ts
-export type Patient = {
-  num: number; ci: string; nombres: string; apellidos: string;
-  fechaNac: string; sexo: 'M'|'F'; direccion: string; telefono: string;
-  nacionalidad: 'Venezolano'|'Extranjero'; estadoCivil: string;
-  estado: 'Activo'|'Encamado';
-  comunidad: string; estadoGeo: string; municipio: string; parroquia: string;
-};
-let _patients: Patient[] = [...]; // datos seed (los 4 actuales + comunidad/municipio/parroquia)
-export const getPatients = () => _patients;
-export const addPatient = (p: Patient) => { _patients = [..._patients, p]; emit(); };
-// pequeño pub/sub con useSyncExternalStore para que las tablas re-rendericen
-export const usePatients = () => useSyncExternalStore(subscribe, getPatients, getPatients);
+- `exporters.ts`: agregar soporte para **DOCX** (vía `docx` npm) además de CSV/XLSX/PDF ya soportados. Exponer `exportMulti(formats[], data, fields)` que genera 1 archivo por formato.
+- `SplitExportButton.tsx`: rediseñar dropdown con:
+  - Bloque "Formato predeterminado": `[✓] CSV` fijo (disabled).
+  - Bloque "Formatos adicionales": `[ ] XLSX`, `[ ] PDF`, `[ ] DOCX` (reset al cerrar).
+  - Ítem condicional `Reporte avanzado…` (solo Citas/Diagnósticos).
+  - Botón izq ejecuta exportación (selección si hay, tabla completa si no) con todos los formatos marcados + CSV.
+- `ContextActionBar.tsx`: 
+  - Animación slide/fade (Tailwind `data-[state]` + transition).
+  - Texto pluralizado por módulo (`pacientes/citas/diagnósticos`).
+  - Botón **Limpiar** (ghost) + **Avanzado** (solo Citas/Diagnósticos).
+  - Sin botón de exportar propio.
+
+**A2. Modal lateral de Reporte Avanzado — Citas** (`AdvancedReportSheetCitas.tsx`)
+
+Sheet derecha (390–420px) usando `@/components/ui/sheet`. Secciones:
+- Indicador de alcance (pill azul/verde).
+- Campos a exportar (checkboxes, todos marcados por defecto).
+- **Tipo de reporte** (radio pills, obligatorio): Total citas / Volumen menor / Volumen mayor / Promedio — todos por especialidad.
+- Rango de fechas Desde/Hasta (obligatorio, validación Hasta ≥ Desde).
+- "Ordenar resultados" (checkbox + selector condicional: A→Z, Z→A, cronológico asc/desc).
+- Formato de salida (radio pills, XLSX default): XLSX/CSV/PDF/DOCX.
+- "Incluir métricas y gráficos" (checkbox + sub-panel con tipo de gráfico coherente: barras por especialidad, distribución por estado, evolución temporal).
+- **Vista previa estimada** (bloque neutro, actualización reactiva).
+- Pie: Generar reporte (primario) / Cancelar.
+
+**A3. Modal lateral de Reporte Avanzado — Diagnósticos** (`AdvancedReportSheetDiagnosticos.tsx`)
+
+Misma estructura, con diferencias:
+- Tipos: Total diagnósticos (requiere selector de enfermedad) / Volumen menor / Volumen mayor / Promedio por especialidad.
+- Selector adicional de enfermedad cuando tipo = Total.
+- Campos coherentes con tabla Diagnósticos.
+- Gráficos: distribución por enfermedad, % críticos, evolución temporal.
+
+**A4. Drawer de Exportación — Médicos** (`EspecialistasExportDrawer.tsx`)
+
+Nuevo drawer (no usa split button ni context bar). Disparador: botón **Exportar** en barra superior de `EspecialistasPage`.
+- Campos a incluir (8 checkboxes con defaults indicados; teléfono y disponibilidad OFF; validación "al menos uno").
+- Tipo de reporte (4 opciones, obligatorio).
+- Filtrar por especialidad (select; "Todas" default).
+- Filtrar por disponibilidad (radio: Todos/Disponibles/No disponibles).
+- Rango de fechas obligatorio sobre fecha de ingreso.
+- Ordenar por (6 opciones, default "Mayor carga"). MPPS ordenado por sufijo numérico.
+- Formato: Excel default / CSV / PDF.
+- Opciones: "Incluir gráfica de carga" (deshabilitada si CSV) + "Incluir resumen estadístico".
+- Vista previa estimada en tiempo real.
+- Estados: idle/loading ("Generando…")/success/error.
+
+**A5. Alertas y notificaciones** (Parte 5)
+
+Usar `sonner` para toasts (éxito verde, error rojo, advertencia amarilla) y mensajes inline dentro de paneles para validaciones de campos. Mensajes exactos según spec.
+
+**A6. Integración por módulo**
+
+- `PatientTable.tsx` (Dashboard / Pacientes): split button (CSV/XLSX/PDF/DOCX) + barra contextual **sin** botón Avanzado.
+- `CitasPage.tsx`: split button con "Reporte avanzado…" + barra con Avanzado + modal Citas.
+- `DiagnosticosPage.tsx`: split button con "Reporte avanzado…" + barra con Avanzado + modal Diagnósticos.
+- `EspecialistasPage.tsx`: botón "Exportar" en header → drawer dedicado. Sin checkboxes/selección.
+
+---
+
+### Parte B — Modificaciones del Dashboard
+
+**B1. Modal "Configurar KPIs"** (`KPIConfigModal.tsx`)
+
+Reemplaza el selector inline actual. Contiene:
+- Checkboxes de tipo: Aleatorio (default ON) / Mensual / Trimestral / Bimensual / Semestral o Anual.
+- Clasificación interna de KPIs por tipo (según spec).
+- Selector numérico cuyo máximo se recalcula según los tipos marcados.
+- Aplicar → actualiza el grid del Dashboard con redistribución proporcional.
+
+**B2. Nuevos KPIs** (en `src/components/dashboard/`)
+
+- `EarlyDetectionGauge.tsx` — donut/gauge 0–100% con bandas rojo/amarillo/verde y aguja.
+- `GeographicComorbidityMap.tsx` — choropleth con `react-simple-maps` (nueva dep), tooltip con región/valor/variación.
+- `AgeGroupTrendChart.tsx` — barras agrupadas o líneas múltiples (recharts ya disponible), series 0-12/13-18/19-59/60+, tooltip con valores y %.
+
+Reemplazos: 1ª "Vista Reservada" → `EarlyDetectionGauge`; 2ª "Vista Reservada" → `GeographicComorbidityMap`; nuevo slot → `AgeGroupTrendChart`.
+
+**B3. Sistema de slots con navegación secuencial** (`KPIWrapper.tsx`)
+
+Cada slot del grid recibe un array de KPIs asignados.
+- Estado interno `currentIndex` por slot.
+- Botones header: primer KPI `[→]`; intermedios `[← →]`; último `[← 🔄]`.
+- `[🔄]` reinicia a índice 0.
+
+**B4. Botón de exportación por tarjeta** (`KPIExportPopover.tsx`)
+
+En header de `KPIWrapper`, junto a navegación:
 ```
-
-**Columnas de la tabla del Dashboard**:
-
-```text
-[ ☐ ] | Nº | C.I. | Nombres | Apellidos | Detalles Complementarios 👁 | Detalles Comunitarios 👁 | Estado
+[ ← ] [ → ] | [ ⬇ ]
 ```
+Divisor 1px `border-tertiary`. Ícono ⬇ con estilo neutral.
 
-- Botón ojo (`Eye` de `lucide-react`, `variant="ghost"`) en cada fila para cada bloque de detalles.
-- **Modal "Detalles Complementarios"**: Fecha de Nacimiento, Edad (calculada), Sexo (Masculino/Femenino), Dirección, Teléfono, Nacionalidad, Estado Civil.
-- **Modal "Detalles Comunitarios"**: Nº, Comunidad, Estado, Municipio, Parroquia.
-- Columna **Estado**: badge `Activo` (verde) / `Encamado` (warning).
-- Mantener filtros existentes adaptados (búsqueda por nombre/CI; filtro por Estado Activo/Encamado; filtro por Comunidad).
+Popover (borde `border-info`):
+- Header: "Exportar · {nombre KPI activo}".
+- Chips toggle: PNG / PDF / DOCX (al menos 1 para habilitar).
+- Separador.
+- Checkbox "Incluir resumen de datos" (genera narrativa según tipo de KPI).
+- Botón primario "Generar informe" (`bg-info`/`border-info`); 1 archivo por formato marcado.
 
-### 2) Modal "Registrar Nuevo Paciente" — Nacionalidad como Selector
+Implementación: PNG vía `html-to-image`, PDF vía `jspdf` (ya instalado) + canvas, DOCX vía `docx`.
 
-Archivo: `src/components/pages/CitasPage.tsx`.
+---
 
-- Línea ~510: reemplazar `Input` por `Select` con opciones `Venezolano` / `Extranjero`.
-- Agregar campos de ubicación al estado `newPatient`: `comunidad`, `estadoGeo`, `municipio`, `parroquia` (los inputs ya existen en sección "Ubicación", solo conectarlos).
-- Al guardar paciente nuevo: llamar `addPatient(...)` del store; el paciente aparecerá en la tabla "Buscar Paciente" y en el Dashboard.
-- Tabla de "Buscar Paciente" pasa a leer del store (`usePatients()`).
-- En la tabla principal de Citas (`appointments`), al confirmar una cita nueva, hacer `setAppointments([...prev, { id, patient: 'Nombres Apellidos', doctor, specialty, date, time, status: 'pendiente' }])`. Solo esos 6 campos visibles.
+### Detalles técnicos
 
-### 3) Componente reutilizable de Reportes
+**Dependencias nuevas:** `docx`, `react-simple-maps`, `html-to-image`. (Ya disponibles: `xlsx`, `jspdf`, `jspdf-autotable`, `recharts`.)
 
-Nuevos archivos en `src/components/reports/`:
+**Archivos nuevos:**
+- `src/components/reports/AdvancedReportSheetCitas.tsx`
+- `src/components/reports/AdvancedReportSheetDiagnosticos.tsx`
+- `src/components/reports/EspecialistasExportDrawer.tsx`
+- `src/components/reports/reportTypes.ts` (catálogos, mensajes de alerta)
+- `src/components/dashboard/KPIConfigModal.tsx`
+- `src/components/dashboard/EarlyDetectionGauge.tsx`
+- `src/components/dashboard/GeographicComorbidityMap.tsx`
+- `src/components/dashboard/AgeGroupTrendChart.tsx`
+- `src/components/dashboard/KPIExportPopover.tsx`
+- `src/components/dashboard/kpiCatalog.ts` (clasificación por tipo)
+- `src/data/especialistasStore.ts` (si necesario para mocks compartidos)
 
-- `ReportsProvider.tsx` — contexto con `selection` (Set de IDs), helpers `toggle/clear/selectAll/setAll`, y metadata del módulo.
-- `useTableReports.ts` — hook que expone `selectedIds`, `isAllSelected`, `isIndeterminate`, `toggleRow`, `toggleAll(visibleIds)`, `clear`.
-- `SelectionCheckbox.tsx` — checkbox con estado `indeterminate` (usa `<Checkbox>` de shadcn + ref para `data-state="indeterminate"`).
-- `ContextActionBar.tsx` — barra info que aparece con `animate-fade-in slide-in-from-top-2` cuando `selectedIds.size > 0`. Botones: `Limpiar`, `Avanzado`, `Exportar` (toast verde de éxito).
-- `SplitExportButton.tsx` — botón dividido (acción principal "Exportar tabla" + `DropdownMenu` con: Reporte de selección / Exportar todo (CSV) / Reporte avanzado…). Item "Reporte de selección" `disabled` si selección vacía.
-- `AdvancedReportSheet.tsx` — `Sheet` lateral derecho (shadcn `sheet`) con:
-  - Header: "Reporte avanzado — {moduleName}" + subtítulo de alcance + ✕.
-  - Indicador de alcance (badge azul/verde).
-  - **Campos a exportar**: lista de `Checkbox` por columna (todas marcadas).
-  - **Rango de fechas** (desde/hasta) sólo si `module.dateField` definido.
-  - **Ordenar por**: `Select` (recientes / antiguos / nombre asc).
-- **Formato**: `RadioGroup` pills `PDF | Excel (.xlsx) | CSV` .
-  - **Opciones**: checkbox "Incluir hoja de métricas".
-  - **Vista previa estimada** (bloque `bg-muted` que se actualiza en tiempo real con: alcance, # campos, # registros estimados, formato, métricas sí/no).
-  - Footer: `Generar reporte` (primary) + `Cancelar`.
-  - Si registros estimados = 0 → alerta inline amarilla y no genera.
-  - Estado se resetea a defaults en cada apertura.
+**Archivos modificados:**
+- `src/components/reports/{SplitExportButton,ContextActionBar,AdvancedReportSheet,exporters}.tsx/ts`
+- `src/components/dashboard/{DashboardContent,KPIWrapper,PatientTable}.tsx`
+- `src/components/pages/{CitasPage,DiagnosticosPage,EspecialistasPage}.tsx`
 
-**Configuración por módulo** (`ReportableModule`):
+**Mocks:** datos médicos coherentes en español (especialidades, enfermedades, regiones de Venezuela para choropleth).
 
-```ts
-interface ReportableModule<T> {
-  name: string;            // "Pacientes"
-  itemSingular: string;    // "paciente"
-  itemPlural: string;      // "pacientes"
-  rows: T[];
-  getId: (r: T) => string|number;
-  fields: { key: keyof T|string; label: string; accessor: (r: T) => string|number }[];
-  dateField?: { accessor: (r: T) => string; label: string };
-  metrics?: (rows: T[]) => Record<string, string|number>;
-}
-```
-
-**Generadores**:
-
-- CSV: construir manual `;`-separado, descargar via `Blob`.
-- Excel (.xlsx): usar `xlsx` (SheetJS). Agregar dependencia `xlsx`. Si `incluirMetricas`, agregar segunda hoja "Métricas".
-- PDF: usar `jspdf` (ya instalado) + `jspdf-autotable` (agregar dependencia) para tabla. Hoja de métricas como página adicional.
-
-**Integraciones**:
-
-1. **Dashboard PatientTable** — agregar columna inicial de checkboxes, `SplitExportButton` en header, `ContextActionBar` debajo; sin filtro de fechas.
-2. **CitasPage** — tabla "Próximas Citas Médicas" con columnas `Paciente|Doctor|Especialidad|Fecha|Hora|Estado`. Date field = `date`.
-3. **DiagnosticosPage** — tabla principal. Date field = `fechaDiagnostico`. `metrics` cuenta `critico=true` y % sobre exportados.
-
-### 4) Detalles técnicos
-
-- **Checkbox indeterminado**: `<Checkbox>` shadcn ya soporta `checked="indeterminate"`. Usar `useEffect` + ref si es necesario.
-- **Selección por página**: como las tablas no paginan actualmente, la selección aplica a las filas filtradas visibles.
-- **z-index**: `Sheet` de shadcn ya gestiona overlay correctamente; no abrir sobre otros modales (chequear `document.querySelector('[role="dialog"][data-state="open"]')` antes de abrir; si existe → toast warning y no abrir).
-- **Alertas**: usar `sonner` (`toast.success`, `toast.warning`) coherente con resto del sistema.
-- **Estilo**: reutilizar `chart-container`, `bg-info/10`, `text-primary`, `border-primary/30` del tema; checkboxes y botones shadcn existentes; sin estilos nuevos.
-- **Datos de prueba**: añadir 2-3 registros más en Dashboard/Citas/Diagnósticos para que los reportes generados tengan contenido demostrable.
-
-### 5) Archivos a crear/modificar
-
-- **Crear**: `src/data/patientsStore.ts`, `src/components/reports/{ReportsProvider,SelectionCheckbox,ContextActionBar,SplitExportButton,AdvancedReportSheet,useTableReports,exporters}.tsx/.ts`.
-- **Modificar**: `src/components/dashboard/PatientTable.tsx` (reescribir), `src/components/pages/CitasPage.tsx` (Nacionalidad → Select, store wiring, integrar reportes en tabla de citas), `src/components/pages/DiagnosticosPage.tsx` (integrar reportes).
-- **Dependencias nuevas**: `xlsx`, `jspdf-autotable`.
-
-### Resultado esperado
-
-- Dashboard muestra tabla con columnas pedidas y dos modales 👁 funcionales.
-- Registrar paciente persiste en memoria y aparece en Buscar Paciente, tabla de Citas y Dashboard.
-- Toda tabla integrada exhibe checkbox-column, barra contextual animada, split button y panel lateral de reporte avanzado con vista previa en tiempo real, exportando en CSV/XLSX/PDF (con hoja de métricas opcional).
+**Reglas de comportamiento global:** stacking de modales (no abrir si otro modal activo), selección reseteada al paginar, no alterar filtros/búsqueda existentes, estética consistente con tokens del sistema (sin colores hardcoded).

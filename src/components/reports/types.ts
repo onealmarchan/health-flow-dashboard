@@ -13,7 +13,15 @@ export interface ReportableModule<T> {
   fields: ReportField<T>[];
   dateField?: { accessor: (r: T) => string; label: string };
   metrics?: (rows: T[]) => Record<string, string | number>;
+  /** Optional flavor for advanced sheet variant: 'citas' | 'diagnosticos' | undefined */
+  advancedVariant?: 'citas' | 'diagnosticos';
 }
 
-export type ExportFormat = 'xlsx' | 'csv' | 'pdf';
-export type SortMode = 'recent' | 'oldest' | 'name-asc';
+export type ExportFormat = 'xlsx' | 'csv' | 'pdf' | 'docx';
+export type AdditionalFormat = 'xlsx' | 'pdf' | 'docx';
+
+export type SortMode =
+  | 'alpha-asc'
+  | 'alpha-desc'
+  | 'date-asc'
+  | 'date-desc';
