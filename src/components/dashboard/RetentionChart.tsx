@@ -1,5 +1,7 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
+import { EarlyDetectionGauge } from './EarlyDetectionGauge';
+import { AgeGroupTrendChart } from './AgeGroupTrendChart';
 
 const retentionData = [
   { name: 'Cardiología', value: 78, fill: 'hsl(var(--chart-1))' },
@@ -16,11 +18,11 @@ function RetentionView() {
         <h3 className="text-lg font-semibold text-foreground">Tasa de Retención por Especialidad</h3>
         <p className="text-sm text-muted-foreground">Pacientes que regresan a control/seguimiento</p>
       </div>
-      <div className="h-[280px]">
+      <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie data={retentionData} cx="50%" cy="50%" innerRadius={55} outerRadius={90}
-              paddingAngle={3} dataKey="value" label={({ name, value }) => `${value}%`}
+              paddingAngle={3} dataKey="value" label={({ value }) => `${value}%`}
             >
               {retentionData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -28,7 +30,7 @@ function RetentionView() {
             </Pie>
             <Tooltip content={({ payload }) => {
               if (payload && payload.length) {
-                const d = payload[0].payload;
+                const d = payload[0].payload as { name: string; value: number };
                 return (
                   <div className="bg-popover border border-border rounded-lg p-2 shadow-lg">
                     <p className="font-medium text-foreground text-sm">{d.name}</p>
@@ -54,25 +56,12 @@ function RetentionView() {
   );
 }
 
-function ReservedView() {
-  return (
-    <div>
-      <div className="mb-4 pr-8">
-        <h3 className="text-lg font-semibold text-foreground">Vista Reservada</h3>
-        <p className="text-sm text-muted-foreground">Espacio reservado para futuras funcionalidades</p>
-      </div>
-      <div className="h-[280px] flex items-center justify-center">
-        <p className="text-muted-foreground text-sm">Próximamente...</p>
-      </div>
-    </div>
-  );
-}
-
 export function RetentionChartKPI() {
   return (
     <KPIWrapper views={[
-      { label: 'Retención por Especialidad', component: <RetentionView /> },
-      { label: 'Reservado', component: <ReservedView /> },
+      { id: 'retencion-especialidad', label: 'Tasa de retención por especialidad', component: <RetentionView /> },
+      { id: 'deteccion-temprana',     label: 'Tasa de detección temprana',         component: <EarlyDetectionGauge /> },
+      { id: 'tendencia-etaria',       label: 'Tendencia de consultas por grupo etario', component: <AgeGroupTrendChart /> },
     ]} />
   );
 }

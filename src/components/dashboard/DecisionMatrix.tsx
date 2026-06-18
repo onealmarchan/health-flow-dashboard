@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { KPIWrapper } from './KPIWrapper';
+import { GeographicComorbidityMap } from './GeographicComorbidityMap';
 
 interface MatrixCell {
   label: string;
@@ -133,26 +134,12 @@ function InterconsultaMatrix() {
   );
 }
 
-function ReservedView() {
-  return (
-    <div>
-      <div className="mb-4 pr-8">
-        <h3 className="text-lg font-semibold text-foreground">Vista Reservada</h3>
-        <p className="text-sm text-muted-foreground">Espacio para futuras funcionalidades</p>
-      </div>
-      <div className="h-[240px] flex items-center justify-center">
-        <p className="text-muted-foreground text-sm">Próximamente...</p>
-      </div>
-    </div>
-  );
-}
-
 export function DecisionMatrix() {
   return (
     <KPIWrapper views={[
-      { label: 'Prioridades', component: <PriorityMatrix /> },
-      { label: 'Interconsultas', component: <InterconsultaMatrix /> },
-      { label: 'Reservado', component: <ReservedView /> },
+      { id: 'matriz-prioridades', label: 'Matriz de prioridades',          component: <PriorityMatrix /> },
+      { id: 'interconsulta',      label: 'Interconsulta entre especialidades', component: <InterconsultaMatrix /> },
+      { id: 'comorbilidad-geo',   label: 'Índice de comorbilidad geográfica',  component: <GeographicComorbidityMap /> },
     ]} />
   );
 }

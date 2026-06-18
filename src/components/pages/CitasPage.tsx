@@ -332,6 +332,7 @@ export function CitasPage() {
       { key: 'status', label: 'Estado', accessor: r => r.status },
     ],
     dateField: { accessor: r => r.date, label: 'Fecha' },
+    advancedVariant: 'citas',
     metrics: rows => ({
       'Total exportadas': rows.length,
       'Confirmadas': rows.filter(r => r.status === 'confirmada').length,

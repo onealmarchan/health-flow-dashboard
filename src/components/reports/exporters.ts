@@ -1,14 +1,21 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { ReportableModule, ReportField, ExportFormat } from './types';
+import {
+  Document, Packer, Paragraph, Table as DocxTable, TableRow as DocxRow, TableCell as DocxCell,
+  HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType, TextRun,
+} from 'docx';
+import type { ReportableModule, ReportField, ExportFormat, AdditionalFormat } from './types';
 
-function buildRows<T>(rows: T[], fields: ReportField<T>[]) {
-  return rows.map(r => {
-    const o: Record<string, string | number> = {};
-    fields.forEach(f => { o[f.label] = f.accessor(r); });
-    return o;
-  });
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export function downloadCSV<T>(name: string, rows: T[], fields: ReportField<T>[]) {
@@ -17,8 +24,15 @@ export function downloadCSV<T>(name: string, rows: T[], fields: ReportField<T>[]
     fields.map(f => `"${String(f.accessor(r)).replace(/"/g, '""')}"`).join(';')
   ).join('\n');
   const csv = '\uFEFF' + header + '\n' + body;
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  triggerDownload(blob, `${name}.csv`);
+  triggerDownload(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `${name}.csv`);
+}
+
+function buildRows<T>(rows: T[], fields: ReportField<T>[]) {
+  return rows.map(r => {
+    const o: Record<string, string | number> = {};
+    fields.forEach(f => { o[f.label] = f.accessor(r); });
+    return o;
+  });
 }
 
 export function downloadXLSX<T>(name: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
@@ -66,23 +80,79 @@ export function downloadPDF<T>(name: string, title: string, scopeText: string, r
   doc.save(`${name}.pdf`);
 }
 
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+export async function downloadDOCX<T>(name: string, title: string, scopeText: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+  const border = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
+  const borders = { top: border, bottom: border, left: border, right: border };
+
+  const headerRow = new DocxRow({
+    children: fields.map(f =>
+      new DocxCell({
+        borders,
+        shading: { fill: 'D5E8F0', type: ShadingType.CLEAR, color: 'auto' },
+        margins: { top: 80, bottom: 80, left: 120, right: 120 },
+        children: [new Paragraph({ children: [new TextRun({ text: f.label, bold: true })] })],
+      })
+    ),
+  });
+
+  const bodyRows = rows.map(r =>
+    new DocxRow({
+      children: fields.map(f =>
+        new DocxCell({
+          borders,
+          margins: { top: 60, bottom: 60, left: 120, right: 120 },
+          children: [new Paragraph(String(f.accessor(r)))],
+        })
+      ),
+    })
+  );
+
+  const table = new DocxTable({
+    width: { size: 9026, type: WidthType.DXA },
+    rows: [headerRow, ...bodyRows],
+  });
+
+  const children: (Paragraph | DocxTable)[] = [
+    new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(title)] }),
+    new Paragraph({ children: [new TextRun({ text: scopeText, italics: true })] }),
+    new Paragraph({ children: [new TextRun(`Generado: ${new Date().toLocaleString()}`)] }),
+    new Paragraph(''),
+    table,
+  ];
+
+  if (metrics) {
+    children.push(
+      new Paragraph(''),
+      new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun('Métricas')] }),
+    );
+    Object.entries(metrics).forEach(([k, v]) => {
+      children.push(new Paragraph({ children: [new TextRun({ text: `${k}: `, bold: true }), new TextRun(String(v))] }));
+    });
+  }
+
+  const doc = new Document({
+    styles: { default: { document: { run: { font: 'Arial', size: 22 } } } },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 } } },
+      children,
+    }],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  triggerDownload(blob, `${name}.docx`);
 }
 
-export function exportReport<T>(
+interface ExportOptions {
+  scope: string;
+  includeMetrics: boolean;
+}
+
+export async function exportReport<T>(
   format: ExportFormat,
   module: ReportableModule<T>,
   rows: T[],
   fields: ReportField<T>[],
-  options: { scope: string; includeMetrics: boolean }
+  options: ExportOptions
 ) {
   const safe = module.name.replace(/\s+/g, '_');
   const stamp = new Date().toISOString().slice(0, 10);
@@ -90,5 +160,20 @@ export function exportReport<T>(
   const metrics = options.includeMetrics && module.metrics ? module.metrics(rows) : undefined;
   if (format === 'csv') downloadCSV(fileName, rows, fields);
   else if (format === 'xlsx') downloadXLSX(fileName, rows, fields, metrics);
-  else downloadPDF(fileName, `Reporte — ${module.name}`, options.scope, rows, fields, metrics);
+  else if (format === 'pdf') downloadPDF(fileName, `Reporte — ${module.name}`, options.scope, rows, fields, metrics);
+  else await downloadDOCX(fileName, `Reporte — ${module.name}`, options.scope, rows, fields, metrics);
+}
+
+/** Multi-format export: always CSV + any additional formats marked. */
+export async function exportMulti<T>(
+  additional: AdditionalFormat[],
+  module: ReportableModule<T>,
+  rows: T[],
+  fields: ReportField<T>[],
+  options: ExportOptions
+) {
+  await exportReport('csv', module, rows, fields, options);
+  for (const fmt of additional) {
+    await exportReport(fmt, module, rows, fields, options);
+  }
 }
