@@ -243,6 +243,7 @@ export function DiagnosticosPage() {
       { key: 'estado', label: 'Estado', accessor: r => r.estado },
     ],
     dateField: { accessor: r => r.fechaDiagnostico, label: 'Fecha Diagnóstico' },
+    advancedVariant: 'diagnosticos',
     metrics: rows => {
       const total = rows.length;
       const criticos = rows.filter(r => r.critico).length;
