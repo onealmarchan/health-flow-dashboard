@@ -25,6 +25,7 @@ export function EspecialistasPage() {
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
   const [exportOpen, setExportOpen] = useState(false);
+  const [view, setView] = useState<'cards' | 'analysis'>('cards');
 
   const filteredSpecialists = useMemo(() => specialists.filter(s =>
     s.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
