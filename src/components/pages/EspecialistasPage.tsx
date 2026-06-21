@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { UserCog, Plus, Phone, Search, Download } from 'lucide-react';
+import { UserCog, Plus, Phone, Search, Download, LayoutGrid, BarChart3 } from 'lucide-react';
+import { AnalysisView } from './especialistas/AnalysisView';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ export function EspecialistasPage() {
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
   const [exportOpen, setExportOpen] = useState(false);
+  const [view, setView] = useState<'cards' | 'analysis'>('cards');
 
   const filteredSpecialists = useMemo(() => specialists.filter(s =>
     s.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -71,7 +73,25 @@ export function EspecialistasPage() {
           <h1 className="text-2xl font-bold text-foreground">Especialistas Médicos</h1>
           <p className="text-muted-foreground">Directorio de profesionales de la salud</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center rounded-md bg-secondary p-0.5">
+            <button
+              onClick={() => setView('cards')}
+              className={`inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors ${
+                view === 'cards' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" /> Tarjetas
+            </button>
+            <button
+              onClick={() => setView('analysis')}
+              className={`inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors ${
+                view === 'analysis' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" /> Análisis
+            </button>
+          </div>
           <Button variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
@@ -83,37 +103,41 @@ export function EspecialistasPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {specialists.map(s => (
-          <div key={s.id} className="metric-card">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                <UserCog className="w-6 h-6 text-primary-foreground" />
+      {view === 'cards' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+          {specialists.map(s => (
+            <div key={s.id} className="metric-card">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+                  <UserCog className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  s.disponible ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
+                }`}>
+                  {s.disponible ? 'Disponible' : 'No disponible'}
+                </span>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                s.disponible ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
-              }`}>
-                {s.disponible ? 'Disponible' : 'No disponible'}
-              </span>
-            </div>
 
-            <h3 className="font-semibold text-foreground">Dr(a). {s.nombre} {s.apellido}</h3>
-            <p className="text-sm text-primary mb-1">{s.especialidad}</p>
-            <p className="text-xs text-muted-foreground font-mono mb-3">{s.mpps}</p>
+              <h3 className="font-semibold text-foreground">Dr(a). {s.nombre} {s.apellido}</h3>
+              <p className="text-sm text-primary mb-1">{s.especialidad}</p>
+              <p className="text-xs text-muted-foreground font-mono mb-3">{s.mpps}</p>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
-            </div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
+              </div>
 
-            <div className="pt-3 border-t border-border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="w-4 h-4" />
-                <span>{s.telefono}</span>
+              <div className="pt-3 border-t border-border">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Phone className="w-4 h-4" />
+                  <span>{s.telefono}</span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <AnalysisView specialists={specialists} />
+      )}
 
       {/* Export Drawer */}
       <EspecialistasExportDrawer
