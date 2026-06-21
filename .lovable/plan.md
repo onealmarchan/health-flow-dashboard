@@ -1,137 +1,56 @@
-## Plan: Sistema de Exportación/Reportes + Rediseño Dashboard
+# Vista de Análisis — Especialistas Médicos
 
-### Parte A — Componente de Exportación y Reportes (4 módulos)
+## Objetivo
+Añadir una **segunda vista** ("Análisis") en `EspecialistasPage`, sin tocar la vista actual de tarjetas. Alternancia mediante un segmented control en la barra superior.
 
-**A1. Refactor del sistema actual de reportes** (`src/components/reports/`)
+## Cambios
 
-Reescribir/extender los componentes existentes (`SplitExportButton`, `ContextActionBar`, `AdvancedReportSheet`, `exporters.ts`) para cumplir la nueva especificación, conservando la integración con `useTableSelection` y `useReportableTable` ya funcional.
+### 1. `EspecialistasPage.tsx`
+- En la barra superior, a la izquierda de "+ Agregar Especialista", añadir segmented control:
+  - `[ ⊞ Tarjetas ]  [ ≡ Análisis ]` (iconos `LayoutGrid` / `BarChart3`).
+  - Estado local `view: 'cards' | 'analysis'`, default `cards`.
+  - Activo: `bg-primary text-primary-foreground`; inactivo: `bg-secondary text-muted-foreground`.
+- Render condicional con transición `animate-fade-in` (~200ms).
+  - `view === 'cards'`: grid actual intacto.
+  - `view === 'analysis'`: nuevo `<AnalysisView specialists={...} />`.
 
-- `exporters.ts`: agregar soporte para **DOCX** (vía `docx` npm) además de CSV/XLSX/PDF ya soportados. Exponer `exportMulti(formats[], data, fields)` que genera 1 archivo por formato.
-- `SplitExportButton.tsx`: rediseñar dropdown con:
-  - Bloque "Formato predeterminado": `[✓] CSV` fijo (disabled).
-  - Bloque "Formatos adicionales": `[ ] XLSX`, `[ ] PDF`, `[ ] DOCX` (reset al cerrar).
-  - Ítem condicional `Reporte avanzado…` (solo Citas/Diagnósticos).
-  - Botón izq ejecuta exportación (selección si hay, tabla completa si no) con todos los formatos marcados + CSV.
-- `ContextActionBar.tsx`: 
-  - Animación slide/fade (Tailwind `data-[state]` + transition).
-  - Texto pluralizado por módulo (`pacientes/citas/diagnósticos`).
-  - Botón **Limpiar** (ghost) + **Avanzado** (solo Citas/Diagnósticos).
-  - Sin botón de exportar propio.
+### 2. Nuevos componentes (en `src/components/pages/especialistas/`)
+- `AnalysisView.tsx` — layout split:
+  - `lg:grid-cols-[340px_1fr]`, en `<lg` apila vertical. `min-h-[480px]`, separador `border-r border-border`.
+  - Estado `chart: 'violin' | 'diverging'`, default `violin`.
+- `SpecialistList.tsx`:
+  - Header sticky con etiquetas `Nº / MÉDICO · MPPS / PACIENTES` (text-xs uppercase muted).
+  - Filas: Nº (28px, muted) · Avatar 32px círculo con color de especialidad y `UserCog` · nombre `text-sm font-medium` + segunda línea `<Especialidad>` color acento + ` · ` + MPPS muted · a la derecha conteo + mini-barra 60×4px (porcentaje = `pacientes/max*100`). Si `pacientes >= 350` → número y barra `#e05252`.
+  - Hover, selección con `bg-primary/10` y `border-l-[3px] border-primary` (sólo visual, no filtra).
+  - `overflow-y-auto` con header fijo.
+- `ViolinPlot.tsx` (D3 v7):
+  - KDE gaussiano bandwidth ~22–24 por especialidad, área simétrica con `d3.curveBasis`, fill acento opacity 0.18, stroke 0.65.
+  - Box plot interno: Q1/Q3, mediana (stroke `#333` 2.5), bigotes Tukey con caps.
+  - Jitter: círculos r=4.5 con desplazamiento horizontal vía Mulberry32 seeded por índice de especialidad. Excepción crítica (≥350): `#e05252`, r=5.5, stroke `#a01010`.
+  - Línea meta `y=250` punteada `#f09030` con etiqueta "Meta: 250".
+  - Tooltip flotante (div absoluto con anti-overflow): nombre, especialidad, pacientes, desviación, badge crítico si aplica.
+  - Eje Y "Nº Pacientes" ticks ~50; eje X especialidades; grilla horizontal punteada `#ebebeb`.
+- `DivergingBar.tsx` (D3 v7, horizontal):
+  - Agrega por especialidad: `promedio`, `desviacion = round((prom-250)*10)/10`, `cantidad_medicos`.
+  - Orden ASC por desviación. Escala simétrica.
+  - 6 tramos de color (`>+60 #c0392b`, `+30..+60 #e05252`, `0..+30 #f09090`, `-30..0 #7dcfb6`, `-60..-30 #0f9e7b`, `<-60 #0a5c48`).
+  - Etiquetas: desviación con signo (font-weight 700, 11.5px) y `(N pac.)` muted 9.5px.
+  - Línea central x=0 (`#bbb` 1.5) con "Meta 250 pac./médico" arriba.
+  - Etiquetas zona: "← Capacidad disponible" `#0f9e7b`, "Sobrecarga →" `#e05252`.
+  - Leyenda inferior 2×3 con los 6 tramos.
+  - Tooltip por barra.
 
-**A2. Modal lateral de Reporte Avanzado — Citas** (`AdvancedReportSheetCitas.tsx`)
+### 3. Helpers (`src/components/pages/especialistas/utils.ts`)
+- `SPECIALTY_COLORS`: mapping fijo (Cardiología `#1a9bd8`, Pediatría `#0f9e7b`, Dermatología `#7c5bc4`, Neurología `#d85a30`, Traumatología `#d4537e`, Ginecología `#ba7517`). Fallback para nuevas.
+- `META = 250` (constante exportada).
+- `mulberry32(seed)`, `kde(values, bandwidth)`, `quantiles(arr)`, `groupBy(spec)`.
 
-Sheet derecha (390–420px) usando `@/components/ui/sheet`. Secciones:
-- Indicador de alcance (pill azul/verde).
-- Campos a exportar (checkboxes, todos marcados por defecto).
-- **Tipo de reporte** (radio pills, obligatorio): Total citas / Volumen menor / Volumen mayor / Promedio — todos por especialidad.
-- Rango de fechas Desde/Hasta (obligatorio, validación Hasta ≥ Desde).
-- "Ordenar resultados" (checkbox + selector condicional: A→Z, Z→A, cronológico asc/desc).
-- Formato de salida (radio pills, XLSX default): XLSX/CSV/PDF/DOCX.
-- "Incluir métricas y gráficos" (checkbox + sub-panel con tipo de gráfico coherente: barras por especialidad, distribución por estado, evolución temporal).
-- **Vista previa estimada** (bloque neutro, actualización reactiva).
-- Pie: Generar reporte (primario) / Cancelar.
+### 4. Dependencia
+- Agregar `d3` y `@types/d3` (D3 v7) vía `bun add`.
 
-**A3. Modal lateral de Reporte Avanzado — Diagnósticos** (`AdvancedReportSheetDiagnosticos.tsx`)
-
-Misma estructura, con diferencias:
-- Tipos: Total diagnósticos (requiere selector de enfermedad) / Volumen menor / Volumen mayor / Promedio por especialidad.
-- Selector adicional de enfermedad cuando tipo = Total.
-- Campos coherentes con tabla Diagnósticos.
-- Gráficos: distribución por enfermedad, % críticos, evolución temporal.
-
-**A4. Drawer de Exportación — Médicos** (`EspecialistasExportDrawer.tsx`)
-
-Nuevo drawer (no usa split button ni context bar). Disparador: botón **Exportar** en barra superior de `EspecialistasPage`.
-- Campos a incluir (8 checkboxes con defaults indicados; teléfono y disponibilidad OFF; validación "al menos uno").
-- Tipo de reporte (4 opciones, obligatorio).
-- Filtrar por especialidad (select; "Todas" default).
-- Filtrar por disponibilidad (radio: Todos/Disponibles/No disponibles).
-- Rango de fechas obligatorio sobre fecha de ingreso.
-- Ordenar por (6 opciones, default "Mayor carga"). MPPS ordenado por sufijo numérico.
-- Formato: Excel default / CSV / PDF.
-- Opciones: "Incluir gráfica de carga" (deshabilitada si CSV) + "Incluir resumen estadístico".
-- Vista previa estimada en tiempo real.
-- Estados: idle/loading ("Generando…")/success/error.
-
-**A5. Alertas y notificaciones** (Parte 5)
-
-Usar `sonner` para toasts (éxito verde, error rojo, advertencia amarilla) y mensajes inline dentro de paneles para validaciones de campos. Mensajes exactos según spec.
-
-**A6. Integración por módulo**
-
-- `PatientTable.tsx` (Dashboard / Pacientes): split button (CSV/XLSX/PDF/DOCX) + barra contextual **sin** botón Avanzado.
-- `CitasPage.tsx`: split button con "Reporte avanzado…" + barra con Avanzado + modal Citas.
-- `DiagnosticosPage.tsx`: split button con "Reporte avanzado…" + barra con Avanzado + modal Diagnósticos.
-- `EspecialistasPage.tsx`: botón "Exportar" en header → drawer dedicado. Sin checkboxes/selección.
-
----
-
-### Parte B — Modificaciones del Dashboard
-
-**B1. Modal "Configurar KPIs"** (`KPIConfigModal.tsx`)
-
-Reemplaza el selector inline actual. Contiene:
-- Checkboxes de tipo: Aleatorio (default ON) / Mensual / Trimestral / Bimensual / Semestral o Anual.
-- Clasificación interna de KPIs por tipo (según spec).
-- Selector numérico cuyo máximo se recalcula según los tipos marcados.
-- Aplicar → actualiza el grid del Dashboard con redistribución proporcional.
-
-**B2. Nuevos KPIs** (en `src/components/dashboard/`)
-
-- `EarlyDetectionGauge.tsx` — donut/gauge 0–100% con bandas rojo/amarillo/verde y aguja.
-- `GeographicComorbidityMap.tsx` — choropleth con `react-simple-maps` (nueva dep), tooltip con región/valor/variación.
-- `AgeGroupTrendChart.tsx` — barras agrupadas o líneas múltiples (recharts ya disponible), series 0-12/13-18/19-59/60+, tooltip con valores y %.
-
-Reemplazos: 1ª "Vista Reservada" → `EarlyDetectionGauge`; 2ª "Vista Reservada" → `GeographicComorbidityMap`; nuevo slot → `AgeGroupTrendChart`.
-
-**B3. Sistema de slots con navegación secuencial** (`KPIWrapper.tsx`)
-
-Cada slot del grid recibe un array de KPIs asignados.
-- Estado interno `currentIndex` por slot.
-- Botones header: primer KPI `[→]`; intermedios `[← →]`; último `[← 🔄]`.
-- `[🔄]` reinicia a índice 0.
-
-**B4. Botón de exportación por tarjeta** (`KPIExportPopover.tsx`)
-
-En header de `KPIWrapper`, junto a navegación:
-```
-[ ← ] [ → ] | [ ⬇ ]
-```
-Divisor 1px `border-tertiary`. Ícono ⬇ con estilo neutral.
-
-Popover (borde `border-info`):
-- Header: "Exportar · {nombre KPI activo}".
-- Chips toggle: PNG / PDF / DOCX (al menos 1 para habilitar).
-- Separador.
-- Checkbox "Incluir resumen de datos" (genera narrativa según tipo de KPI).
-- Botón primario "Generar informe" (`bg-info`/`border-info`); 1 archivo por formato marcado.
-
-Implementación: PNG vía `html-to-image`, PDF vía `jspdf` (ya instalado) + canvas, DOCX vía `docx`.
-
----
-
-### Detalles técnicos
-
-**Dependencias nuevas:** `docx`, `react-simple-maps`, `html-to-image`. (Ya disponibles: `xlsx`, `jspdf`, `jspdf-autotable`, `recharts`.)
-
-**Archivos nuevos:**
-- `src/components/reports/AdvancedReportSheetCitas.tsx`
-- `src/components/reports/AdvancedReportSheetDiagnosticos.tsx`
-- `src/components/reports/EspecialistasExportDrawer.tsx`
-- `src/components/reports/reportTypes.ts` (catálogos, mensajes de alerta)
-- `src/components/dashboard/KPIConfigModal.tsx`
-- `src/components/dashboard/EarlyDetectionGauge.tsx`
-- `src/components/dashboard/GeographicComorbidityMap.tsx`
-- `src/components/dashboard/AgeGroupTrendChart.tsx`
-- `src/components/dashboard/KPIExportPopover.tsx`
-- `src/components/dashboard/kpiCatalog.ts` (clasificación por tipo)
-- `src/data/especialistasStore.ts` (si necesario para mocks compartidos)
-
-**Archivos modificados:**
-- `src/components/reports/{SplitExportButton,ContextActionBar,AdvancedReportSheet,exporters}.tsx/ts`
-- `src/components/dashboard/{DashboardContent,KPIWrapper,PatientTable}.tsx`
-- `src/components/pages/{CitasPage,DiagnosticosPage,EspecialistasPage}.tsx`
-
-**Mocks:** datos médicos coherentes en español (especialidades, enfermedades, regiones de Venezuela para choropleth).
-
-**Reglas de comportamiento global:** stacking de modales (no abrir si otro modal activo), selección reseteada al paginar, no alterar filtros/búsqueda existentes, estética consistente con tokens del sistema (sin colores hardcoded).
+## Notas técnicas
+- Cálculos se hacen en cliente sobre `useEspecialistas()`.
+- SVG usa variables CSS del tema cuando aplica (texto/grilla). Colores categóricos y de severidad son fijos por requerimiento.
+- Jitter determinístico (seed = `specialtyIndex * 1013 + 7`).
+- MPPS: helper `parseInt(mpps.split('-')[1])` disponible aunque aquí no se ordene por MPPS.
+- Sin cambios en stores, rutas, ni en la vista de tarjetas existente.
