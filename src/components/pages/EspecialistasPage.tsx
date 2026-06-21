@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { UserCog, Plus, Phone, Search, Download } from 'lucide-react';
+import { UserCog, Plus, Phone, Search, Download, LayoutGrid, BarChart3 } from 'lucide-react';
+import { AnalysisView } from './especialistas/AnalysisView';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
