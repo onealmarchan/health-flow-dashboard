@@ -1,56 +1,80 @@
-# Vista de Análisis — Especialistas Médicos
 
-## Objetivo
-Añadir una **segunda vista** ("Análisis") en `EspecialistasPage`, sin tocar la vista actual de tarjetas. Alternancia mediante un segmented control en la barra superior.
+# Plan de cambios
 
-## Cambios
+## 1. Especialistas Médicos
+- Eliminar el segmented control `[Tarjetas] [Análisis]` y el estado `view` en `EspecialistasPage.tsx`. La página vuelve a mostrar únicamente el grid de tarjetas.
+- Borrar los archivos `src/components/pages/especialistas/AnalysisView.tsx`, `SpecialistList.tsx`, `ViolinPlot.tsx`. Se mantiene `DivergingBar.tsx` y `utils.ts` (utilizados en el Dashboard).
+- Añadir barra de búsqueda dinámica arriba del grid (input con icono `Search`) que filtra en vivo por nombre, especialidad o MPPS.
+- Añadir botón `Filtros` (icono `SlidersHorizontal`) que abre un `Popover` con: especialidad (multi-select), disponibilidad, rango de pacientes (min/max).
 
-### 1. `EspecialistasPage.tsx`
-- En la barra superior, a la izquierda de "+ Agregar Especialista", añadir segmented control:
-  - `[ ⊞ Tarjetas ]  [ ≡ Análisis ]` (iconos `LayoutGrid` / `BarChart3`).
-  - Estado local `view: 'cards' | 'analysis'`, default `cards`.
-  - Activo: `bg-primary text-primary-foreground`; inactivo: `bg-secondary text-muted-foreground`.
-- Render condicional con transición `animate-fade-in` (~200ms).
-  - `view === 'cards'`: grid actual intacto.
-  - `view === 'analysis'`: nuevo `<AnalysisView specialists={...} />`.
+## 2. Dashboard
+- Eliminar por completo `GeographicComorbidityMap.tsx` (archivo + referencias en `kpiCatalog.ts` y `DashboardContent.tsx`).
+- Registrar un nuevo KPI `"diverging-bar"` en `kpiCatalog.ts` que renderiza `<DivergingBar />` (leyendo `especialistasStore`). Ocupa el mismo slot que ocupaba el mapa de comorbilidad, con el mismo tamaño/wrapper (`KPIWrapper`), navegación rotatoria y export intactos.
+- Título del KPI: "Ratio de pacientes vs Meta por Especialidad".
 
-### 2. Nuevos componentes (en `src/components/pages/especialistas/`)
-- `AnalysisView.tsx` — layout split:
-  - `lg:grid-cols-[340px_1fr]`, en `<lg` apila vertical. `min-h-[480px]`, separador `border-r border-border`.
-  - Estado `chart: 'violin' | 'diverging'`, default `violin`.
-- `SpecialistList.tsx`:
-  - Header sticky con etiquetas `Nº / MÉDICO · MPPS / PACIENTES` (text-xs uppercase muted).
-  - Filas: Nº (28px, muted) · Avatar 32px círculo con color de especialidad y `UserCog` · nombre `text-sm font-medium` + segunda línea `<Especialidad>` color acento + ` · ` + MPPS muted · a la derecha conteo + mini-barra 60×4px (porcentaje = `pacientes/max*100`). Si `pacientes >= 350` → número y barra `#e05252`.
-  - Hover, selección con `bg-primary/10` y `border-l-[3px] border-primary` (sólo visual, no filtra).
-  - `overflow-y-auto` con header fijo.
-- `ViolinPlot.tsx` (D3 v7):
-  - KDE gaussiano bandwidth ~22–24 por especialidad, área simétrica con `d3.curveBasis`, fill acento opacity 0.18, stroke 0.65.
-  - Box plot interno: Q1/Q3, mediana (stroke `#333` 2.5), bigotes Tukey con caps.
-  - Jitter: círculos r=4.5 con desplazamiento horizontal vía Mulberry32 seeded por índice de especialidad. Excepción crítica (≥350): `#e05252`, r=5.5, stroke `#a01010`.
-  - Línea meta `y=250` punteada `#f09030` con etiqueta "Meta: 250".
-  - Tooltip flotante (div absoluto con anti-overflow): nombre, especialidad, pacientes, desviación, badge crítico si aplica.
-  - Eje Y "Nº Pacientes" ticks ~50; eje X especialidades; grilla horizontal punteada `#ebebeb`.
-- `DivergingBar.tsx` (D3 v7, horizontal):
-  - Agrega por especialidad: `promedio`, `desviacion = round((prom-250)*10)/10`, `cantidad_medicos`.
-  - Orden ASC por desviación. Escala simétrica.
-  - 6 tramos de color (`>+60 #c0392b`, `+30..+60 #e05252`, `0..+30 #f09090`, `-30..0 #7dcfb6`, `-60..-30 #0f9e7b`, `<-60 #0a5c48`).
-  - Etiquetas: desviación con signo (font-weight 700, 11.5px) y `(N pac.)` muted 9.5px.
-  - Línea central x=0 (`#bbb` 1.5) con "Meta 250 pac./médico" arriba.
-  - Etiquetas zona: "← Capacidad disponible" `#0f9e7b`, "Sobrecarga →" `#e05252`.
-  - Leyenda inferior 2×3 con los 6 tramos.
-  - Tooltip por barra.
+## 3. Usuarios
+- `UsuariosPage.tsx`: reemplazar columnas por  
+  `Nº | Correo electrónico | Nombre completo | Rol | Miembro desde | Última actualización | Estado`.
+- Ajustar el mock de usuarios (o `usuariosStore` si existe) con esos campos (`email`, `nombreCompleto`, `rol`, `miembroDesde`, `ultimaActualizacion`, `estado`). Rol limitado a "Administrador" / "Auxiliar Administrativo". Estado como Badge (Activo/Inactivo).
+- Añadir barra de búsqueda dinámica + botón `Filtros` (rol, estado, rango de fecha "miembro desde").
 
-### 3. Helpers (`src/components/pages/especialistas/utils.ts`)
-- `SPECIALTY_COLORS`: mapping fijo (Cardiología `#1a9bd8`, Pediatría `#0f9e7b`, Dermatología `#7c5bc4`, Neurología `#d85a30`, Traumatología `#d4537e`, Ginecología `#ba7517`). Fallback para nuevas.
-- `META = 250` (constante exportada).
-- `mulberry32(seed)`, `kde(values, bandwidth)`, `quantiles(arr)`, `groupBy(spec)`.
+## 4. Historial de Cambios
+- Renombrar en el sidebar y en el título de la página: `"Historias de Cambios"` → `"Historial de Cambios"` (buscar todas las cadenas en `Sidebar.tsx`, `AuditoriasPage.tsx`, `pageComponents` labels).
+- Reemplazar la tabla actual por:  
+  `Sección | Registro afectado | Acción realizada | Cambio realizado | Responsable | Fecha y hora`.
+- Actualizar mock data acorde (acciones: Crear/Editar/Eliminar; "Cambio realizado" como texto libre tipo `campo: antes → después`).
 
-### 4. Dependencia
-- Agregar `d3` y `@types/d3` (D3 v7) vía `bun add`.
+## 5. Control de Diagnósticos
+- Unificar el diseño visual con las tablas del resto del sistema (mismo `Table` de shadcn con header `bg-muted`, filas con `hover:bg-muted/50`, badges y tipografía coincidentes con `PatientTable`).
+- Añadir barra de búsqueda dinámica (paciente, diagnóstico, CIE-10) + botón `Filtros` (severidad, estado, especialidad).
 
-## Notas técnicas
-- Cálculos se hacen en cliente sobre `useEspecialistas()`.
-- SVG usa variables CSS del tema cuando aplica (texto/grilla). Colores categóricos y de severidad son fijos por requerimiento.
-- Jitter determinístico (seed = `specialtyIndex * 1013 + 7`).
-- MPPS: helper `parseInt(mpps.split('-')[1])` disponible aunque aquí no se ordene por MPPS.
-- Sin cambios en stores, rutas, ni en la vista de tarjetas existente.
+## 6. Búsquedas, Filtros y Rango de fechas — componentes reutilizables
+- Crear `src/components/shared/SearchBar.tsx` (input con icono, `value/onChange`, placeholder configurable).
+- Crear `src/components/shared/FiltersButton.tsx` (Popover con children configurables por página; footer con "Limpiar" / "Aplicar").
+- Crear `src/components/shared/DateRangeButton.tsx` (Popover con `Calendar mode="range"` de shadcn) usado en **Citas Médicas**.
+- Integrar:
+  - Jornadas Médicas → botón `Filtros`.
+  - Especialistas → búsqueda + `Filtros`.
+  - Control de Diagnósticos → búsqueda + `Filtros`.
+  - Usuarios → búsqueda + `Filtros`.
+  - Citas Médicas → botón `Rango de fechas`.
+
+## 7. Ajustes y Temas
+- Nueva página `src/components/pages/AjustesPage.tsx` con sección **Apariencia**:
+  - Mueve la selección completa de los 8 temas (4 claros / 4 oscuros) desde `Header.tsx`.
+  - Añade dos selectores: "Tema claro preferido" (entre los 4 claros) y "Tema oscuro preferido" (entre los 4 oscuros). Se guardan en `localStorage` (`preferredLightTheme`, `preferredDarkTheme`).
+- Sidebar: nuevo item "Ajustes" (icono `Settings`).
+- `ThemeContext`:
+  - Añadir `mode: 'light' | 'dark'`, `preferredLight`, `preferredDark`, `toggleMode()`.
+  - `toggleMode()` cambia entre el tema claro y el oscuro preferidos y dispara la animación.
+- Header: eliminar el dropdown de paleta; sustituir por botón animado tipo toggle (icono `Sun`/`Moon` con transición) que llama a `toggleMode()`.
+- **Animación ECG**: componente `src/components/theme/ECGTransition.tsx` que renderiza un overlay `fixed inset-0 pointer-events-none z-[100]` con un SVG de una línea de electrocardiograma que se dibuja de izquierda a derecha (~800 ms, `stroke-dasharray`/`stroke-dashoffset`). Se monta al cambiar de modo y se desmonta al terminar. Color del trazo: `hsl(var(--primary))`.
+
+## 8. Nuevas páginas
+- `src/components/pages/FAQPage.tsx` — placeholder con título "Preguntas Frecuentes" y texto "Próximamente".
+- `src/components/pages/HelpDeskPage.tsx` — placeholder con título "Help Desk" y texto "Próximamente".
+- Registrar ambas en `Sidebar.tsx` y en `pageComponents` de `Index.tsx`.
+
+## 9. Acceso Denegado
+- Nueva ruta fija `/acceso-denegado` en `App.tsx` → `src/pages/AccesoDenegado.tsx`.
+- Layout centrado (viewport completo, fondo del tema).
+- Ilustración animada: SVG de una cruz médica + latido (pulse) o estetoscopio con animación CSS suave. Debajo, texto grande: **"ACCESO DENEGADO"** en `text-5xl md:text-7xl font-bold text-destructive`, con subtítulo "No tienes permisos para ver esta página".
+- Sin enlace desde el sidebar; accesible solo por URL directa.
+
+---
+
+## Detalles técnicos
+
+- **Sin backend**. Todo con stores en memoria (`patientsStore`, `especialistasStore`, `appointmentsStore` + nuevos `usuariosStore`, `historialStore`).
+- **Búsquedas/filtros**: memoización con `useMemo` sobre los stores; sin debounce (dataset pequeño).
+- **Consistencia visual**: reutilizar `Table`, `Badge`, `Button`, `Popover`, `Calendar`, `Input` de shadcn ya presentes; respetar tokens semánticos del `ThemeContext`.
+- **ThemeContext**: mantener compatibilidad con las 8 clases existentes (`theme-*`). Sólo se añade encima el concepto `mode` + preferidos.
+- **ECG overlay**: implementado con Tailwind + un keyframe `@keyframes ecg-sweep` inyectado en `index.css` (o clase utilitaria); duración 800ms, `ease-out`, se autodestruye con `onAnimationEnd`.
+- **Ruta Acceso Denegado**: se agrega antes del `path="*"` en `App.tsx`.
+- **Renombrado "Historias" → "Historial"**: aplicar en `Sidebar.tsx`, en el título dentro de `AuditoriasPage.tsx` y en cualquier `label`/`breadcrumb` visible. La key interna de `pageComponents` (`auditorias`) se mantiene para no romper referencias.
+- **Eliminaciones**: `GeographicComorbidityMap.tsx`, `AnalysisView.tsx`, `SpecialistList.tsx`, `ViolinPlot.tsx` se borran con `rm`.
+
+## Fuera de alcance
+- Autenticación real / lógica de permisos que redirija a `/acceso-denegado`.
+- Contenido real de FAQ y Help Desk.
+- Persistencia en base de datos.
