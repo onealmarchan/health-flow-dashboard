@@ -8,6 +8,9 @@ import { EspecialistasPage } from '@/components/pages/EspecialistasPage';
 import { UsuariosPage } from '@/components/pages/UsuariosPage';
 import { AuditoriasPage } from '@/components/pages/AuditoriasPage';
 import { DiagnosticosPage } from '@/components/pages/DiagnosticosPage';
+import { AjustesPage } from '@/components/pages/AjustesPage';
+import { FAQPage } from '@/components/pages/FAQPage';
+import { HelpDeskPage } from '@/components/pages/HelpDeskPage';
 
 const pageComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardContent,
@@ -17,6 +20,9 @@ const pageComponents: Record<string, React.ComponentType> = {
   diagnosticos: DiagnosticosPage,
   usuarios: UsuariosPage,
   auditorias: AuditoriasPage,
+  ajustes: AjustesPage,
+  faq: FAQPage,
+  helpdesk: HelpDeskPage,
 };
 
 const Index = () => {

@@ -31,7 +31,7 @@ export const KPI_CATALOG: KPIDef[] = [
   // Slot 4 — Matriz prioridades / interconsulta / comorbilidad geográfica
   { id: 'matriz-prioridades', label: 'Matriz de prioridades',                  type: 'trimestral', slot: 4 },
   { id: 'interconsulta',      label: 'Interconsulta entre especialidades',     type: 'trimestral', slot: 4 },
-  { id: 'comorbilidad-geo',   label: 'Índice de comorbilidad geográfica',      type: 'semestral',  slot: 4 },
+  { id: 'ratio-vs-meta',      label: 'Diverging Bar — Ratio vs Meta',          type: 'trimestral', slot: 4 },
 
   // Slot 5 — geografía / densidad / vulnerabilidad
   { id: 'densidad-comunidad', label: 'Densidad epidemiológica por comunidad',  type: 'trimestral', slot: 5 },
@@ -61,7 +61,7 @@ export function summaryForKPI(kpiId: string): string {
     'tendencia-trimestral': 'Aumento o decremento trimestral de diagnósticos por especialidad.',
     'matriz-prioridades': 'Cruce urgencia × impacto para priorizar atención por especialidad.',
     'interconsulta': 'Volumen de remisiones entre especialidades comparado con el periodo anterior.',
-    'comorbilidad-geo': 'Intensidad de comorbilidad por región, con variación versus periodo previo.',
+    'ratio-vs-meta': 'Desviación de la carga promedio de pacientes por especialidad frente a la meta institucional (250 pac./médico).',
     'densidad-comunidad': 'Casos por comunidad ponderados por población.',
     'concentracion-geo': 'Concentración de casos por zona geográfica.',
     'crecimiento-zona': 'Crecimiento trimestral de casos epidemiológicos por zona.',

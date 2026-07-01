@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { UserCog, Plus, Phone, Search, Download, LayoutGrid, BarChart3 } from 'lucide-react';
-import { AnalysisView } from './especialistas/AnalysisView';
+import { UserCog, Plus, Phone, Search, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { useEspecialistas, addEspecialista } from '@/data/especialistasStore';
 import { EspecialistasExportDrawer } from '@/components/reports/EspecialistasExportDrawer';
+import { SearchBar } from '@/components/shared/SearchBar';
+import { FiltersButton } from '@/components/shared/FiltersButton';
 
 type ModalView = 'closed' | 'search' | 'new';
 
@@ -18,6 +19,9 @@ export function EspecialistasPage() {
   const specialists = useEspecialistas();
   const [modalView, setModalView] = useState<ModalView>('closed');
   const [searchQuery, setSearchQuery] = useState('');
+  const [cardSearch, setCardSearch] = useState('');
+  const [filterEspecialidad, setFilterEspecialidad] = useState<string>('todas');
+  const [filterDisponible, setFilterDisponible] = useState<string>('todos');
   const [newSpec, setNewSpec] = useState({ mpps: '', nombre: '', apellido: '', telefono: '', especialidad: '' });
   const [especialidades, setEspecialidades] = useState<string[]>([
     'Cardiología', 'Pediatría', 'Dermatología', 'Neurología', 'Traumatología', 'Ginecología',
@@ -25,13 +29,28 @@ export function EspecialistasPage() {
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
   const [exportOpen, setExportOpen] = useState(false);
-  const [view, setView] = useState<'cards' | 'analysis'>('cards');
 
   const filteredSpecialists = useMemo(() => specialists.filter(s =>
     s.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.apellido.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.mpps.toLowerCase().includes(searchQuery.toLowerCase())
   ), [specialists, searchQuery]);
+
+  const cardList = useMemo(() => {
+    const q = cardSearch.trim().toLowerCase();
+    return specialists.filter(s => {
+      if (filterEspecialidad !== 'todas' && s.especialidad !== filterEspecialidad) return false;
+      if (filterDisponible === 'si' && !s.disponible) return false;
+      if (filterDisponible === 'no' && s.disponible) return false;
+      if (!q) return true;
+      return (
+        s.nombre.toLowerCase().includes(q) ||
+        s.apellido.toLowerCase().includes(q) ||
+        s.mpps.toLowerCase().includes(q) ||
+        s.especialidad.toLowerCase().includes(q)
+      );
+    });
+  }, [specialists, cardSearch, filterEspecialidad, filterDisponible]);
 
   const handleSave = () => {
     if (!newSpec.nombre.trim() || !newSpec.apellido.trim() || !newSpec.mpps.trim()) {
@@ -74,24 +93,6 @@ export function EspecialistasPage() {
           <p className="text-muted-foreground">Directorio de profesionales de la salud</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center rounded-md bg-secondary p-0.5">
-            <button
-              onClick={() => setView('cards')}
-              className={`inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors ${
-                view === 'cards' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" /> Tarjetas
-            </button>
-            <button
-              onClick={() => setView('analysis')}
-              className={`inline-flex items-center gap-1.5 rounded-[5px] px-3 py-1.5 text-xs font-medium transition-colors ${
-                view === 'analysis' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" /> Análisis
-            </button>
-          </div>
           <Button variant="outline" onClick={() => setExportOpen(true)}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
@@ -103,43 +104,76 @@ export function EspecialistasPage() {
         </div>
       </div>
 
-      {view === 'cards' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-          {specialists.map(s => (
-            <div key={s.id} className="metric-card">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                  <UserCog className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  s.disponible ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
-                }`}>
-                  {s.disponible ? 'Disponible' : 'No disponible'}
-                </span>
+      <div className="flex flex-wrap gap-3">
+        <SearchBar
+          value={cardSearch}
+          onChange={setCardSearch}
+          placeholder="Buscar por nombre, MPPS o especialidad..."
+        />
+        <FiltersButton
+          onClear={() => { setFilterEspecialidad('todas'); setFilterDisponible('todos'); }}
+        >
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Especialidad</Label>
+            <Select value={filterEspecialidad} onValueChange={setFilterEspecialidad}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todas">Todas</SelectItem>
+                {especialidades.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Disponibilidad</Label>
+            <Select value={filterDisponible} onValueChange={setFilterDisponible}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="si">Disponible</SelectItem>
+                <SelectItem value="no">No disponible</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FiltersButton>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
+        {cardList.map(s => (
+          <div key={s.id} className="metric-card">
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+                <UserCog className="w-6 h-6 text-primary-foreground" />
               </div>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                s.disponible ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
+              }`}>
+                {s.disponible ? 'Disponible' : 'No disponible'}
+              </span>
+            </div>
 
-              <h3 className="font-semibold text-foreground">Dr(a). {s.nombre} {s.apellido}</h3>
-              <p className="text-sm text-primary mb-1">{s.especialidad}</p>
-              <p className="text-xs text-muted-foreground font-mono mb-3">{s.mpps}</p>
+            <h3 className="font-semibold text-foreground">Dr(a). {s.nombre} {s.apellido}</h3>
+            <p className="text-sm text-primary mb-1">{s.especialidad}</p>
+            <p className="text-xs text-muted-foreground font-mono mb-3">{s.mpps}</p>
 
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
-              </div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
+            </div>
 
-              <div className="pt-3 border-t border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="w-4 h-4" />
-                  <span>{s.telefono}</span>
-                </div>
+            <div className="pt-3 border-t border-border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Phone className="w-4 h-4" />
+                <span>{s.telefono}</span>
               </div>
             </div>
-          ))}
-        </div>
-      ) : (
-        <AnalysisView specialists={specialists} />
-      )}
+          </div>
+        ))}
+        {cardList.length === 0 && (
+          <div className="col-span-full text-center text-muted-foreground py-10">
+            No se encontraron especialistas con los filtros seleccionados.
+          </div>
+        )}
+      </div>
 
-      {/* Export Drawer */}
       <EspecialistasExportDrawer
         open={exportOpen}
         onOpenChange={setExportOpen}
@@ -147,7 +181,6 @@ export function EspecialistasPage() {
         especialidades={especialidades}
       />
 
-      {/* Search Specialist Modal */}
       <Dialog open={modalView === 'search'} onOpenChange={(o) => !o && setModalView('closed')}>
         <DialogContent className="bg-card border border-border max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
@@ -190,7 +223,6 @@ export function EspecialistasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* New Specialist Modal */}
       <Dialog open={modalView === 'new'} onOpenChange={(o) => !o && setModalView('search')}>
         <DialogContent className="bg-card border border-border max-w-lg">
           <DialogHeader>
@@ -245,7 +277,6 @@ export function EspecialistasPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Nested: Registro de Especialidad Médica */}
       <Dialog open={specModalOpen} onOpenChange={setSpecModalOpen}>
         <DialogContent className="bg-card border border-border max-w-md">
           <DialogHeader>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { 
+import {
   CalendarDays, Clock, UserCog, Users, FileSearch, Stethoscope,
-  ChevronLeft, ChevronRight, Activity
+  ChevronLeft, ChevronRight, Activity, Settings, HelpCircle, LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,7 +17,10 @@ const menuItems = [
   { id: 'especialistas', label: 'Especialistas Médicos', icon: UserCog },
   { id: 'diagnosticos', label: 'Control de Diagnósticos', icon: Stethoscope },
   { id: 'usuarios', label: 'Usuarios', icon: Users },
-  { id: 'auditorias', label: 'Historias de Cambios', icon: FileSearch },
+  { id: 'auditorias', label: 'Historial de Cambios', icon: FileSearch },
+  { id: 'ajustes', label: 'Ajustes', icon: Settings },
+  { id: 'faq', label: 'FAQ', icon: HelpCircle },
+  { id: 'helpdesk', label: 'Help Desk', icon: LifeBuoy },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {

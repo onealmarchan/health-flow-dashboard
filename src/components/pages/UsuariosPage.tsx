@@ -1,36 +1,20 @@
-import { useState } from 'react';
-import { Plus, Search, MoreVertical, Clock } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Plus, MoreVertical, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-
-const users = [
-  { id: 1, nombre: 'Roberto', apellido: 'García', email: 'rgarcia@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2022-03-15 09:14', actualizadoEn: '2024-01-20 16:42' },
-  { id: 2, nombre: 'Carmen', apellido: 'Ruiz', email: 'cruiz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2021-08-20 11:05', actualizadoEn: '2024-01-18 10:21' },
-  { id: 3, nombre: 'Miguel', apellido: 'Torres', email: 'mtorres@medicitas.com', rol: 'Administrador', estado: 'Activo', creadoEn: '2020-01-10 08:30', actualizadoEn: '2024-01-15 14:55' },
-  { id: 4, nombre: 'Patricia', apellido: 'López', email: 'plopez@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Inhabilitado', creadoEn: '2019-05-22 13:18', actualizadoEn: '2023-12-01 09:00' },
-  { id: 5, nombre: 'Fernando', apellido: 'Díaz', email: 'fdiaz@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2023-02-01 07:45', actualizadoEn: '2024-01-22 18:10' },
-  { id: 6, nombre: 'Sandra', apellido: 'Moreno', email: 'smoreno@medicitas.com', rol: 'Auxiliar Administrativo', estado: 'Activo', creadoEn: '2022-11-30 12:20', actualizadoEn: '2024-01-10 15:30' },
-];
-
-type UserRow = (typeof users)[number];
+import { SearchBar } from '@/components/shared/SearchBar';
+import { FiltersButton } from '@/components/shared/FiltersButton';
+import { usuariosMock, type Usuario } from '@/data/usuariosStore';
 
 const statusColors: Record<string, string> = {
   Activo: 'bg-success/20 text-success',
@@ -40,19 +24,28 @@ const statusColors: Record<string, string> = {
 export function UsuariosPage() {
   const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterRol, setFilterRol] = useState<string>('todos');
+  const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [confirmDisable, setConfirmDisable] = useState<number | null>(null);
-  const [registroUser, setRegistroUser] = useState<UserRow | null>(null);
-  const [newUser, setNewUser] = useState({ nombre: '', apellido: '', email: '', rol: '' });
+  const [registroUser, setRegistroUser] = useState<Usuario | null>(null);
+  const [newUser, setNewUser] = useState({ nombreCompleto: '', email: '', rol: '' });
 
-  const filteredUsers = users.filter(u =>
-    u.nombre.toLowerCase().includes(search.toLowerCase()) ||
-    u.apellido.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return usuariosMock.filter(u => {
+      if (filterRol !== 'todos' && u.rol !== filterRol) return false;
+      if (filterEstado !== 'todos' && u.estado !== filterEstado) return false;
+      if (!q) return true;
+      return (
+        u.nombreCompleto.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+      );
+    });
+  }, [search, filterRol, filterEstado]);
 
   const handleSave = () => {
     setShowModal(false);
-    setNewUser({ nombre: '', apellido: '', email: '', rol: '' });
+    setNewUser({ nombreCompleto: '', email: '', rol: '' });
   };
 
   return (
@@ -68,89 +61,102 @@ export function UsuariosPage() {
         </Button>
       </div>
 
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar usuarios..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
-        </div>
+      <div className="flex flex-wrap gap-3">
+        <SearchBar value={search} onChange={setSearch} placeholder="Buscar por correo o nombre..." />
+        <FiltersButton onClear={() => { setFilterRol('todos'); setFilterEstado('todos'); }}>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Rol</Label>
+            <Select value={filterRol} onValueChange={setFilterRol}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="Administrador">Administrador</SelectItem>
+                <SelectItem value="Auxiliar Administrativo">Auxiliar Administrativo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Estado</Label>
+            <Select value={filterEstado} onValueChange={setFilterEstado}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="Activo">Activo</SelectItem>
+                <SelectItem value="Inhabilitado">Inhabilitado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FiltersButton>
       </div>
 
-      <div className="chart-container">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {['ID', 'Nombre', 'Apellido', 'Email', 'Rol', 'Estado', 'Control de Registro', 'Acciones'].map(h => (
-                  <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/50">
+              <tr>
+                {['Nº', 'Correo electrónico', 'Nombre completo', 'Rol', 'Miembro desde', 'Última actualización', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map(user => (
-                <tr key={user.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
-                  <td className="p-3 text-sm font-mono text-foreground">{user.id}</td>
-                  <td className="p-3 text-sm font-medium text-foreground">{user.nombre}</td>
-                  <td className="p-3 text-sm text-foreground">{user.apellido}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{user.email}</td>
-                  <td className="p-3 text-sm text-foreground">{user.rol}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[user.estado] || ''}`}>
-                      {user.estado}
+              {filteredUsers.map(u => (
+                <tr key={u.num} className="border-t border-border hover:bg-secondary/30">
+                  <td className="px-3 py-2 text-foreground">{u.num}</td>
+                  <td className="px-3 py-2 text-foreground">{u.email}</td>
+                  <td className="px-3 py-2 font-medium text-foreground">{u.nombreCompleto}</td>
+                  <td className="px-3 py-2 text-foreground">{u.rol}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{u.miembroDesde}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{u.ultimaActualizacion}</td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[u.estado]}`}>
+                      {u.estado}
                     </span>
                   </td>
-                  <td className="p-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title="Ver control de registro"
-                      onClick={() => setRegistroUser(user)}
-                    >
-                      <Clock className="w-4 h-4" />
-                    </Button>
-                  </td>
-                  <td className="p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm"><MoreVertical className="w-4 h-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="bg-popover border border-border z-50">
-                        <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
-                        <DropdownMenuItem className="cursor-pointer text-destructive" onClick={() => setConfirmDisable(user.id)}>
-                          Inhabilitar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" title="Ver historial" onClick={() => setRegistroUser(u)}>
+                        <Clock className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-popover border border-border z-50">
+                          <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
+                          <DropdownMenuItem className="cursor-pointer text-destructive" onClick={() => setConfirmDisable(u.num)}>
+                            Inhabilitar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </td>
                 </tr>
               ))}
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">Sin resultados</td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* New User Modal */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="bg-card border border-border max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-foreground">Nuevo Usuario</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              ID: #{users.length + 1} — Los campos de auditoría se llenan automáticamente
+              Nº: {usuariosMock.length + 1} — Los campos de auditoría se llenan automáticamente
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-foreground">Nombre</Label>
-                <Input value={newUser.nombre} onChange={e => setNewUser({ ...newUser, nombre: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-foreground">Apellido</Label>
-                <Input value={newUser.apellido} onChange={e => setNewUser({ ...newUser, apellido: e.target.value })} />
-              </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">Nombre completo</Label>
+              <Input value={newUser.nombreCompleto} onChange={e => setNewUser({ ...newUser, nombreCompleto: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Email</Label>
+              <Label className="text-foreground">Correo electrónico</Label>
               <Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
             </div>
             <div className="space-y-2">
@@ -173,7 +179,6 @@ export function UsuariosPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Disable Confirmation */}
       <ConfirmDialog
         open={confirmDisable !== null}
         onOpenChange={(o) => !o && setConfirmDisable(null)}
@@ -182,31 +187,24 @@ export function UsuariosPage() {
         description="El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
       />
 
-      {/* Control de Registro Modal */}
       <Dialog open={registroUser !== null} onOpenChange={(o) => !o && setRegistroUser(null)}>
         <DialogContent className="bg-card border border-border max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-foreground">Control de Registro</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {registroUser ? `${registroUser.nombre} ${registroUser.apellido}` : ''}
+              {registroUser?.nombreCompleto ?? ''}
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-3 py-2">
             <div className="rounded-lg border border-border bg-secondary/40 p-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Creado en</p>
-              <p className="text-sm font-medium text-foreground mt-1">
-                {registroUser?.creadoEn ?? '—'}
-              </p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Miembro desde</p>
+              <p className="text-sm font-medium text-foreground mt-1">{registroUser?.miembroDesde ?? '—'}</p>
             </div>
             <div className="rounded-lg border border-border bg-secondary/40 p-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Actualizado en</p>
-              <p className="text-sm font-medium text-foreground mt-1">
-                {registroUser?.actualizadoEn ?? '—'}
-              </p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Última actualización</p>
+              <p className="text-sm font-medium text-foreground mt-1">{registroUser?.ultimaActualizacion ?? '—'}</p>
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setRegistroUser(null)}>Cerrar</Button>
           </DialogFooter>
