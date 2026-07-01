@@ -1,19 +1,30 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 
-export type ThemeType = 
-  | 'light-blue' 
-  | 'light-green' 
-  | 'light-violet' 
+export type ThemeType =
+  | 'light-blue'
+  | 'light-green'
+  | 'light-violet'
   | 'light-brown'
-  | 'dark-purple' 
-  | 'dark-scarlet' 
+  | 'dark-purple'
+  | 'dark-scarlet'
   | 'dark-black-green'
   | 'dark-white-gray';
+
+export type ThemeMode = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeType;
   setTheme: (theme: ThemeType) => void;
+  mode: ThemeMode;
+  setMode: (mode: ThemeMode) => void;
+  toggleMode: () => void;
+  lightPreference: ThemeType;
+  darkPreference: ThemeType;
+  setLightPreference: (theme: ThemeType) => void;
+  setDarkPreference: (theme: ThemeType) => void;
   isDark: boolean;
+  /** Increments each time the mode is toggled; useful for animation triggers. */
+  transitionTick: number;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -29,33 +40,51 @@ const themeClasses: Record<ThemeType, string> = {
   'dark-white-gray': 'theme-dark-white-gray',
 };
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<ThemeType>('light-blue');
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [lightPreference, setLightPreference] = useState<ThemeType>('light-blue');
+  const [darkPreference, setDarkPreference] = useState<ThemeType>('dark-purple');
+  const [mode, setMode] = useState<ThemeMode>('light');
+  const [transitionTick, setTransitionTick] = useState(0);
+
+  const theme = mode === 'light' ? lightPreference : darkPreference;
+
+  const setTheme = useCallback((t: ThemeType) => {
+    if (t.startsWith('light')) {
+      setLightPreference(t);
+      setMode('light');
+    } else {
+      setDarkPreference(t);
+      setMode('dark');
+    }
+  }, []);
+
+  const toggleMode = useCallback(() => {
+    setMode(m => (m === 'light' ? 'dark' : 'light'));
+    setTransitionTick(t => t + 1);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
-    Object.values(themeClasses).forEach(cls => {
-      if (cls) root.classList.remove(cls);
-    });
-    const themeClass = themeClasses[theme];
-    if (themeClass) {
-      root.classList.add(themeClass);
-    }
+    Object.values(themeClasses).forEach(cls => cls && root.classList.remove(cls));
+    const cls = themeClasses[theme];
+    if (cls) root.classList.add(cls);
   }, [theme]);
 
-  const isDark = theme.startsWith('dark');
+  const isDark = mode === 'dark';
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
+    <ThemeContext.Provider value={{
+      theme, setTheme, mode, setMode, toggleMode,
+      lightPreference, darkPreference, setLightPreference, setDarkPreference,
+      isDark, transitionTick,
+    }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme must be used within a ThemeProvider');
+  return ctx;
 }

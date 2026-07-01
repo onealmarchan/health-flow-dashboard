@@ -1,6 +1,20 @@
-import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 import { KPIWrapper } from './KPIWrapper';
-import { GeographicComorbidityMap } from './GeographicComorbidityMap';
+import { DivergingBar } from '@/components/pages/especialistas/DivergingBar';
+import { useEspecialistas } from '@/data/especialistasStore';
+
+function DivergingBarView() {
+  const specialists = useEspecialistas();
+  return (
+    <div>
+      <div className="mb-4 pr-8">
+        <h3 className="text-lg font-semibold text-foreground">Diverging Bar — Ratio vs Meta</h3>
+        <p className="text-sm text-muted-foreground">Desviación de carga por especialidad frente a la meta institucional</p>
+      </div>
+      <DivergingBar specialists={specialists} />
+    </div>
+  );
+}
 
 interface MatrixCell {
   label: string;
@@ -36,12 +50,13 @@ const urgencyColors = {
 };
 
 function PriorityMatrix() {
-  const grid: MatrixCell[][][] = [[[], [], []], [[], [], []], [[], [], []]];
-  const urgencyMap = { high: 0, medium: 1, low: 2 };
-  const impactMap = { high: 0, medium: 1, low: 2 };
-  matrixData.forEach(cell => {
-    grid[urgencyMap[cell.urgency]][impactMap[cell.impact]].push(cell);
-  });
+  const grid = useMemo(() => {
+    const g: MatrixCell[][][] = [[[], [], []], [[], [], []], [[], [], []]];
+    const uM = { high: 0, medium: 1, low: 2 };
+    const iM = { high: 0, medium: 1, low: 2 };
+    matrixData.forEach(c => g[uM[c.urgency]][iM[c.impact]].push(c));
+    return g;
+  }, []);
 
   return (
     <div>
@@ -61,22 +76,16 @@ function PriorityMatrix() {
             <div className="text-center text-xs font-medium text-destructive">Bajo</div>
           </div>
           <div className="space-y-2">
-            {['Alta', 'Media', 'Baja'].map((_, rowIdx) => (
+            {[0, 1, 2].map(rowIdx => (
               <div key={rowIdx} className="grid grid-cols-3 gap-2">
                 {grid[rowIdx].map((cells, colIdx) => (
-                  <div key={`${rowIdx}-${colIdx}`}
-                    className={cn("min-h-[70px] rounded-lg border-2 p-2 transition-all",
-                      rowIdx === 0 && colIdx === 0 ? "bg-destructive/10 border-destructive/30"
-                        : rowIdx === 2 && colIdx === 2 ? "bg-success/10 border-success/30"
-                        : "bg-secondary/50 border-border"
-                    )}>
+                  <div key={`${rowIdx}-${colIdx}`} className="min-h-[70px] rounded-lg border-2 p-2 bg-secondary/50 border-border">
                     <div className="flex flex-wrap gap-1">
                       {cells.map(cell => (
                         <div key={cell.label}
-                          className={cn("px-2 py-1 rounded text-xs font-medium border cursor-pointer hover:scale-105 transition-transform", urgencyColors[cell.urgency])}
+                          className={`px-2 py-1 rounded text-xs font-medium border ${urgencyColors[cell.urgency]}`}
                           title={`${cell.label}: ${cell.value} pacientes`}>
-                          {cell.label.substring(0, 4)}
-                          <span className="ml-1 opacity-70">{cell.value}</span>
+                          {cell.label.substring(0, 4)}<span className="ml-1 opacity-70">{cell.value}</span>
                         </div>
                       ))}
                     </div>
@@ -137,9 +146,9 @@ function InterconsultaMatrix() {
 export function DecisionMatrix() {
   return (
     <KPIWrapper views={[
-      { id: 'matriz-prioridades', label: 'Matriz de prioridades',          component: <PriorityMatrix /> },
+      { id: 'matriz-prioridades', label: 'Matriz de prioridades', component: <PriorityMatrix /> },
       { id: 'interconsulta',      label: 'Interconsulta entre especialidades', component: <InterconsultaMatrix /> },
-      { id: 'comorbilidad-geo',   label: 'Índice de comorbilidad geográfica',  component: <GeographicComorbidityMap /> },
+      { id: 'ratio-vs-meta',      label: 'Diverging Bar — Ratio vs Meta', component: <DivergingBarView /> },
     ]} />
   );
 }

@@ -1,36 +1,51 @@
-import { FileSearch, Download, Calendar, Filter, Eye } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { FileSearch, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchBar } from '@/components/shared/SearchBar';
+import { FiltersButton } from '@/components/shared/FiltersButton';
+import { historialMock, type AccionRealizada } from '@/data/historialStore';
+import { cn } from '@/lib/utils';
 
-const auditLogs = [
-  { id: 1, action: 'Creación de cita', user: 'Roberto García', module: 'Citas', date: '2024-01-28 14:32:15', ip: '192.168.1.45', status: 'success' },
-  { id: 2, action: 'Modificación de paciente', user: 'Carmen Ruiz', module: 'Pacientes', date: '2024-01-28 14:28:10', ip: '192.168.1.52', status: 'success' },
-  { id: 3, action: 'Cancelación de cita', user: 'Miguel Torres', module: 'Citas', date: '2024-01-28 14:15:33', ip: '192.168.1.48', status: 'warning' },
-  { id: 4, action: 'Acceso denegado', user: 'Usuario desconocido', module: 'Sistema', date: '2024-01-28 13:45:22', ip: '203.45.67.89', status: 'error' },
-  { id: 5, action: 'Exportación de datos', user: 'Patricia López', module: 'Reportes', date: '2024-01-28 13:30:00', ip: '192.168.1.50', status: 'success' },
-  { id: 6, action: 'Actualización de horario', user: 'Fernando Díaz', module: 'Horarios', date: '2024-01-28 12:55:18', ip: '192.168.1.55', status: 'success' },
-  { id: 7, action: 'Eliminación de registro', user: 'Sandra Moreno', module: 'Pacientes', date: '2024-01-28 12:40:05', ip: '192.168.1.47', status: 'warning' },
-  { id: 8, action: 'Login exitoso', user: 'Dr. López', module: 'Autenticación', date: '2024-01-28 08:00:12', ip: '192.168.1.60', status: 'success' },
-];
-
-const statusColors = {
-  success: 'bg-success/20 text-success',
-  warning: 'bg-warning/20 text-warning',
-  error: 'bg-destructive/20 text-destructive',
-};
-
-const statusLabels = {
-  success: 'Exitoso',
-  warning: 'Advertencia',
-  error: 'Error',
+const accionColors: Record<AccionRealizada, string> = {
+  Crear: 'bg-success/20 text-success',
+  Editar: 'bg-warning/20 text-warning',
+  Eliminar: 'bg-destructive/20 text-destructive',
 };
 
 export function AuditoriasPage() {
+  const [search, setSearch] = useState('');
+  const [filterSeccion, setFilterSeccion] = useState<string>('todas');
+  const [filterAccion, setFilterAccion] = useState<string>('todas');
+
+  const secciones = useMemo(
+    () => Array.from(new Set(historialMock.map(h => h.seccion))).sort(),
+    []
+  );
+
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return historialMock.filter(r => {
+      if (filterSeccion !== 'todas' && r.seccion !== filterSeccion) return false;
+      if (filterAccion !== 'todas' && r.accion !== filterAccion) return false;
+      if (!q) return true;
+      return (
+        r.registroAfectado.toLowerCase().includes(q) ||
+        r.cambio.toLowerCase().includes(q) ||
+        r.responsable.toLowerCase().includes(q)
+      );
+    });
+  }, [search, filterSeccion, filterAccion]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Historias de Cambios</h1>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <FileSearch className="w-6 h-6 text-primary" />
+            Historial de Cambios
+          </h1>
           <p className="text-muted-foreground">Registro de actividades del sistema</p>
         </div>
         <Button variant="outline">
@@ -39,81 +54,62 @@ export function AuditoriasPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="metric-card">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary/20">
-              <FileSearch className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">1,245</p>
-              <p className="text-sm text-muted-foreground">Total Eventos</p>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <p className="text-sm text-muted-foreground">Hoy</p>
-          <p className="text-2xl font-bold text-foreground">48</p>
-        </div>
-        <div className="metric-card">
-          <p className="text-sm text-muted-foreground">Advertencias</p>
-          <p className="text-2xl font-bold text-warning">12</p>
-        </div>
-        <div className="metric-card">
-          <p className="text-sm text-muted-foreground">Errores</p>
-          <p className="text-2xl font-bold text-destructive">3</p>
-        </div>
-      </div>
-
       <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <FileSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Buscar en logs..." className="pl-9" />
-        </div>
-        <Button variant="outline">
-          <Calendar className="w-4 h-4 mr-2" />
-          Rango de Fechas
-        </Button>
-        <Button variant="outline">
-          <Filter className="w-4 h-4 mr-2" />
-          Filtros
-        </Button>
+        <SearchBar value={search} onChange={setSearch} placeholder="Buscar por registro, cambio o responsable..." />
+        <FiltersButton onClear={() => { setFilterSeccion('todas'); setFilterAccion('todas'); }}>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Sección</Label>
+            <Select value={filterSeccion} onValueChange={setFilterSeccion}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todas">Todas</SelectItem>
+                {secciones.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Acción</Label>
+            <Select value={filterAccion} onValueChange={setFilterAccion}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="Crear">Crear</SelectItem>
+                <SelectItem value="Editar">Editar</SelectItem>
+                <SelectItem value="Eliminar">Eliminar</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FiltersButton>
       </div>
 
-      <div className="chart-container">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Fecha/Hora</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Acción</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Usuario</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Módulo</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">IP</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Estado</th>
-                <th className="text-left p-3 text-sm font-medium text-muted-foreground">Detalles</th>
+          <table className="w-full text-sm">
+            <thead className="bg-secondary/50">
+              <tr>
+                {['Sección', 'Registro afectado', 'Acción realizada', 'Cambio realizado', 'Responsable', 'Fecha y hora'].map(h => (
+                  <th key={h} className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {auditLogs.map((log) => (
-                <tr key={log.id} className="border-b border-border/50 hover:bg-secondary/50 transition-colors">
-                  <td className="p-3 text-sm text-muted-foreground font-mono">{log.date}</td>
-                  <td className="p-3 text-sm font-medium text-foreground">{log.action}</td>
-                  <td className="p-3 text-sm text-foreground">{log.user}</td>
-                  <td className="p-3 text-sm text-muted-foreground">{log.module}</td>
-                  <td className="p-3 text-sm text-muted-foreground font-mono">{log.ip}</td>
-                  <td className="p-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[log.status as keyof typeof statusColors]}`}>
-                      {statusLabels[log.status as keyof typeof statusLabels]}
+              {rows.map(r => (
+                <tr key={r.id} className="border-t border-border hover:bg-secondary/30">
+                  <td className="px-3 py-2 text-foreground">{r.seccion}</td>
+                  <td className="px-3 py-2 font-mono text-xs text-foreground">{r.registroAfectado}</td>
+                  <td className="px-3 py-2">
+                    <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', accionColors[r.accion])}>
+                      {r.accion}
                     </span>
                   </td>
-                  <td className="p-3">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </td>
+                  <td className="px-3 py-2 text-foreground">{r.cambio}</td>
+                  <td className="px-3 py-2 text-foreground">{r.responsable}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{r.fechaHora}</td>
                 </tr>
               ))}
+              {rows.length === 0 && (
+                <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Sin registros</td></tr>
+              )}
             </tbody>
           </table>
         </div>
