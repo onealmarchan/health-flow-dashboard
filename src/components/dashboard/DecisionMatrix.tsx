@@ -64,20 +64,24 @@ function PriorityMatrix() {
         <h3 className="text-lg font-semibold text-foreground">Matriz de Prioridades</h3>
         <p className="text-sm text-muted-foreground">Especialidades por urgencia e impacto</p>
       </div>
-      <div className="relative">
-        <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap">
-          Urgencia →
+      <div className="grid grid-cols-[auto_1fr] gap-3 items-stretch">
+        {/* Eje Urgencia (columna angosta propia) */}
+        <div className="flex items-center">
+          <div className="-rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap px-1">
+            Urgencia →
+          </div>
         </div>
-        <div className="pl-6">
+        {/* Grid principal */}
+        <div className="pl-2">
           <div className="text-center text-xs font-medium text-muted-foreground mb-2">Impacto →</div>
-          <div className="grid grid-cols-3 gap-2 mb-2">
+          <div className="grid grid-cols-3 gap-3 mb-2">
             <div className="text-center text-xs font-medium text-success">Alto</div>
             <div className="text-center text-xs font-medium text-warning">Medio</div>
             <div className="text-center text-xs font-medium text-destructive">Bajo</div>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[0, 1, 2].map(rowIdx => (
-              <div key={rowIdx} className="grid grid-cols-3 gap-2">
+              <div key={rowIdx} className="grid grid-cols-3 gap-3">
                 {grid[rowIdx].map((cells, colIdx) => (
                   <div key={`${rowIdx}-${colIdx}`} className="min-h-[70px] rounded-lg border-2 p-2 bg-secondary/50 border-border">
                     <div className="flex flex-wrap gap-1">
@@ -99,6 +103,7 @@ function PriorityMatrix() {
     </div>
   );
 }
+
 
 function InterconsultaMatrix() {
   return (
