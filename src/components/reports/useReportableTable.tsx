@@ -83,6 +83,7 @@ export function useReportableTable<T>({ module, visibleRows }: Args<T>) {
       showAdvanced={supportsAdvanced}
       onExport={exportRows}
       onAdvancedAll={() => openAdvanced('all')}
+      onImport={module.onImport}
     />
   );
 

@@ -1,17 +1,67 @@
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
 import { EarlyDetectionGauge } from './EarlyDetectionGauge';
 import { AgeGroupTrendChart } from './AgeGroupTrendChart';
-
-const retentionData = [
-  { name: 'Cardiología', value: 78, fill: 'hsl(var(--chart-1))' },
-  { name: 'Pediatría', value: 85, fill: 'hsl(var(--chart-2))' },
-  { name: 'Dermatología', value: 62, fill: 'hsl(var(--chart-3))' },
-  { name: 'Neurología', value: 71, fill: 'hsl(var(--chart-4))' },
-  { name: 'Traumatología', value: 55, fill: 'hsl(var(--chart-5))' },
-];
+import { useCitas } from '@/services/useCitas';
+import { useMedicos } from '@/services/useMedicos';
+import { useSesionesMedicas } from '@/services/useJornadas';
 
 function RetentionView() {
+  const { data: citas = [] } = useCitas();
+  const { data: medicos = [] } = useMedicos();
+  const { data: sesiones = [] } = useSesionesMedicas();
+
+  const retentionData = useMemo(() => {
+    // Map sessions to doctors
+    const sesMap = new Map();
+    sesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
+
+    // Map doctors to specialties
+    const medMap = new Map();
+    medicos.forEach((m: any) => medMap.set(String(m.pk_num_medico_ministerio_salud ?? m.id), m?.especialidad?.nombre || 'General'));
+
+    // Count total patients per specialty and successive patients per specialty
+    const specTotalPatients: Record<string, Set<string>> = {};
+    const specSuccessivePatients: Record<string, Set<string>> = {};
+
+    citas.forEach((c: any) => {
+      const pId = String(c.fk_ps_b001_num_paciente ?? '');
+      const sId = String(c.fk_cm_b005_num_sesion ?? '');
+      if (!pId) return;
+
+      const mId = sesMap.get(sId);
+      const spec = medMap.get(mId) || 'General';
+
+      if (!specTotalPatients[spec]) specTotalPatients[spec] = new Set();
+      if (!specSuccessivePatients[spec]) specSuccessivePatients[spec] = new Set();
+
+      // Assuming "sucesivo" or multiple appointments means retention
+      // We can check if patient already exists in total, then they are successive
+      if (specTotalPatients[spec].has(pId)) {
+        specSuccessivePatients[spec].add(pId);
+      }
+      specTotalPatients[spec].add(pId);
+    });
+
+    const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+    const results = Object.keys(specTotalPatients).map((spec, idx) => {
+      const total = specTotalPatients[spec].size;
+      const retained = specSuccessivePatients[spec].size;
+      const retentionRate = total > 0 ? Math.round((retained / total) * 100) : 0;
+      
+      return {
+        name: spec,
+        value: retentionRate,
+        fill: colors[idx % colors.length]
+      };
+    }).filter(d => d.value > 0);
+
+    if (results.length === 0) {
+       return [{ name: 'Sin retención', value: 100, fill: 'hsl(var(--muted))' }];
+    }
+    return results;
+  }, [citas, medicos, sesiones]);
   return (
     <div>
       <div className="mb-4 pr-8">

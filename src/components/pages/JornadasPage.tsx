@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2, TrendingUp, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,8 @@ import { getSemaforo } from '@/lib/kpi-semaforos';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AvailabilityTable, DoctorAvailability, AvailabilityEvent } from './jornadas/AvailabilityTable';
+import { useMedicos, useEspecialidades } from '@/services/useMedicos';
+import { buildCreateSesionPayload, useSesionesMedicas, useCreateSesion, useUpdateSesion, useDeleteSesion, useBloqueos, useCreateBloqueo, useUpdateBloqueo, useDeleteBloqueo } from '@/services/useJornadas';
 
 
 const doctors = [
@@ -25,7 +27,19 @@ const doctors = [
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const DAYS_HEAD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const DAYS_FULL = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const RAZONES = ['Vacaciones', 'Permiso', 'Reposo', 'Cirugía', 'Capacitación', 'Congreso', 'Mantenimiento', 'Rotación', 'Otro'];
+const RAZONES_API: Record<string, 'vacaciones' | 'permiso' | 'reposo' | 'cirugia' | 'capacitacion' | 'congreso' | 'bloqueo_manual' | 'mantenimiento' | 'rotacion'> = {
+  'Vacaciones': 'vacaciones',
+  'Permiso': 'permiso',
+  'Reposo': 'reposo',
+  'Cirugía': 'cirugia',
+  'Capacitación': 'capacitacion',
+  'Congreso': 'congreso',
+  'Mantenimiento': 'mantenimiento',
+  'Rotación': 'rotacion',
+  'Otro': 'bloqueo_manual',
+};
+
+const RAZONES_DISPLAY = Object.keys(RAZONES_API);
 const TURNOS = ['Mañana', 'Tarde', 'Noche'] as const;
 type TurnoTipo = typeof TURNOS[number];
 type TurnoOrAll = TurnoTipo | 'Todos los Turnos';
@@ -118,6 +132,31 @@ const currentYear = today.getFullYear();
 const YEARS = Array.from({ length: 3 }, (_, i) => currentYear + i);
 
 export function JornadasPage() {
+  // API Hooks
+  const { data: apiMedicos = [] } = useMedicos();
+  const { data: apiEspecialidades = [] } = useEspecialidades();
+  const { data: apiSesiones = [] } = useSesionesMedicas();
+  const { data: apiBloqueos = [] } = useBloqueos();
+  
+  const createSesion = useCreateSesion();
+  const updateSesion = useUpdateSesion();
+  const deleteSesion = useDeleteSesion();
+  const createBloqueo = useCreateBloqueo();
+  const updateBloqueo = useUpdateBloqueo();
+  const deleteBloqueo = useDeleteBloqueo();
+
+  // Transform API data to local format
+  const doctors = useMemo(() => apiMedicos.map((m: any) => {
+    const specId = String(m.fk_cm_a001_num_especialidad || m.especialidad?.id || '');
+    const spec = apiEspecialidades.find((e: any) => String(e.id || e.pk_num_especialidad) === specId);
+    return {
+      mpps: String(m.pk_num_medico_ministerio_salud || m.id),
+      nombre: m.nombre || m.nombres || '',
+      apellido: m.apellido || m.apellidos || '',
+      especialidad: spec?.nombre || m.especialidad?.nombre || 'General',
+    };
+  }), [apiMedicos, apiEspecialidades]);
+
   const [showModal, setShowModal] = useState(false);
   const [selectedMpps, setSelectedMpps] = useState('');
   const [calMonth, setCalMonth] = useState(today.getMonth());
@@ -128,6 +167,7 @@ export function JornadasPage() {
 
   // Persisted store per doctor (used by AvailabilityTable)
   const [store, setStore] = useState<Record<string, DoctorStore>>({});
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'sessions' | 'blocks'>('all');
 
   // Filter for blocks table (Q4)
   const [blockTurnoFilter, setBlockTurnoFilter] = useState<'Todos' | TurnoOrAll>('Todos');
@@ -287,8 +327,26 @@ export function JornadasPage() {
       toast.error(err);
       return;
     }
-    setRows(prev => prev.map(r => (r.id === id ? { ...r, saved: true } : r)));
-    toast.success('Sesión guardada');
+    
+    // Guardar sesión médica en el API
+    const dayName = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][new Date(row.iso).getDay()];
+    const payload = buildCreateSesionPayload({
+      medicoId: Number(selectedMpps),
+      turno: row.turnoTipo,
+      diaSemana: dayName,
+      horaInicio: row.horaInicio,
+      horaFin: row.horaFin,
+    });
+
+    createSesion.mutate(payload, {
+      onSuccess: () => {
+        setRows(prev => prev.map(r => (r.id === id ? { ...r, saved: true } : r)));
+        toast.success('Sesión guardada en el sistema');
+      },
+      onError: (error: any) => {
+        toast.error(error?.response?.data?.message || 'Error al guardar sesión');
+      }
+    });
   };
 
   const removeRow = (id: string) => {
@@ -304,42 +362,59 @@ export function JornadasPage() {
     !!blockModal.turno;
 
   const doSaveBlock = () => {
-    if (!isBlockValid) return;
+    if (!isBlockValid || !selectedMpps) return;
+    
+    const razonApi = RAZONES_API[blockModal.razon] || 'bloqueo_manual';
+    
     if (blockModal.editingId) {
-      setBloqueos(prev =>
-        prev.map(b =>
-          b.id === blockModal.editingId
-            ? {
-                ...b,
-                fechaInicio: blockModal.fechaInicio,
-                fechaFin: blockModal.fechaFin,
-                razon: blockModal.razon,
-                observaciones: blockModal.observaciones,
-                turno: blockModal.turno,
-              }
-            : b,
-        ),
-      );
-      toast.success('Bloqueo actualizado');
+      // Actualizar bloqueo existente
+      updateBloqueo.mutate({
+        id: Number(blockModal.editingId),
+        data: {
+          fecha_inicio: blockModal.fechaInicio,
+          fecha_fin: blockModal.fechaFin,
+          razon_bloqueo: razonApi,
+          motivo_bloqueo: blockModal.observaciones,
+        }
+      }, {
+        onSuccess: () => {
+          toast.success('Bloqueo actualizado');
+          setBlockModal(s => ({ ...s, open: false }));
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || 'Error al actualizar bloqueo');
+        }
+      });
     } else {
-      const nuevo: Bloqueo = {
-        id: `BLQ-${Date.now()}`,
-        fechaInicio: blockModal.fechaInicio,
-        fechaFin: blockModal.fechaFin,
-        razon: blockModal.razon,
-        observaciones: blockModal.observaciones,
-        turno: blockModal.turno,
-      };
-      setBloqueos(prev => [...prev, nuevo]);
-      toast.success('Bloqueo registrado');
+      // Crear nuevo bloqueo
+      createBloqueo.mutate({
+        fk_cm_b001_num_medico_ministerio_salud: Number(selectedMpps),
+        fecha_inicio: blockModal.fechaInicio,
+        fecha_fin: blockModal.fechaFin,
+        razon_bloqueo: razonApi,
+        motivo_bloqueo: blockModal.observaciones,
+      }, {
+        onSuccess: () => {
+          toast.success('Bloqueo registrado en el sistema');
+          setBlockModal(s => ({ ...s, open: false }));
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || 'Error al crear bloqueo');
+        }
+      });
     }
-    setBlockModal(s => ({ ...s, open: false }));
   };
 
   const doDeleteBlock = (id: string) => {
-    setBloqueos(prev => prev.filter(b => b.id !== id));
-    toast.success('Bloqueo eliminado');
-    setConfirmDeleteBlock(null);
+    deleteBloqueo.mutate(Number(id), {
+      onSuccess: () => {
+        toast.success('Bloqueo eliminado');
+        setConfirmDeleteBlock(null);
+      },
+      onError: (error: any) => {
+        toast.error(error?.response?.data?.message || 'Error al eliminar bloqueo');
+      }
+    });
   };
 
   const filteredBloqueos = useMemo(() => {
@@ -363,6 +438,8 @@ export function JornadasPage() {
       setConfirmSaveAll(false);
       return;
     }
+    // Los datos ya se guardaron individualmente en el API a través de saveRow y doSaveBlock
+    // Solo actualizamos el store local para la tabla de disponibilidad
     setStore(prev => ({
       ...prev,
       [selectedMpps]: {
@@ -370,7 +447,7 @@ export function JornadasPage() {
         bloqueos: [...bloqueos],
       },
     }));
-    toast.success('Jornadas y bloqueos guardados');
+    toast.success('Jornadas configuradas correctamente');
     setShowModal(false);
     resetWorkingState();
     setConfirmSaveAll(false);
@@ -396,39 +473,54 @@ export function JornadasPage() {
   // ---- Build availability data for unified table ----
   const availabilityData: DoctorAvailability[] = useMemo(() => {
     return doctors.map(d => {
-      const data = store[d.mpps];
       const events: AvailabilityEvent[] = [];
-      if (data) {
-        // Group sessions by turno + horario
-        const sessionMap = new Map<string, AvailabilityEvent & { kind: 'session' }>();
-        for (const r of data.rows) {
-          if (!r.turnoTipo || !r.horaInicio || !r.horaFin) continue;
-          const key = `${r.turnoTipo}-${r.horaInicio}-${r.horaFin}`;
-          const dayName = DAYS_FULL[(new Date(r.iso).getDay() + 6) % 7];
-          const existing = sessionMap.get(key);
-          if (existing) {
-            if (!existing.days.includes(dayName)) existing.days.push(dayName);
-          } else {
-            sessionMap.set(key, {
-              kind: 'session',
-              turno: r.turnoTipo,
-              horaInicio: r.horaInicio,
-              horaFin: r.horaFin,
-              days: [dayName],
-            });
-          }
-        }
-        events.push(...sessionMap.values());
-        for (const b of data.bloqueos) {
-          events.push({
-            kind: 'block',
-            razon: b.razon,
-            fechaInicio: b.fechaInicio,
-            fechaFin: b.fechaFin,
-            turno: b.turno,
+      
+      // Obtener sesiones del médico desde el API
+      const medicoSesiones = apiSesiones.filter((s: any) => 
+        String(s.fk_cm_b001_num_medico_ministerio_salud) === d.mpps
+      );
+      
+      // Group sessions by turno + horario
+      const sessionMap = new Map<string, AvailabilityEvent & { kind: 'session' }>();
+      for (const s of medicoSesiones) {
+        const turno = s.turno === 'mañana' ? 'Mañana' : s.turno === 'tarde' ? 'Tarde' : 'Noche';
+        const key = `${turno}-${s.hora_inicio}-${s.hora_fin}`;
+        const dayName = s.dias_semana;
+        const existing = sessionMap.get(key);
+        if (existing) {
+          if (!existing.days.includes(dayName)) existing.days.push(dayName);
+        } else {
+          sessionMap.set(key, {
+            kind: 'session',
+            turno,
+            horaInicio: s.hora_inicio,
+            horaFin: s.hora_fin,
+            days: [dayName],
           });
         }
       }
+      events.push(...sessionMap.values());
+      
+      // Obtener bloqueos del médico desde el API
+      const medicoBloqueos = apiBloqueos.filter((b: any) => 
+        String(b.fk_cm_b001_num_medico_ministerio_salud) === d.mpps
+      );
+      
+      for (const b of medicoBloqueos) {
+        const turnoDisplay = b.razon_bloqueo === 'vacaciones' ? 'Todos los Turnos' 
+          : b.turno === 'mañana' ? 'Mañana' 
+          : b.turno === 'tarde' ? 'Tarde' 
+          : b.turno === 'noche' ? 'Noche' 
+          : 'Todos los Turnos';
+        events.push({
+          kind: 'block',
+          razon: b.razon_bloqueo,
+          fechaInicio: b.fecha_inicio,
+          fechaFin: b.fecha_fin,
+          turno: turnoDisplay,
+        });
+      }
+      
       return {
         mpps: d.mpps,
         nombre: d.nombre,
@@ -437,7 +529,7 @@ export function JornadasPage() {
         events,
       };
     });
-  }, [store]);
+  }, [doctors, apiSesiones, apiBloqueos]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -462,29 +554,35 @@ export function JornadasPage() {
         const bloqueosPct = totalBlocks > 0 ? (bloqueados / totalBlocks) * 100 : 0;
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MetricCard
-              title="% Ocupación de Agenda"
-              value={`${ocupacionPct.toFixed(0)}%`}
-              subtitle="Bloques ocupados / totales"
-              icon={Calendar}
-              semaforo={getSemaforo('ocupacionAgenda', ocupacionPct)}
-              trend={{ value: 0, isPositive: true }}
-            />
-            <MetricCard
-              title="% Bloqueos de Agenda"
-              value={`${bloqueosPct.toFixed(0)}%`}
-              subtitle="Bloqueos manuales / totales"
-              icon={ShieldOff}
-              semaforo={getSemaforo('bloqueosAgenda', bloqueosPct)}
-              trend={{ value: 0, isPositive: false }}
-            />
+            <div role="button" tabIndex={0} onClick={() => setAvailabilityFilter('sessions')} onKeyDown={() => setAvailabilityFilter('sessions')}
+              className="cursor-pointer">
+              <MetricCard
+                title="% Ocupación de Agenda"
+                value={`${ocupacionPct.toFixed(0)}%`}
+                subtitle="Bloques ocupados / totales"
+                icon={Calendar}
+                semaforo={getSemaforo('ocupacionAgenda', ocupacionPct)}
+                trend={{ value: 0, isPositive: true }}
+              />
+            </div>
+            <div role="button" tabIndex={0} onClick={() => setAvailabilityFilter('blocks')} onKeyDown={() => setAvailabilityFilter('blocks')}
+              className="cursor-pointer">
+              <MetricCard
+                title="% Bloqueos de Agenda"
+                value={`${bloqueosPct.toFixed(0)}%`}
+                subtitle="Bloqueos manuales / totales"
+                icon={ShieldOff}
+                semaforo={getSemaforo('bloqueosAgenda', bloqueosPct)}
+                trend={{ value: 0, isPositive: false }}
+              />
+            </div>
           </div>
         );
       })()}
 
 
       {/* Unified Availability Table (replaces old "Jornadas Registradas") */}
-      <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} />
+      <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} filter={availabilityFilter} onFilterChange={setAvailabilityFilter} />
 
       {/* Add Jornada Modal — 4 cuadrantes */}
       <Dialog open={showModal} onOpenChange={setShowModal}>
@@ -881,7 +979,7 @@ export function JornadasPage() {
               <Select value={blockModal.razon} onValueChange={v => setBlockModal(s => ({ ...s, razon: v }))}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar razón" /></SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
-                  {RAZONES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                  {RAZONES_DISPLAY.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

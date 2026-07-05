@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import type { Especialista } from '@/data/especialistasStore';
 import { META, divergingColor, severityLabel } from './utils';
+
+export type Especialista = {
+  id: number;
+  mpps: string;
+  nombre: string;
+  apellido: string;
+  especialidad: string;
+  pacientes: number;
+  telefono: string;
+  disponible: boolean;
+  fechaIngreso: string;
+  createdAt: number;
+};
 
 interface Props {
   specialists: Especialista[];

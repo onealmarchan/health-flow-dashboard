@@ -1,4 +1,8 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useLogout } from '@/services/useAuth';
+import { clearAuthToken } from '@/services/apiClient';
+import { useNotificaciones, useMarkNotificacionAsRead, useDeleteNotificacion, useClearAllNotificaciones } from '@/services/useNotificaciones';
 import { User, Sun, Moon, Bell } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -22,16 +26,36 @@ const initialNotifications: NotificationItem[] = [
 
 export function Header() {
   const { mode, toggleMode, transitionTick } = useTheme();
+  const navigate = useNavigate();
+  const logout = useLogout();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(initialNotifications);
+  const { data: apiNotifications = [] } = useNotificaciones();
+  const markAsRead = useMarkNotificacionAsRead();
+  const deleteNot = useDeleteNotificacion();
+  const clearAll = useClearAllNotificaciones();
+
+  // Map API payload to local NotificationItem shape
+  const notifications: NotificationItem[] = (apiNotifications || []).map((n: any) => ({
+    id: Number(n.id ?? n.pk_num_notificacion ?? n.pk_num_mensaje ?? 0),
+    title: n.titulo || n.title || n.asunto || n.message || String(n.id),
+    description: n.descripcion || n.description || n.body || n.mensaje || '',
+    time: n.tiempo || n.time || n.createdAt ? new Date(n.createdAt).toLocaleString() : '—',
+    type: (n.tipo || n.type || 'update') as NotificationItem['type'],
+    read: Boolean(n.leido || n.read || n.visto),
+  }));
 
   const unreadCount = notifications.filter(item => !item.read).length;
 
   const handleSelectNotification = (n: NotificationItem) => {
-    setNotifications(cur => cur.map(i => (i.id === n.id ? { ...i, read: true } : i)));
+    if (!n.read) markAsRead.mutate(n.id);
   };
-  const markAllAsRead = () => setNotifications(cur => cur.map(i => ({ ...i, read: true })));
-  const clearAllNotifications = () => setNotifications([]);
+  const markAllAsRead = () => {
+    // Mark each unread as read via API if available
+    notifications.filter(n => !n.read).forEach(n => markAsRead.mutate(n.id));
+  };
+  const clearAllNotifications = () => {
+    clearAll.mutate();
+  };
 
   const isDark = mode === 'dark';
 
@@ -65,9 +89,12 @@ export function Header() {
                   <div className="px-3 py-6 text-center text-sm text-muted-foreground">No hay notificaciones.</div>
                 ) : (
                   notifications.map(n => (
-                    <DropdownMenuItem key={n.id} onClick={() => handleSelectNotification(n)}
+                    <DropdownMenuItem
+                      key={n.id}
+                      onClick={() => handleSelectNotification(n)}
                       className={cn('flex flex-col items-start gap-1 cursor-pointer rounded-md px-3 py-2',
-                        n.read ? 'text-muted-foreground' : 'bg-accent/40 text-accent-foreground')}>
+                        n.read ? 'text-muted-foreground' : 'bg-accent/40 text-accent-foreground')}
+                    >
                       <div className="flex w-full items-start justify-between gap-3">
                         <span className={cn('text-sm', !n.read && 'font-semibold')}>{n.title}</span>
                         <span className="shrink-0 text-xs text-muted-foreground">{n.time}</span>
@@ -123,10 +150,24 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">Configuración</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer text-destructive">Cerrar Sesión</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer">Configuración</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="cursor-pointer text-destructive"
+                  onClick={() => {
+                    logout.mutate(undefined, {
+                      onSuccess: () => {
+                        try { clearAuthToken(); } catch (e) {}
+                        navigate('/login');
+                      },
+                      onError: () => {
+                        try { clearAuthToken(); } catch (e) {}
+                        navigate('/login');
+                      }
+                    });
+                  }}
+                >Cerrar Sesión</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

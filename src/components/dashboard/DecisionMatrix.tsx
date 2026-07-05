@@ -1,10 +1,49 @@
 import { useMemo } from 'react';
 import { KPIWrapper } from './KPIWrapper';
 import { DivergingBar } from '@/components/pages/especialistas/DivergingBar';
-import { useEspecialistas } from '@/data/especialistasStore';
+import { useMedicos } from '@/services/useMedicos';
+import { useCitas } from '@/services/useCitas';
+import { useSesionesMedicas } from '@/services/useJornadas';
 
 function DivergingBarView() {
-  const specialists = useEspecialistas();
+  const { data: apiMedicos = [] } = useMedicos();
+  const { data: apiCitas = [] } = useCitas();
+  const { data: apiSesiones = [] } = useSesionesMedicas();
+  
+  const specialists = useMemo(() => {
+    // Map sessions to doctors to count patients per doctor
+    const sesMap = new Map();
+    apiSesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
+    
+    const docPatients = new Map<string, Set<string>>();
+    apiCitas.forEach((c: any) => {
+      const pId = String(c.fk_ps_b001_num_paciente ?? '');
+      const sId = String(c.fk_cm_b005_num_sesion ?? '');
+      if (!pId) return;
+      const mId = sesMap.get(sId);
+      if (mId) {
+        if (!docPatients.has(mId)) docPatients.set(mId, new Set());
+        docPatients.get(mId)!.add(pId);
+      }
+    });
+
+    return apiMedicos.map((m: any, idx: number) => {
+      const mId = String(m.pk_num_medico_ministerio_salud ?? m.id ?? '');
+      return {
+        id: m.id || idx,
+        mpps: m.mpps || mId || '',
+        nombre: m.nombre || m.nombres || '',
+        apellido: m.apellido || m.apellidos || '',
+        especialidad: m.especialidad?.nombre || 'General',
+        pacientes: docPatients.get(mId)?.size || 0,
+        telefono: m.telefono || '',
+        disponible: true,
+        fechaIngreso: '',
+        createdAt: Date.now()
+      };
+    });
+  }, [apiMedicos, apiCitas, apiSesiones]);
+
   return (
     <div>
       <div className="mb-4 pr-8">
@@ -16,137 +55,34 @@ function DivergingBarView() {
   );
 }
 
-interface MatrixCell {
-  label: string;
-  value: number;
-  urgency: 'high' | 'medium' | 'low';
-  impact: 'high' | 'medium' | 'low';
-}
-
-const matrixData: MatrixCell[] = [
-  { label: 'Cardiología', value: 45, urgency: 'high', impact: 'high' },
-  { label: 'Pediatría', value: 78, urgency: 'medium', impact: 'high' },
-  { label: 'Dermatología', value: 32, urgency: 'low', impact: 'medium' },
-  { label: 'Traumatología', value: 56, urgency: 'high', impact: 'medium' },
-  { label: 'Medicina General', value: 120, urgency: 'medium', impact: 'medium' },
-  { label: 'Oftalmología', value: 28, urgency: 'low', impact: 'low' },
-  { label: 'Neurología', value: 34, urgency: 'high', impact: 'high' },
-  { label: 'Ginecología', value: 65, urgency: 'medium', impact: 'high' },
-  { label: 'Psiquiatría', value: 42, urgency: 'medium', impact: 'medium' },
-];
-
-const interconsultaData = [
-  { from: 'Cardiología', to: 'Neurología', current: 12, previous: 10 },
-  { from: 'Pediatría', to: 'Dermatología', current: 8, previous: 6 },
-  { from: 'Medicina General', to: 'Cardiología', current: 25, previous: 22 },
-  { from: 'Traumatología', to: 'Neurología', current: 15, previous: 18 },
-  { from: 'Ginecología', to: 'Pediatría', current: 10, previous: 9 },
-];
-
-const urgencyColors = {
-  high: 'bg-destructive/20 border-destructive/40 text-destructive',
-  medium: 'bg-warning/20 border-warning/40 text-warning',
-  low: 'bg-success/20 border-success/40 text-success',
-};
-
 function PriorityMatrix() {
-  const grid = useMemo(() => {
-    const g: MatrixCell[][][] = [[[], [], []], [[], [], []], [[], [], []]];
-    const uM = { high: 0, medium: 1, low: 2 };
-    const iM = { high: 0, medium: 1, low: 2 };
-    matrixData.forEach(c => g[uM[c.urgency]][iM[c.impact]].push(c));
-    return g;
-  }, []);
-
   return (
     <div>
       <div className="mb-4 pr-8">
         <h3 className="text-lg font-semibold text-foreground">Matriz de Prioridades</h3>
-        <p className="text-sm text-muted-foreground">Especialidades por urgencia e impacto</p>
+        <p className="text-sm text-muted-foreground">No disponible (requiere módulo de diagnósticos clínicos)</p>
       </div>
-      <div className="grid grid-cols-[auto_1fr] gap-3 items-stretch">
-        {/* Eje Urgencia (columna angosta propia) */}
-        <div className="flex items-center">
-          <div className="-rotate-90 text-xs font-medium text-muted-foreground whitespace-nowrap px-1">
-            Urgencia →
-          </div>
-        </div>
-        {/* Grid principal */}
-        <div className="pl-2">
-          <div className="text-center text-xs font-medium text-muted-foreground mb-2">Impacto →</div>
-          <div className="grid grid-cols-3 gap-3 mb-2">
-            <div className="text-center text-xs font-medium text-success">Alto</div>
-            <div className="text-center text-xs font-medium text-warning">Medio</div>
-            <div className="text-center text-xs font-medium text-destructive">Bajo</div>
-          </div>
-          <div className="space-y-3">
-            {[0, 1, 2].map(rowIdx => (
-              <div key={rowIdx} className="grid grid-cols-3 gap-3">
-                {grid[rowIdx].map((cells, colIdx) => (
-                  <div key={`${rowIdx}-${colIdx}`} className="min-h-[70px] rounded-lg border-2 p-2 bg-secondary/50 border-border">
-                    <div className="flex flex-wrap gap-1">
-                      {cells.map(cell => (
-                        <div key={cell.label}
-                          className={`px-2 py-1 rounded text-xs font-medium border ${urgencyColors[cell.urgency]}`}
-                          title={`${cell.label}: ${cell.value} pacientes`}>
-                          {cell.label.substring(0, 4)}<span className="ml-1 opacity-70">{cell.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="h-[200px] flex items-center justify-center border-2 border-dashed border-border rounded-lg bg-secondary/20">
+        <span className="text-muted-foreground">Sin datos clínicos suficientes</span>
       </div>
     </div>
   );
 }
-
 
 function InterconsultaMatrix() {
   return (
     <div>
       <div className="mb-4 pr-8">
         <h3 className="text-lg font-semibold text-foreground">Matriz de Interconsulta</h3>
-        <p className="text-sm text-muted-foreground">Remisiones entre especialidades vs periodo anterior</p>
+        <p className="text-sm text-muted-foreground">No disponible (remisiones origen-destino no registradas)</p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left p-2 text-muted-foreground">Origen</th>
-              <th className="text-left p-2 text-muted-foreground">Destino</th>
-              <th className="text-center p-2 text-muted-foreground">Actual</th>
-              <th className="text-center p-2 text-muted-foreground">Anterior</th>
-              <th className="text-center p-2 text-muted-foreground">Variación</th>
-            </tr>
-          </thead>
-          <tbody>
-            {interconsultaData.map((row, idx) => {
-              const variation = ((row.current / row.previous) * 100 - 100).toFixed(1);
-              const isPositive = row.current >= row.previous;
-              return (
-                <tr key={idx} className="border-b border-border/50 hover:bg-secondary/50">
-                  <td className="p-2 font-medium text-foreground">{row.from}</td>
-                  <td className="p-2 text-foreground">{row.to}</td>
-                  <td className="p-2 text-center text-foreground">{row.current}</td>
-                  <td className="p-2 text-center text-muted-foreground">{row.previous}</td>
-                  <td className="p-2 text-center">
-                    <span className={isPositive ? 'text-warning' : 'text-success'}>
-                      {isPositive ? '+' : ''}{variation}%
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      <div className="h-[200px] flex items-center justify-center border-2 border-dashed border-border rounded-lg bg-secondary/20">
+        <span className="text-muted-foreground">Sin datos de interconsulta</span>
       </div>
     </div>
   );
 }
+
 
 export function DecisionMatrix() {
   return (

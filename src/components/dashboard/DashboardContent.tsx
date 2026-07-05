@@ -10,8 +10,8 @@ import { PatientTable } from './PatientTable';
 import { Button } from '@/components/ui/button';
 import { KPIConfigModal, KPIConfigValue } from './KPIConfigModal';
 import { KPI_CATALOG } from './kpiCatalog';
-import { useDemoStore } from '@/store/useDemoStore';
 import { getSemaforo } from '@/lib/kpi-semaforos';
+import { useDashboardMetrics } from '@/services/useDashboard';
 
 const SLOT_COMPONENTS = [
   AgeTreeMap,
@@ -33,50 +33,40 @@ export function DashboardContent() {
   const [config, setConfig] = useState<KPIConfigValue>({ types: 'random', count: 5 });
   const [showConfig, setShowConfig] = useState(false);
 
-  const patients = useDemoStore(s => s.patients);
-  const appointments = useDemoStore(s => s.appointments);
-  const especialistas = useDemoStore(s => s.especialistas);
+  const { data: dashData, isLoading } = useDashboardMetrics();
 
   const metrics = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    const todayAppts = appointments.filter(a => a.date === today);
-    const totalToday = todayAppts.length || appointments.length;
-    const confirmed = todayAppts.filter(a => a.status === 'confirmada').length;
-    const citasHoyPct = totalToday > 0 ? (confirmed / totalToday) * 100 : 0;
-
-    const totalConsultas = appointments.filter(a => a.status !== 'cancelada').length;
-    const totalPacientes = patients.length;
-
-    // Carga promedio: desviación % de la media de pacientes/especialista vs meta 250.
-    const META = 250;
-    const cargaMedia = especialistas.length > 0
-      ? especialistas.reduce((s, e) => s + e.pacientes, 0) / especialistas.length
-      : 0;
-    const desviacionCarga = META > 0 ? ((cargaMedia - META) / META) * 100 : 0;
-
-    // % Urgencias: mock — proporción de citas 'pendiente' sobre total (proxy de urgencias).
-    const urgenciasPct = appointments.length > 0
-      ? (appointments.filter(a => a.status === 'pendiente').length / appointments.length) * 100
-      : 0;
-
+    // If endpoints are mocked/empty, use safe defaults
+    const fallback = { total: 0, change: 0, percentage: 0 };
+    const citas = dashData?.citasHoy || fallback;
+    const consultas = dashData?.consultasMensuales || fallback;
+    const pacientes = dashData?.totalPacientes || fallback;
+    const ocupacion = dashData?.ocupacionAgenda || fallback;
+    // We are mapping the backend endpoints to the UI cards as best as possible
+    // Backend may need adjustments to provide exactly what the UI needs
+    
+    // For now, we mock the delta values for the visual trends if backend doesn't provide them
     const deltaFor = (curr: number, seed: string) => {
       const prev = baseline(seed, curr);
-      return ((curr - prev) / prev) * 100;
+      return curr === 0 ? 0 : ((curr - prev) / prev) * 100;
     };
 
+    const cargaMedia = 250; // default meta
+    const desviacionCarga = 0; // default 0
+
     return {
-      citasHoyPct,
-      citasHoyDelta: deltaFor(citasHoyPct, 'citas'),
-      totalConsultas,
-      consultasDelta: deltaFor(totalConsultas, 'consultas'),
-      totalPacientes,
-      pacientesDelta: deltaFor(totalPacientes, 'pacientes'),
-      cargaMedia: Math.round(cargaMedia),
-      desviacionCarga,
-      urgenciasPct,
-      urgenciasDelta: deltaFor(urgenciasPct, 'urgencias'),
+      citasHoyPct: citas.percentage || 0,
+      citasHoyDelta: citas.change || deltaFor(citas.percentage || 0, 'citas'),
+      totalConsultas: consultas.total || 0,
+      consultasDelta: consultas.change || deltaFor(consultas.total || 0, 'consultas'),
+      totalPacientes: pacientes.total || 0,
+      pacientesDelta: pacientes.change || deltaFor(pacientes.total || 0, 'pacientes'),
+      cargaMedia: cargaMedia,
+      desviacionCarga: desviacionCarga,
+      urgenciasPct: ocupacion.percentage || 0,
+      urgenciasDelta: ocupacion.change || deltaFor(ocupacion.percentage || 0, 'urgencias'),
     };
-  }, [patients, appointments, especialistas]);
+  }, [dashData]);
 
   const eligibleSlots = (() => {
     if (config.types === 'random') return [1, 2, 3, 4, 5];
@@ -89,6 +79,19 @@ export function DashboardContent() {
                visibleSlots.length === 2 ? 'lg:grid-cols-2' :
                visibleSlots.length === 3 ? 'lg:grid-cols-3' :
                                             'lg:grid-cols-2';
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-[120px] bg-card border border-border rounded-xl"></div>
+          ))}
+        </div>
+        <div className="h-[400px] bg-card border border-border rounded-xl"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">

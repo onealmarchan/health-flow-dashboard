@@ -1,31 +1,9 @@
+import { useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
-
-const monthlyDiseaseData = [
-  { month: 'Ene', gripe: 18.5, covid: 12.3, hepatitis: 5.2, otras: 64.0 },
-  { month: 'Feb', gripe: 20.1, covid: 10.8, hepatitis: 4.8, otras: 64.3 },
-  { month: 'Mar', gripe: 25.0, covid: 15.2, hepatitis: 6.1, otras: 53.7 },
-  { month: 'Abr', gripe: 22.3, covid: 13.1, hepatitis: 5.5, otras: 59.1 },
-  { month: 'May', gripe: 19.8, covid: 14.5, hepatitis: 6.8, otras: 58.9 },
-  { month: 'Jun', gripe: 16.2, covid: 11.0, hepatitis: 4.2, otras: 68.6 },
-];
-
-const reconsultaData = [
-  { month: 'Ene', cardio: 12, neuro: 8, pediatria: 5, trauma: 15 },
-  { month: 'Feb', cardio: 14, neuro: 10, pediatria: 6, trauma: 12 },
-  { month: 'Mar', cardio: 11, neuro: 12, pediatria: 8, trauma: 18 },
-  { month: 'Abr', cardio: 16, neuro: 9, pediatria: 4, trauma: 14 },
-  { month: 'May', cardio: 13, neuro: 11, pediatria: 7, trauma: 16 },
-  { month: 'Jun', cardio: 15, neuro: 10, pediatria: 5, trauma: 13 },
-];
-
-const trimestralData = [
-  { trimestre: 'Q1 2023', cardio: 100, neuro: 80, pediatria: 120 },
-  { trimestre: 'Q2 2023', cardio: 110, neuro: 85, pediatria: 115 },
-  { trimestre: 'Q3 2023', cardio: 105, neuro: 92, pediatria: 130 },
-  { trimestre: 'Q4 2023', cardio: 120, neuro: 88, pediatria: 125 },
-  { trimestre: 'Q1 2024', cardio: 130, neuro: 95, pediatria: 140 },
-];
+import { useCitas } from '@/services/useCitas';
+import { useMedicos } from '@/services/useMedicos';
+import { useSesionesMedicas } from '@/services/useJornadas';
 
 const chartStyle = {
   grid: { strokeDasharray: "3 3", stroke: 'hsl(var(--border))', vertical: false as const },
@@ -42,28 +20,67 @@ function DiseaseDistribution() {
     <div>
       <div className="mb-4 pr-8">
         <h3 className="text-lg font-semibold text-foreground">Distribución de Enfermedades</h3>
-        <p className="text-sm text-muted-foreground">Porcentaje mensual por diagnóstico</p>
+        <p className="text-sm text-muted-foreground">No disponible (requiere módulo de diagnósticos clínicos)</p>
       </div>
-      <div className="h-[280px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={monthlyDiseaseData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid {...chartStyle.grid} />
-            <XAxis dataKey="month" tick={chartStyle.xAxis} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
-            <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} unit="%" />
-            <Tooltip contentStyle={chartStyle.tooltip} />
-            <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="gripe" stackId="a" fill="hsl(var(--chart-1))" name="Gripe" />
-            <Bar dataKey="covid" stackId="a" fill="hsl(var(--chart-2))" name="COVID" />
-            <Bar dataKey="hepatitis" stackId="a" fill="hsl(var(--chart-4))" name="Hepatitis" />
-            <Bar dataKey="otras" stackId="a" fill="hsl(var(--chart-3))" name="Otras" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="h-[200px] flex items-center justify-center border-2 border-dashed border-border rounded-lg bg-secondary/20">
+        <span className="text-muted-foreground">Sin datos clínicos suficientes</span>
       </div>
     </div>
   );
 }
 
 function ReconsultaFrequency() {
+  const { data: citas = [] } = useCitas();
+  const { data: medicos = [] } = useMedicos();
+  const { data: sesiones = [] } = useSesionesMedicas();
+
+  const reconsultaData = useMemo(() => {
+    const sesMap = new Map();
+    sesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
+    const medMap = new Map();
+    medicos.forEach((m: any) => medMap.set(String(m.pk_num_medico_ministerio_salud ?? m.id), m?.especialidad?.nombre || 'General'));
+
+    const counts: Record<string, Record<string, number>> = {};
+    const patientSeen: Record<string, Set<string>> = {};
+
+    citas.forEach((c: any) => {
+      const month = (c.fecha || c.date || '').substring(0, 7);
+      if (!month) return;
+      const pId = String(c.fk_ps_b001_num_paciente ?? '');
+      const sId = String(c.fk_cm_b005_num_sesion ?? '');
+      const spec = medMap.get(sesMap.get(sId)) || 'General';
+
+      if (!counts[month]) counts[month] = {};
+      if (!counts[month][spec]) counts[month][spec] = 0;
+      
+      const key = `${spec}-${pId}`;
+      if (!patientSeen[key]) {
+        patientSeen[key] = new Set();
+      } else {
+        // Already seen this patient in this specialty = reconsulta
+        counts[month][spec]++;
+      }
+      patientSeen[key].add(c.id);
+    });
+
+    const results = Object.keys(counts).sort().map(month => ({
+      month,
+      ...counts[month]
+    }));
+    return results.length ? results : [{ month: 'Sin datos', General: 0 }];
+  }, [citas, medicos, sesiones]);
+
+  // Extract all unique specialties to generate lines
+  const specialties = useMemo(() => {
+    const specs = new Set<string>();
+    reconsultaData.forEach(d => {
+      Object.keys(d).forEach(k => { if (k !== 'month') specs.add(k); });
+    });
+    return Array.from(specs);
+  }, [reconsultaData]);
+
+  const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
   return (
     <div>
       <div className="mb-4 pr-8">
@@ -78,10 +95,9 @@ function ReconsultaFrequency() {
             <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={chartStyle.tooltip} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Line type="monotone" dataKey="cardio" stroke="hsl(var(--chart-1))" name="Cardiología" strokeWidth={2} />
-            <Line type="monotone" dataKey="neuro" stroke="hsl(var(--chart-2))" name="Neurología" strokeWidth={2} />
-            <Line type="monotone" dataKey="pediatria" stroke="hsl(var(--chart-3))" name="Pediatría" strokeWidth={2} />
-            <Line type="monotone" dataKey="trauma" stroke="hsl(var(--chart-4))" name="Traumatología" strokeWidth={2} />
+            {specialties.map((spec, idx) => (
+              <Line key={spec} type="monotone" dataKey={spec} stroke={colors[idx % colors.length]} name={spec} strokeWidth={2} />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -90,6 +106,51 @@ function ReconsultaFrequency() {
 }
 
 function TrimestralTrend() {
+  const { data: citas = [] } = useCitas();
+  const { data: medicos = [] } = useMedicos();
+  const { data: sesiones = [] } = useSesionesMedicas();
+
+  const trimestralData = useMemo(() => {
+    const sesMap = new Map();
+    sesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
+    const medMap = new Map();
+    medicos.forEach((m: any) => medMap.set(String(m.pk_num_medico_ministerio_salud ?? m.id), m?.especialidad?.nombre || 'General'));
+
+    const counts: Record<string, Record<string, number>> = {};
+    
+    citas.forEach((c: any) => {
+      const dateStr = c.fecha || c.date || '';
+      if (!dateStr) return;
+      const month = parseInt(dateStr.substring(5, 7));
+      const year = dateStr.substring(0, 4);
+      const quarter = Math.ceil(month / 3);
+      const qStr = `Q${quarter} ${year}`;
+      
+      const sId = String(c.fk_cm_b005_num_sesion ?? '');
+      const spec = medMap.get(sesMap.get(sId)) || 'General';
+
+      if (!counts[qStr]) counts[qStr] = {};
+      if (!counts[qStr][spec]) counts[qStr][spec] = 0;
+      counts[qStr][spec]++;
+    });
+
+    const results = Object.keys(counts).sort().map(q => ({
+      trimestre: q,
+      ...counts[q]
+    }));
+    return results.length ? results : [{ trimestre: 'Sin datos', General: 0 }];
+  }, [citas, medicos, sesiones]);
+
+  const specialties = useMemo(() => {
+    const specs = new Set<string>();
+    trimestralData.forEach(d => {
+      Object.keys(d).forEach(k => { if (k !== 'trimestre') specs.add(k); });
+    });
+    return Array.from(specs);
+  }, [trimestralData]);
+
+  const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
   return (
     <div>
       <div className="mb-4 pr-8">
@@ -104,9 +165,9 @@ function TrimestralTrend() {
             <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={chartStyle.tooltip} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="cardio" fill="hsl(var(--chart-1))" name="Cardiología" />
-            <Bar dataKey="neuro" fill="hsl(var(--chart-2))" name="Neurología" />
-            <Bar dataKey="pediatria" fill="hsl(var(--chart-3))" name="Pediatría" />
+            {specialties.map((spec, idx) => (
+              <Bar key={spec} dataKey={spec} fill={colors[idx % colors.length]} name={spec} maxBarSize={40} />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>

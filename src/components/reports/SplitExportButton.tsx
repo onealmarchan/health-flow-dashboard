@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -11,6 +13,7 @@ interface Props {
   showAdvanced?: boolean;
   onExport: (additional: AdditionalFormat[]) => void;
   onAdvancedAll?: () => void;
+  onImport?: (rows: any[]) => void;
 }
 
 export function SplitExportButton({ showAdvanced = false, onExport, onAdvancedAll }: Props) {
@@ -79,6 +82,36 @@ export function SplitExportButton({ showAdvanced = false, onExport, onAdvancedAl
               </DropdownMenuItem>
             </>
           )}
+          <DropdownMenuSeparator />
+          <div className="px-2 py-1.5 text-[11px] font-semibold uppercase text-muted-foreground">Importar</div>
+          <DropdownMenuItem asChild>
+            <label className="w-full cursor-pointer">
+              <input
+                type="file"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  try {
+                    const data = await f.arrayBuffer();
+                    const wb = XLSX.read(data, { type: 'array' });
+                    const first = wb.SheetNames[0];
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[first], { defval: '' });
+                    if (onImport) onImport(json as any[]);
+                    else toast.info('Importación no soportada para este módulo');
+                  } catch (err) {
+                    console.error('Import error', err);
+                    toast.error('No se pudo leer el archivo. Asegúrate que sea CSV/XLSX válido.');
+                  } finally {
+                    // reset input
+                    (e.target as HTMLInputElement).value = '';
+                  }
+                }}
+              />
+              <div className="px-3 py-1.5 text-sm text-foreground cursor-pointer">Importar desde archivo...</div>
+            </label>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

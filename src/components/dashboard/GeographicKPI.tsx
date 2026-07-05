@@ -1,37 +1,25 @@
+import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
+import { usePacientes } from '@/services/usePacientes';
+import { useComunidades } from '@/services/useComunidades';
 
-const densityData = [
-  { comunidad: 'Centro', casos: 85, poblacion: 5000, densidad: 1.7 },
-  { comunidad: 'Norte', casos: 62, poblacion: 4200, densidad: 1.48 },
-  { comunidad: 'Sur', casos: 98, poblacion: 6100, densidad: 1.61 },
-  { comunidad: 'Este', casos: 45, poblacion: 3800, densidad: 1.18 },
-  { comunidad: 'Oeste', casos: 72, poblacion: 4500, densidad: 1.6 },
-];
-
-const concentrationData = [
-  { zona: 'Centro', actual: 85, anterior: 72, indice: 18.1 },
-  { zona: 'Norte', actual: 62, anterior: 58, indice: 6.9 },
-  { zona: 'Sur', actual: 98, anterior: 105, indice: -6.7 },
-  { zona: 'Este', actual: 45, anterior: 40, indice: 12.5 },
-  { zona: 'Oeste', actual: 72, anterior: 68, indice: 5.9 },
-];
-
-const growthData = [
-  { zona: 'Centro', q1: 65, q2: 72, q3: 80, q4: 85 },
-  { zona: 'Norte', q1: 50, q2: 55, q3: 58, q4: 62 },
-  { zona: 'Sur', q1: 90, q2: 95, q3: 105, q4: 98 },
-  { zona: 'Este', q1: 35, q2: 38, q3: 40, q4: 45 },
-  { zona: 'Oeste', q1: 60, q2: 65, q3: 68, q4: 72 },
-];
-
-const vulnerabilityData = [
-  { comunidad: 'Centro', encamados: 12, visitados: 800, tasa: 1.5 },
-  { comunidad: 'Norte', encamados: 8, visitados: 650, tasa: 1.23 },
-  { comunidad: 'Sur', encamados: 18, visitados: 900, tasa: 2.0 },
-  { comunidad: 'Este', encamados: 6, visitados: 550, tasa: 1.09 },
-  { comunidad: 'Oeste', encamados: 10, visitados: 700, tasa: 1.43 },
-];
+// Shared hook that returns patients already joined with community data
+function usePatientsWithComunidad() {
+  const { data: pacientes = [] } = usePacientes();
+  const { data: comunidades = [] } = useComunidades();
+  return useMemo(() => {
+    const map = new Map<string, any>();
+    comunidades.forEach((c: any) => {
+      const id = String(c.pk_num_comunidad ?? c.id ?? '');
+      if (id) map.set(id, c);
+    });
+    return pacientes.map((p: any) => {
+      const com = map.get(String(p.fk_ps_a001_num_comunidad ?? ''));
+      return { ...p, _com: com };
+    });
+  }, [pacientes, comunidades]);
+}
 
 const ts = {
   grid: { strokeDasharray: "3 3" as const, stroke: 'hsl(var(--border))', vertical: false as const },
@@ -40,6 +28,21 @@ const ts = {
 };
 
 function DensityView() {
+  const patients = usePatientsWithComunidad();
+  const densityData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    patients.forEach((p: any) => {
+      const c = p._com?.nombre_comunidad || p._com?.nombre || 'Desconocida';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    const results = Object.entries(counts).map(([comunidad, casos]) => ({
+      comunidad,
+      casos,
+      densidad: casos
+    }));
+    return results.length ? results : [{ comunidad: 'Sin datos', densidad: 0 }];
+  }, [patients]);
+
   return (
     <div>
       <div className="mb-4 pr-8">
@@ -51,9 +54,9 @@ function DensityView() {
           <BarChart data={densityData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
             <CartesianGrid {...ts.grid} />
             <XAxis dataKey="comunidad" tick={ts.xTick} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
-            <YAxis tick={ts.xTick} axisLine={false} tickLine={false} unit="%" />
+            <YAxis tick={ts.xTick} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={ts.tooltip} />
-            <Bar dataKey="densidad" fill="hsl(var(--chart-1))" name="Densidad %" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="densidad" fill="hsl(var(--chart-1))" name="Casos Totales" radius={[4, 4, 0, 0]} maxBarSize={50} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -62,6 +65,21 @@ function DensityView() {
 }
 
 function ConcentrationView() {
+  const patients = usePatientsWithComunidad();
+  const concentrationData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    patients.forEach((p: any) => {
+      const c = p._com?.municipio || p._com?.nombre_comunidad || 'Desconocido';
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    const results = Object.entries(counts).map(([zona, actual]) => ({
+      zona,
+      actual,
+      anterior: 0
+    }));
+    return results.length ? results : [{ zona: 'Sin datos', actual: 0, anterior: 0 }];
+  }, [patients]);
+
   return (
     <div>
       <div className="mb-4 pr-8">
@@ -76,8 +94,8 @@ function ConcentrationView() {
             <YAxis tick={ts.xTick} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={ts.tooltip} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="actual" fill="hsl(var(--chart-1))" name="Actual" />
-            <Bar dataKey="anterior" fill="hsl(var(--chart-3))" name="Anterior" />
+            <Bar dataKey="actual" fill="hsl(var(--chart-1))" name="Actual" maxBarSize={40} />
+            <Bar dataKey="anterior" fill="hsl(var(--chart-3))" name="Anterior" maxBarSize={40} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -90,28 +108,35 @@ function GrowthView() {
     <div>
       <div className="mb-4 pr-8">
         <h3 className="text-lg font-semibold text-foreground">Crecimiento Epidemiológico</h3>
-        <p className="text-sm text-muted-foreground">Tasa de crecimiento por zona (trimestral)</p>
+        <p className="text-sm text-muted-foreground">No disponible (requiere historial extendido)</p>
       </div>
-      <div className="h-[260px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={growthData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid {...ts.grid} />
-            <XAxis dataKey="zona" tick={ts.xTick} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
-            <YAxis tick={ts.xTick} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={ts.tooltip} />
-            <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="q1" fill="hsl(var(--chart-1))" name="Q1" />
-            <Bar dataKey="q2" fill="hsl(var(--chart-2))" name="Q2" />
-            <Bar dataKey="q3" fill="hsl(var(--chart-3))" name="Q3" />
-            <Bar dataKey="q4" fill="hsl(var(--chart-4))" name="Q4" />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="h-[200px] flex items-center justify-center border-2 border-dashed border-border rounded-lg bg-secondary/20">
+        <span className="text-muted-foreground">Datos históricos insuficientes</span>
       </div>
     </div>
   );
 }
 
 function VulnerabilityView() {
+  const patients = usePatientsWithComunidad();
+  const vulnerabilityData = useMemo(() => {
+    const counts: Record<string, { total: number, encamados: number }> = {};
+    patients.forEach((p: any) => {
+      const c = p._com?.nombre_comunidad || p._com?.nombre || 'Desconocida';
+      if (!counts[c]) counts[c] = { total: 0, encamados: 0 };
+      counts[c].total++;
+      if (p.estado_paciente === 'encamado' || p.estado_paciente === 'discapacitado') {
+        counts[c].encamados++;
+      }
+    });
+    const results = Object.entries(counts).map(([comunidad, stats]) => ({
+      comunidad,
+      encamados: stats.encamados,
+      tasa: stats.total > 0 ? (stats.encamados / stats.total) * 100 : 0
+    }));
+    return results.length ? results : [{ comunidad: 'Sin datos', encamados: 0, tasa: 0 }];
+  }, [patients]);
+
   return (
     <div>
       <div className="mb-4 pr-8">

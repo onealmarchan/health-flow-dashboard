@@ -10,7 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
-import type { Especialista } from '@/data/especialistasStore';
+
+export type Especialista = {
+  id: number;
+  mpps: string;
+  nombre: string;
+  apellido: string;
+  especialidad: string;
+  pacientes: number;
+  telefono: string;
+  disponible: boolean;
+  fechaIngreso: string;
+  createdAt: number;
+};
 import { downloadCSV, downloadXLSX, downloadPDF } from './exporters';
 
 type ReportType = 'total' | 'menor' | 'mayor' | 'promedio';

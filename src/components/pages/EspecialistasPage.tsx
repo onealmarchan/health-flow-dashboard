@@ -8,27 +8,60 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
-import { useEspecialistas, addEspecialista } from '@/data/especialistasStore';
+import { useMedicos, useCreateMedico, useUpdateMedico, useDeleteMedico, useEspecialidades, useCreateEspecialidad } from '@/services/useMedicos';
 import { EspecialistasExportDrawer } from '@/components/reports/EspecialistasExportDrawer';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { Pencil, Trash2 } from 'lucide-react';
 
-type ModalView = 'closed' | 'search' | 'new';
+type ModalView = 'closed' | 'search' | 'new' | 'edit';
 
 export function EspecialistasPage() {
-  const specialists = useEspecialistas();
+  const { data: apiMedicos = [] } = useMedicos();
+  const createMedico = useCreateMedico();
+  const updateMedico = useUpdateMedico();
+  const deleteMedico = useDeleteMedico();
+  const { data: apiEspecialidades = [] } = useEspecialidades();
+  const createEspecialidad = useCreateEspecialidad();
+
+  const especialidadMap = useMemo(() => {
+    const map = new Map<string, any>();
+    apiEspecialidades.forEach((e: any) => {
+      const id = String(e.id ?? e.pk_num_especialidad ?? '');
+      if (id) map.set(id, e);
+    });
+    return map;
+  }, [apiEspecialidades]);
+
+  const specialists = useMemo(() => apiMedicos.map((m: any) => {
+    const specId = String(m.fk_cm_a001_num_especialidad || m.especialidad?.id || '');
+    const spec = especialidadMap.get(specId);
+    return {
+      id: m.id || m.pk_num_medico_ministerio_salud,
+      mpps: String(m.pk_num_medico_ministerio_salud || ''),
+      nombre: m.nombre || m.nombres || '',
+      apellido: m.apellido || m.apellidos || '',
+      especialidad: spec?.nombre || m.especialidad?.nombre || 'General',
+      especialidadId: specId,
+      pacientes: m.carga_paciente || 0,
+      telefono: m.telefono || '',
+      disponible: true,
+    };
+  }), [apiMedicos, especialidadMap]);
+
   const [modalView, setModalView] = useState<ModalView>('closed');
   const [searchQuery, setSearchQuery] = useState('');
   const [cardSearch, setCardSearch] = useState('');
   const [filterEspecialidad, setFilterEspecialidad] = useState<string>('todas');
   const [filterDisponible, setFilterDisponible] = useState<string>('todos');
-  const [newSpec, setNewSpec] = useState({ mpps: '', nombre: '', apellido: '', telefono: '', especialidad: '' });
-  const [especialidades, setEspecialidades] = useState<string[]>([
-    'Cardiología', 'Pediatría', 'Dermatología', 'Neurología', 'Traumatología', 'Ginecología',
-  ]);
+  const [newSpec, setNewSpec] = useState({ id: 0, mpps: '', nombre: '', apellido: '', telefono: '', especialidadId: '', carga_paciente: 0 });
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
   const [exportOpen, setExportOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+
+  const especialidades = useMemo(() => apiEspecialidades, [apiEspecialidades]);
 
   const filteredSpecialists = useMemo(() => specialists.filter(s =>
     s.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -52,37 +85,78 @@ export function EspecialistasPage() {
     });
   }, [specialists, cardSearch, filterEspecialidad, filterDisponible]);
 
-  const handleSave = () => {
-    if (!newSpec.nombre.trim() || !newSpec.apellido.trim() || !newSpec.mpps.trim()) {
-      toast.error('MPPS, nombre y apellido son obligatorios');
+  const handleSave = async () => {
+    if (!newSpec.nombre.trim() || !newSpec.apellido.trim() || !newSpec.mpps.trim() || !newSpec.especialidadId || !newSpec.telefono.trim()) {
+      toast.error('MPPS, nombre, apellido, teléfono y especialidad son obligatorios');
       return;
     }
-    addEspecialista({
-      mpps: newSpec.mpps,
-      nombre: newSpec.nombre,
-      apellido: newSpec.apellido,
-      especialidad: newSpec.especialidad || 'Medicina General',
-      telefono: newSpec.telefono,
-      pacientes: 0,
-      disponible: true,
-      fechaIngreso: new Date().toISOString().slice(0, 10),
-    });
-    toast.success('Especialista registrado');
-    setModalView('closed');
-    setNewSpec({ mpps: '', nombre: '', apellido: '', telefono: '', especialidad: '' });
+    try {
+      const payload = {
+        pk_num_medico_ministerio_salud: Number(newSpec.mpps.replace(/\D/g, '')),
+        nombre: newSpec.nombre,
+        apellido: newSpec.apellido,
+        telefono: newSpec.telefono,
+        fk_cm_a001_num_especialidad: Number(newSpec.especialidadId),
+        carga_paciente: newSpec.carga_paciente || 0
+      };
+
+      if (modalView === 'edit' && newSpec.id) {
+        await updateMedico.mutateAsync({ id: newSpec.id, data: payload });
+        toast.success('Especialista actualizado con éxito');
+      } else {
+        await createMedico.mutateAsync(payload as any);
+        toast.success('Especialista registrado con éxito');
+      }
+      setModalView('closed');
+      setNewSpec({ id: 0, mpps: '', nombre: '', apellido: '', telefono: '', especialidadId: '', carga_paciente: 0 });
+    } catch (e: any) {
+      console.error("Error saving medico:", e);
+      if (e?.response) {
+        const msg = e.response.data?.message;
+        toast.error(Array.isArray(msg) ? msg[0] : (msg || 'Error del servidor al guardar'));
+      } else {
+        toast.error(`Error interno: ${e?.message || e}`);
+      }
+    }
   };
 
-  const handleSaveEspecialidad = () => {
+  const handleEdit = (s: any) => {
+    setNewSpec({
+      id: s.id,
+      mpps: s.mpps,
+      nombre: s.nombre,
+      apellido: s.apellido,
+      telefono: s.telefono,
+      especialidadId: String(s.especialidadId),
+      carga_paciente: s.pacientes
+    });
+    setModalView('edit');
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDelete) return;
+    try {
+      await deleteMedico.mutateAsync(confirmDelete);
+      toast.success('Especialista eliminado');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Error al eliminar');
+    } finally {
+      setConfirmDelete(null);
+    }
+  };
+
+  const handleSaveEspecialidad = async () => {
     const nombre = newEspecialidad.nombre.trim();
     if (!nombre) { toast.error('El nombre de la especialidad es obligatorio'); return; }
-    if (especialidades.some(e => e.toLowerCase() === nombre.toLowerCase())) {
-      toast.error('Esa especialidad ya existe'); return;
+    try {
+      await createEspecialidad.mutateAsync({ nombre } as any);
+      toast.success('Especialidad registrada');
+      setNewEspecialidad({ nombre: '', descripcion: '' });
+      setSpecModalOpen(false);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg[0] : (msg || 'Error al registrar especialidad'));
     }
-    setEspecialidades([...especialidades, nombre]);
-    setNewSpec(s => ({ ...s, especialidad: nombre }));
-    setNewEspecialidad({ nombre: '', descripcion: '' });
-    setSpecModalOpen(false);
-    toast.success('Especialidad registrada');
   };
 
   return (
@@ -119,7 +193,7 @@ export function EspecialistasPage() {
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover border border-border z-[60]">
                 <SelectItem value="todas">Todas</SelectItem>
-                {especialidades.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                {especialidades.map((e: any, idx: number) => <SelectItem key={e.id || e.pk_num_especialidad || idx} value={e.nombre}>{e.nombre}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -159,10 +233,18 @@ export function EspecialistasPage() {
               <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
             </div>
 
-            <div className="pt-3 border-t border-border">
+            <div className="pt-3 border-t border-border flex justify-between items-center">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4" />
                 <span>{s.telefono}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/20" onClick={() => handleEdit(s)}>
+                  <Pencil className="h-4 w-4 text-primary" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive" onClick={() => setConfirmDelete(s.id)}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
@@ -223,11 +305,11 @@ export function EspecialistasPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={modalView === 'new'} onOpenChange={(o) => !o && setModalView('search')}>
+      <Dialog open={modalView === 'new' || modalView === 'edit'} onOpenChange={(o) => !o && setModalView('search')}>
         <DialogContent className="bg-card border border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Nuevo Especialista</DialogTitle>
-            <DialogDescription className="text-muted-foreground">Registre un nuevo especialista médico</DialogDescription>
+            <DialogTitle className="text-foreground">{modalView === 'new' ? 'Nuevo Especialista' : 'Editar Especialista'}</DialogTitle>
+            <DialogDescription className="text-muted-foreground">{modalView === 'new' ? 'Registre un nuevo especialista médico' : 'Modifique los datos del especialista'}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -252,14 +334,15 @@ export function EspecialistasPage() {
             <div className="space-y-2">
               <Label className="text-foreground">Especialidad</Label>
               <div className="flex gap-2">
-                <Select value={newSpec.especialidad} onValueChange={v => setNewSpec({ ...newSpec, especialidad: v })}>
+                <Select value={newSpec.especialidadId} onValueChange={v => setNewSpec({ ...newSpec, especialidadId: v })}>
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Seleccione una especialidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    {especialidades.map(e => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
-                    ))}
+                    {especialidades.map((e: any, idx: number) => {
+                      const uid = String(e.id || e.pk_num_especialidad || idx);
+                      return <SelectItem key={uid} value={uid}>{e.nombre}</SelectItem>;
+                    })}
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" size="icon" onClick={() => setSpecModalOpen(true)} title="Agregar especialidad">
@@ -271,7 +354,7 @@ export function EspecialistasPage() {
 
           <ModalFormButtons
             onSave={handleSave}
-            onSaveAndAnother={() => { handleSave(); setModalView('new'); }}
+            onSaveAndAnother={modalView === 'new' ? () => { handleSave(); setModalView('new'); } : undefined}
             onCancel={() => setModalView('search')}
           />
         </DialogContent>
@@ -305,6 +388,15 @@ export function EspecialistasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Eliminar Especialista"
+        description="¿Está seguro que desea eliminar a este especialista del registro? Esta acción no se puede deshacer."
+        onConfirm={handleDelete}
+        confirmText="Eliminar"
+        confirmVariant="destructive"
+      />
     </div>
   );
 }

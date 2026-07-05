@@ -9,9 +9,28 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { usePatients, type Patient } from '@/data/patientsStore';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
+import { usePacientes } from '@/services/usePacientes';
+import { useComunidades } from '@/services/useComunidades';
+
+export type Patient = {
+  num: number | string;
+  ci: string;
+  nombres: string;
+  apellidos: string;
+  fechaNac: string;
+  sexo: string;
+  direccion: string;
+  telefono: string;
+  nacionalidad: string;
+  estadoCivil: string;
+  estado: string;
+  comunidad: string;
+  estadoGeo: string;
+  municipio: string;
+  parroquia: string;
+};
 
 function calcAge(fechaNac: string): number {
   if (!fechaNac) return 0;
@@ -26,7 +45,39 @@ function calcAge(fechaNac: string): number {
 const sexoLabel = (s: string) => (s === 'M' ? 'Masculino' : s === 'F' ? 'Femenino' : s);
 
 export function PatientTable() {
-  const patients = usePatients();
+  const { data: apiPatients = [], isLoading } = usePacientes();
+  const { data: apiComunidades = [] } = useComunidades();
+
+  const comunidadMap = useMemo(() => {
+    const map = new Map<string, any>();
+    apiComunidades.forEach((c: any) => {
+      const id = String(c.pk_num_comunidad ?? c.id ?? '');
+      if (id) map.set(id, c);
+    });
+    return map;
+  }, [apiComunidades]);
+
+  const patients = useMemo(() => apiPatients.map((p: any, idx: number) => {
+    const comunidadId = String(p.fk_ps_a001_num_comunidad ?? '');
+    const com = comunidadMap.get(comunidadId);
+    return {
+      num: p.pk_num_paciente || p.id || String(idx + 1).padStart(4, '0'),
+      ci: p.ci || '',
+      nombres: p.nombres || '',
+      apellidos: p.apellidos || '',
+      fechaNac: p.fecha_nacimiento || p.fechaNac || '',
+      sexo: p.sexo === 'femenino' ? 'F' : p.sexo === 'masculino' ? 'M' : p.sexo || '',
+      direccion: p.direccion || '',
+      telefono: p.telefono || '',
+      nacionalidad: p.nacionalidad === 'venezolano' ? 'V' : p.nacionalidad === 'extranjero' ? 'E' : p.nacionalidad || '',
+      estadoCivil: p.estado_civil || '',
+      comunidad: com?.nombre_comunidad || com?.nombre || 'Desconocida',
+      estadoGeo: com?.estado || 'Desconocido',
+      municipio: com?.municipio || 'Desconocido',
+      parroquia: com?.parroquia || 'Desconocida',
+      estado: p.estado_paciente === 'activo' ? 'Activo' : p.estado_paciente === 'encamado' ? 'Encamado' : p.estado_paciente || 'Activo',
+    };
+  }), [apiPatients, comunidadMap]);
   const [search, setSearch] = useState('');
   const [estadoFilter, setEstadoFilter] = useState<string>('all');
   const [comunidadFilter, setComunidadFilter] = useState<string>('all');
@@ -78,6 +129,20 @@ export function PatientTable() {
   }), [patients]);
 
   const reports = useReportableTable({ module: reportModule, visibleRows: filtered });
+
+  if (isLoading) {
+    return (
+      <div className="chart-container animate-pulse">
+        <div className="h-8 w-48 bg-muted rounded mb-4"></div>
+        <div className="flex gap-4 mb-4">
+          <div className="h-10 w-48 bg-muted rounded"></div>
+          <div className="h-10 w-36 bg-muted rounded"></div>
+          <div className="h-10 w-36 bg-muted rounded"></div>
+        </div>
+        <div className="h-64 bg-muted/50 rounded w-full"></div>
+      </div>
+    );
+  }
 
   return (
     <>

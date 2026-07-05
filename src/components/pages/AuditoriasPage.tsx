@@ -4,9 +4,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
-import { historialMock, type AccionRealizada } from '@/data/historialStore';
 import { cn } from '@/lib/utils';
+import { useAuditorias } from '@/services/useAuditorias';
 
+export type AccionRealizada = 'Crear' | 'Editar' | 'Eliminar';
 
 const accionColors: Record<AccionRealizada, string> = {
   Crear: 'bg-success/20 text-success',
@@ -15,13 +16,49 @@ const accionColors: Record<AccionRealizada, string> = {
 };
 
 export function AuditoriasPage() {
+  const { data: rawAuditorias, isLoading } = useAuditorias();
+
+  // Backend may return a paginated object { data: [], total: N } or a plain array
+  const apiAuditorias: any[] = Array.isArray(rawAuditorias)
+    ? rawAuditorias
+    : Array.isArray((rawAuditorias as any)?.data)
+      ? (rawAuditorias as any).data
+      : [];
+
+  const historialMock = useMemo(() => apiAuditorias.map((a: any, idx: number) => {
+    // Build a human-readable summary from valorNuevo or valorAnterior
+    let cambioTexto = 'Sin detalles';
+    if (a.valorNuevo && typeof a.valorNuevo === 'object') {
+      const v = a.valorNuevo;
+      cambioTexto = v.titulo || v.nombre || v.descripcion || v.mensaje?.slice(0, 60) || JSON.stringify(v).slice(0, 80);
+    } else if (a.valorAnterior && typeof a.valorAnterior === 'object') {
+      const v = a.valorAnterior;
+      cambioTexto = v.titulo || v.nombre || v.descripcion || JSON.stringify(v).slice(0, 80);
+    }
+
+    return {
+      id: a.id || idx,
+      seccion: a.entidad || 'Sistema',
+      registroAfectado: a.entidadId ? `${a.entidad || ''} #${a.entidadId}` : 'N/A',
+      accion: a.accion === 'INSERT' ? 'Crear'
+        : a.accion === 'UPDATE' ? 'Editar'
+        : a.accion === 'DELETE' ? 'Eliminar'
+        : 'Editar',
+      cambio: cambioTexto,
+      responsable: a.usuarioId ? `Usuario #${a.usuarioId}` : a.dispositivo || 'Sistema',
+      fechaHora: a.fechaCreacion
+        ? new Date(a.fechaCreacion).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' })
+        : 'N/A',
+    };
+  }), [apiAuditorias]);
+
   const [search, setSearch] = useState('');
   const [filterSeccion, setFilterSeccion] = useState<string>('todas');
   const [filterAccion, setFilterAccion] = useState<string>('todas');
 
   const secciones = useMemo(
-    () => Array.from(new Set(historialMock.map(h => h.seccion))).sort(),
-    []
+    () => Array.from(new Set(historialMock.map((h: any) => h.seccion))).sort() as string[],
+    [historialMock]
   );
 
   const rows = useMemo(() => {

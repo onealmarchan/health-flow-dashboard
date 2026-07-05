@@ -25,6 +25,9 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
+import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma } from '@/services/useDiagnosticos';
+import { useCitas } from '@/services/useCitas';
+import { usePacientes } from '@/services/usePacientes';
 
 type Sintoma = { nombre: string; descripcion: string; gravedad: number };
 
@@ -32,6 +35,7 @@ type Diagnostico = {
   id: number;
   numCitaOrigen: string;
   paciente: string;
+  pacienteId: number;
   ci: string;
   nombres: string;
   apellidos: string;
@@ -42,67 +46,17 @@ type Diagnostico = {
   urgencia: boolean;
   sintomas: Sintoma[];
   enfermedad: { nombre: string; descripcion: string; cronico: boolean };
+  enfermedadId: number;
   critico: boolean;
   etapa: string;
   estado: string;
 };
 
-const mockCitas = [
-  { numCita: 'CITA-001', ci: 'V-12345678', nombres: 'Carlos', apellidos: 'Pérez', fechaCita: '2026-04-10' },
-  { numCita: 'CITA-002', ci: 'V-23456789', nombres: 'María', apellidos: 'González', fechaCita: '2026-04-12' },
-  { numCita: 'CITA-003', ci: 'V-34567890', nombres: 'Luis', apellidos: 'Rodríguez', fechaCita: '2026-04-15' },
-  { numCita: 'CITA-004', ci: 'V-45678901', nombres: 'Ana', apellidos: 'Martínez', fechaCita: '2026-04-18' },
-];
-
-const initialDiagnosticos: Diagnostico[] = [
-  {
-    id: 1,
-    numCitaOrigen: 'CITA-001',
-    paciente: 'Carlos Pérez',
-    ci: 'V-12345678',
-    nombres: 'Carlos',
-    apellidos: 'Pérez',
-    fechaCita: '2026-04-10',
-    fechaDiagnostico: '2026-04-10',
-    motivo: 'Dolor torácico recurrente',
-    tratamientoPrevio: 'Ninguno',
-    urgencia: true,
-    sintomas: [
-      { nombre: 'Dolor en el pecho', descripcion: 'Intermitente, de tipo opresivo', gravedad: 4 },
-      { nombre: 'Disnea', descripcion: 'Al esfuerzo moderado', gravedad: 3 },
-    ],
-    enfermedad: { nombre: 'Angina de pecho', descripcion: 'Sospecha de cardiopatía isquémica', cronico: true },
-    critico: true,
-    etapa: 'Inicial',
-    estado: 'Activo',
-  },
-  {
-    id: 2,
-    numCitaOrigen: 'CITA-002',
-    paciente: 'María González',
-    ci: 'V-23456789',
-    nombres: 'María',
-    apellidos: 'González',
-    fechaCita: '2026-04-12',
-    fechaDiagnostico: '2026-04-12',
-    motivo: 'Erupción cutánea',
-    tratamientoPrevio: 'Antihistamínico oral',
-    urgencia: false,
-    sintomas: [
-      { nombre: 'Prurito', descripcion: 'En zona de brazos', gravedad: 2 },
-      { nombre: 'Enrojecimiento', descripcion: 'Localizado', gravedad: 2 },
-    ],
-    enfermedad: { nombre: 'Dermatitis alérgica', descripcion: 'Reacción a contacto', cronico: false },
-    critico: false,
-    etapa: 'Avanzada',
-    estado: 'Resuelto',
-  },
-];
-
 const emptySintoma = (): Sintoma => ({ nombre: '', descripcion: '', gravedad: 3 });
 
 const emptyForm = () => ({
   numCitaOrigen: '',
+  pacienteId: 0,
   ci: '',
   nombres: '',
   apellidos: '',
@@ -112,6 +66,8 @@ const emptyForm = () => ({
   urgencia: false,
   sintomas: [emptySintoma()],
   enfermedad: { nombre: '', descripcion: '', cronico: false },
+  enfermedadId: 0,
+  citaId: 0,
 });
 
 // ---------- HealthMeter ----------
@@ -143,18 +99,87 @@ function HealthMeter({ value }: { value: number }) {
 }
 
 export function DiagnosticosPage() {
-  const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>(initialDiagnosticos);
+  // API Hooks
+  const { data: apiDiagnosticos = [] } = useDiagnosticos();
+  const { data: apiEnfermedades = [] } = useEnfermedades();
+  const { data: apiSintomas = [] } = useSintomas();
+  const { data: apiCitas = [] } = useCitas();
+  const { data: apiPacientes = [] } = usePacientes();
+  
+  const createDiagnostico = useCreateDiagnostico();
+  const deleteDiagnostico = useDeleteDiagnostico();
+  const createEnfermedad = useCreateEnfermedad();
+  const createSintoma = useCreateSintoma();
+
+  // Transform API data to local format
+  const diagnosticos: Diagnostico[] = useMemo(() => {
+    return apiDiagnosticos.map((d: any, idx: number) => {
+      const paciente = apiPacientes.find((p: any) => 
+        String(p.pk_num_paciente || p.id) === String(d.fk_ps_b001_num_paciente)
+      );
+      const enfermedad = apiEnfermedades.find((e: any) => 
+        String(e.id || e.pk_num_enfermedad) === String(d.fk_cm_a002_num_enfermedad)
+      );
+      const cita = apiCitas.find((c: any) => 
+        String(c.pk_num_cita_medica || c.pk_num_cita || c.id) === String(d.fk_cm_b002_num_cita_medica)
+      );
+      
+      return {
+        id: d.id || d.pk_num_diagnostico_enfermedad || idx + 1,
+        numCitaOrigen: `CITA-${cita?.pk_num_cita_medica || cita?.pk_num_cita || cita?.id || idx + 1}`,
+        paciente: paciente ? `${paciente.nombres || ''} ${paciente.apellidos || ''}`.trim() : 'Sin paciente',
+        pacienteId: d.fk_ps_b001_num_paciente || 0,
+        ci: paciente?.ci || 'N/D',
+        nombres: paciente?.nombres || '',
+        apellidos: paciente?.apellidos || '',
+        fechaCita: cita?.fecha || '',
+        fechaDiagnostico: d.fecha_diagnostico || new Date().toISOString().slice(0, 10),
+        motivo: '', // Se puede obtener del motivo de consulta relacionado
+        tratamientoPrevio: d.tratamiento || '',
+        urgencia: d.critico || false,
+        sintomas: [], // Se pueden obtener de la relación diagnóstico-síntoma
+        enfermedad: {
+          nombre: enfermedad?.nombre || 'Sin especificar',
+          descripcion: enfermedad?.descripcion || '',
+          cronico: enfermedad?.enfermedad_cronica || false,
+        },
+        enfermedadId: d.fk_cm_a002_num_enfermedad || 0,
+        critico: d.critico || false,
+        etapa: d.etapa || 'Inicial',
+        estado: 'Activo',
+      };
+    });
+  }, [apiDiagnosticos, apiPacientes, apiEnfermedades, apiCitas]);
+
   const [registerOpen, setRegisterOpen] = useState(false);
   const [viewing, setViewing] = useState<Diagnostico | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // Transform citas for selection dropdown
+  const citasDisponibles = useMemo(() => apiCitas.map((c: any, idx: number) => {
+    const paciente = apiPacientes.find((p: any) => 
+      String(p.pk_num_paciente || p.id) === String(c.fk_ps_b001_num_paciente)
+    );
+    return {
+      id: c.pk_num_cita_medica || c.pk_num_cita || c.id || idx + 1,
+      numCita: `CITA-${c.pk_num_cita_medica || c.pk_num_cita || c.id || idx + 1}`,
+      ci: paciente?.ci || 'N/D',
+      nombres: paciente?.nombres || '',
+      apellidos: paciente?.apellidos || '',
+      fechaCita: c.fecha || '',
+      pacienteId: c.fk_ps_b001_num_paciente,
+    };
+  }), [apiCitas, apiPacientes]);
+
   const handleCitaChange = (numCita: string) => {
-    const cita = mockCitas.find(c => c.numCita === numCita);
+    const cita = citasDisponibles.find((c: any) => c.numCita === numCita);
     if (cita) {
       setForm(f => ({
         ...f,
         numCitaOrigen: numCita,
+        citaId: Number(cita.id),
+        pacienteId: cita.pacienteId,
         ci: cita.ci,
         nombres: cita.nombres,
         apellidos: cita.apellidos,
@@ -187,33 +212,60 @@ export function DiagnosticosPage() {
   };
 
   const handleSave = () => {
+    if (!form.citaId || !form.pacienteId) {
+      toast.error('Debe seleccionar una cita válida');
+      return;
+    }
+    if (!form.enfermedad.nombre.trim()) {
+      toast.error('El nombre del diagnóstico final es obligatorio');
+      return;
+    }
+
     const avg =
       form.sintomas.length > 0
         ? form.sintomas.reduce((acc, s) => acc + (Number(s.gravedad) || 0), 0) / form.sintomas.length
         : 3;
-    const nuevo: Diagnostico = {
-      id: Date.now(),
-      numCitaOrigen: form.numCitaOrigen,
-      paciente: `${form.nombres} ${form.apellidos}`.trim(),
-      ci: form.ci,
-      nombres: form.nombres,
-      apellidos: form.apellidos,
-      fechaCita: form.fechaCita,
-      fechaDiagnostico: new Date().toISOString().slice(0, 10),
-      motivo: form.motivo,
-      tratamientoPrevio: form.tratamientoPrevio,
-      urgencia: form.urgencia,
-      sintomas: form.sintomas,
-      enfermedad: form.enfermedad,
-      critico: avg >= 4 || form.urgencia,
-      etapa: 'Inicial',
-      estado: 'Activo',
+
+    const crearDiagnostico = (enfermedadId: number) => {
+      createDiagnostico.mutate({
+        fk_ps_b001_num_paciente: form.pacienteId,
+        fk_cm_a002_num_enfermedad: enfermedadId,
+        fk_cm_b002_num_cita_medica: form.citaId,
+        critico: avg >= 4 || form.urgencia,
+        tratamiento: form.tratamientoPrevio,
+        etapa: (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada',
+        fecha_diagnostico: new Date().toISOString().slice(0, 10),
+      }, {
+        onSuccess: () => {
+          toast.success('Diagnóstico registrado exitosamente');
+          setForm(emptyForm());
+          setRegisterOpen(false);
+          setConfirmOpen(false);
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || 'Error al registrar diagnóstico');
+        }
+      });
     };
-    setDiagnosticos(d => [nuevo, ...d]);
-    setForm(emptyForm());
-    setRegisterOpen(false);
-    setConfirmOpen(false);
-    toast.success('Diagnóstico registrado');
+
+    // Si ya se seleccionó una enfermedad existente, usarla directamente
+    if (form.enfermedadId && form.enfermedadId > 0) {
+      crearDiagnostico(form.enfermedadId);
+    } else {
+      // Crear la enfermedad primero
+      createEnfermedad.mutate({
+        nombre: form.enfermedad.nombre,
+        enfermedad_cronica: form.enfermedad.cronico,
+        descripcion: form.enfermedad.descripcion,
+      }, {
+        onSuccess: (newEnfermedad: any) => {
+          crearDiagnostico(newEnfermedad.id || newEnfermedad.pk_num_enfermedad);
+        },
+        onError: (error: any) => {
+          toast.error(error?.response?.data?.message || 'Error al crear enfermedad');
+        }
+      });
+    }
   };
 
   const viewMeterValue = useMemo(() => {
@@ -363,7 +415,7 @@ export function DiagnosticosPage() {
                     <SelectValue placeholder="Seleccione una cita" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCitas.map(c => (
+                    {citasDisponibles.map((c: any) => (
                       <SelectItem key={c.numCita} value={c.numCita}>
                         {c.numCita} — {c.nombres} {c.apellidos}
                       </SelectItem>
@@ -467,10 +519,45 @@ export function DiagnosticosPage() {
               <h3 className="text-sm font-semibold text-foreground">Diagnóstico Final</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-foreground">Nombre</Label>
+                  <Label className="text-foreground">Buscar enfermedad existente</Label>
+                  <Select 
+                    value={form.enfermedadId ? String(form.enfermedadId) : ''} 
+                    onValueChange={(v) => {
+                      if (v === 'nueva') {
+                        setForm({ ...form, enfermedadId: 0, enfermedad: { nombre: '', descripcion: '', cronico: false } });
+                      } else {
+                        const enf = apiEnfermedades.find((e: any) => String(e.id || e.pk_num_enfermedad) === v);
+                        if (enf) {
+                          setForm({ 
+                            ...form, 
+                            enfermedadId: Number(v),
+                            enfermedad: { 
+                              nombre: enf.nombre, 
+                              descripcion: enf.descripcion || '', 
+                              cronico: enf.enfermedad_cronica || false 
+                            }
+                          });
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Seleccionar o escribir nueva" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="nueva">+ Nueva enfermedad</SelectItem>
+                      {apiEnfermedades.map((e: any) => (
+                        <SelectItem key={e.id || e.pk_num_enfermedad} value={String(e.id || e.pk_num_enfermedad)}>
+                          {e.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">Nombre {form.enfermedadId ? '(cargado)' : '(nueva)'}</Label>
                   <Input
                     value={form.enfermedad.nombre}
                     onChange={e => setForm({ ...form, enfermedad: { ...form.enfermedad, nombre: e.target.value } })}
+                    placeholder="Nombre de la enfermedad"
                   />
                 </div>
                 <div className="space-y-1">

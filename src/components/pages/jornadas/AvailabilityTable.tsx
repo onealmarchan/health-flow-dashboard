@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Edit, Search } from 'lucide-react';
+import { Link, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,8 @@ export interface DoctorAvailability {
 interface Props {
   data: DoctorAvailability[];
   onEdit: (mpps: string) => void;
+  filter?: 'all' | 'sessions' | 'blocks';
+  onFilterChange?: (f: 'all' | 'sessions' | 'blocks') => void;
 }
 
 type FilterMode = 'all' | 'sessions' | 'blocks';
@@ -53,8 +56,13 @@ function initials(nombre: string, apellido: string): string {
   return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
 }
 
-export function AvailabilityTable({ data, onEdit }: Props) {
-  const [filter, setFilter] = useState<FilterMode>('all');
+export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterChange }: Props) {
+  const [filterState, setFilterState] = useState<FilterMode>('all');
+  const filter = (propFilter as FilterMode) ?? filterState;
+  const setFilter = (f: FilterMode) => {
+    if (onFilterChange) onFilterChange(f);
+    setFilterState(f);
+  };
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -186,6 +194,27 @@ export function AvailabilityTable({ data, onEdit }: Props) {
                                 <span className="text-success/70 truncate ml-auto">
                                   {ev.days.join(', ')}
                                 </span>
+                                <button
+                                  type="button"
+                                  title="Copiar enlace de sesión"
+                                  onClick={() => {
+                                    try {
+                                      const id = typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2,8);
+                                      const url = `${window.location.origin}/shared/${id}`;
+                                      navigator.clipboard.writeText(url).then(() => {
+                                        // remember this shared id for this tab
+                                        try { localStorage.setItem('activeSharedId', id); } catch (e) {}
+                                        // notify user
+                                        alert('Enlace copiado al portapapeles');
+                                      });
+                                    } catch (e) {
+                                      console.error('copy link error', e);
+                                    }
+                                  }}
+                                  className="ml-2 p-1 rounded-md hover:bg-secondary/40"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
                               </div>
                             ) : (
                               <div

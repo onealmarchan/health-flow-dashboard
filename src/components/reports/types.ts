@@ -15,6 +15,8 @@ export interface ReportableModule<T> {
   metrics?: (rows: T[]) => Record<string, string | number>;
   /** Optional flavor for advanced sheet variant: 'citas' | 'diagnosticos' | undefined */
   advancedVariant?: 'citas' | 'diagnosticos';
+  /** Optional handler called when the user imports rows (parsed from CSV/XLSX). */
+  onImport?: (rows: any[]) => void;
 }
 
 export type ExportFormat = 'xlsx' | 'csv' | 'pdf' | 'docx';

@@ -4,12 +4,10 @@
  * (Sin meta 85%; los umbrales anteriores estaban mal.)
  */
 import { getSemaforo } from '@/lib/kpi-semaforos';
-import { useDemoStore } from '@/store/useDemoStore';
+import { useCitas } from '@/services/useCitas';
 
 function computeValue(totalConsultas: number): number {
-  // Mock proxy: variación pseudoaleatoria estable en función del total.
-  const base = 7 + ((totalConsultas * 13) % 8); // 7..14
-  return Math.round(base * 10) / 10;
+  return 0; // Datos reales: 0% hasta que haya diagnósticos tempranos en backend
 }
 
 function bandColor(v: number) {
@@ -20,7 +18,8 @@ function bandColor(v: number) {
 }
 
 export function EarlyDetectionGauge() {
-  const totalConsultas = useDemoStore(s => s.appointments.length);
+  const { data: citas = [] } = useCitas();
+  const totalConsultas = citas.length;
   const v = Math.max(0, Math.min(100, computeValue(totalConsultas)));
   const angle = -90 + (v / 100) * 180;
   const color = bandColor(v);

@@ -21,11 +21,11 @@ import { Label } from '@/components/ui/label';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { cn } from '@/lib/utils';
 
+import { useLogin, useRequestCode, useResetPassword } from '@/services/useAuth';
+
 type Mode = 'login' | 'recover';
 type RecoverStep = 'email' | 'otp' | 'newPassword';
 
-const VALID_EMAIL = 'admin@ejemplo.com';
-const VALID_PASSWORD = 'admin123';
 const OTP_DURATION_SECONDS = 15 * 60;
 
 function maskEmail(email: string): string {
@@ -48,12 +48,21 @@ function formatMMSS(totalSeconds: number): string {
 export default function Login() {
   const navigate = useNavigate();
 
+  // If already authenticated, redirect to dashboard
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (token) navigate('/dashboard');
+  }, [navigate]);
+
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [shake, setShake] = useState(false);
-  const [loading, setLoading] = useState(false);
+
+  const loginMutation = useLogin();
+  const requestCodeMutation = useRequestCode();
+  const resetPasswordMutation = useResetPassword();
 
   // Recovery flow
   const [recoverStep, setRecoverStep] = useState<RecoverStep>('email');
@@ -95,42 +104,44 @@ export default function Login() {
     window.setTimeout(() => setShake(false), 450);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
-    setLoading(true);
+    if (loginMutation.isPending) return;
 
-    if (email.trim().toLowerCase() === VALID_EMAIL && password === VALID_PASSWORD) {
+    try {
+      await loginMutation.mutateAsync({ email: email.trim(), password });
       toast.success('Autenticación exitosa', {
         icon: <CheckCircle2 className="w-4 h-4 text-success" />,
       });
-      window.setTimeout(() => navigate('/'), 600);
-      return;
+      window.setTimeout(() => navigate('/dashboard'), 600);
+    } catch (error: any) {
+      triggerShake();
+      const msg = error.response?.data?.message || 'Correo o contraseña incorrectos';
+      toast.error(msg);
     }
-
-    triggerShake();
-    toast.error('Correo o contraseña incorrectos');
-    setLoading(false);
   };
 
-  const handleSendCode = (e: React.FormEvent) => {
+  const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (requestCodeMutation.isPending) return;
     const trimmed = recoverEmail.trim();
     if (!trimmed.includes('@') || !trimmed.includes('.')) {
       triggerShake();
       toast.error('Correo inválido');
       return;
     }
-    const code = generateOtp();
-    generatedOtpRef.current = code;
-    setMaskedEmail(maskEmail(trimmed));
-    setOtpValue('');
-    setSecondsLeft(OTP_DURATION_SECONDS);
-    setExpired(false);
-    setRecoverStep('otp');
-    toast.success('Código de recuperación enviado');
-    // Demo helper: log code so it's testable
-    console.info('[DEMO OTP]', code);
+    try {
+      await requestCodeMutation.mutateAsync({ email: trimmed });
+      setMaskedEmail(maskEmail(trimmed));
+      setOtpValue('');
+      setSecondsLeft(OTP_DURATION_SECONDS);
+      setExpired(false);
+      setRecoverStep('otp');
+      toast.success('Código de recuperación enviado');
+    } catch (error: any) {
+      triggerShake();
+      toast.error(error.response?.data?.message || 'Error al solicitar el código');
+    }
   };
 
   const handleVerifyOtp = (e: React.FormEvent) => {
@@ -151,18 +162,22 @@ export default function Login() {
     toast.error('Código incorrecto');
   };
 
-  const handleResendCode = () => {
-    const code = generateOtp();
-    generatedOtpRef.current = code;
-    setOtpValue('');
-    setSecondsLeft(OTP_DURATION_SECONDS);
-    setExpired(false);
-    toast.success('Código de recuperación enviado');
-    console.info('[DEMO OTP]', code);
+  const handleResendCode = async () => {
+    if (requestCodeMutation.isPending) return;
+    try {
+      await requestCodeMutation.mutateAsync({ email: recoverEmail.trim() });
+      setOtpValue('');
+      setSecondsLeft(OTP_DURATION_SECONDS);
+      setExpired(false);
+      toast.success('Código de recuperación enviado');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al reenviar el código');
+    }
   };
 
-  const handleConfirmNewPassword = (e: React.FormEvent) => {
+  const handleConfirmNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (resetPasswordMutation.isPending) return;
     if (newPass.length < 6) {
       triggerShake();
       toast.error('La contraseña debe tener al menos 6 caracteres');
@@ -173,21 +188,32 @@ export default function Login() {
       toast.error('Las contraseñas no coinciden');
       return;
     }
-    toast.success('Contraseña Actualizada Correctamente', {
-      icon: <CheckCircle2 className="w-4 h-4 text-success" />,
-    });
-    window.setTimeout(() => {
-      // Reset everything and return to login
-      setMode('login');
-      setRecoverStep('email');
-      setRecoverEmail('');
-      setMaskedEmail('');
-      setOtpValue('');
-      setNewPass('');
-      setRepeatPass('');
-      setSecondsLeft(OTP_DURATION_SECONDS);
-      setExpired(false);
-    }, 700);
+    try {
+      // Assuming ResetPasswordDto needs email, code and newPassword
+      await resetPasswordMutation.mutateAsync({
+        email: recoverEmail.trim(),
+        code: otpValue,
+        newPassword: newPass,
+      } as any);
+      
+      toast.success('Contraseña Actualizada Correctamente', {
+        icon: <CheckCircle2 className="w-4 h-4 text-success" />,
+      });
+      window.setTimeout(() => {
+        setMode('login');
+        setRecoverStep('email');
+        setRecoverEmail('');
+        setMaskedEmail('');
+        setOtpValue('');
+        setNewPass('');
+        setRepeatPass('');
+        setSecondsLeft(OTP_DURATION_SECONDS);
+        setExpired(false);
+      }, 700);
+    } catch (error: any) {
+      triggerShake();
+      toast.error(error.response?.data?.message || 'Error al actualizar contraseña');
+    }
   };
 
   const switchMode = (next: Mode) => {
@@ -284,10 +310,10 @@ export default function Login() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loginMutation.isPending}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               >
-                {loading ? 'Verificando...' : 'Iniciar Sesión'}
+                {loginMutation.isPending ? 'Verificando...' : 'Iniciar Sesión'}
               </Button>
 
               <div className="text-center pt-1">
@@ -328,9 +354,10 @@ export default function Login() {
 
               <Button
                 type="submit"
+                disabled={requestCodeMutation.isPending}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               >
-                Enviar código de recuperación
+                {requestCodeMutation.isPending ? 'Enviando...' : 'Enviar código de recuperación'}
               </Button>
 
               <button
@@ -466,9 +493,10 @@ export default function Login() {
 
               <Button
                 type="submit"
+                disabled={resetPasswordMutation.isPending}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               >
-                Confirmar
+                {resetPasswordMutation.isPending ? 'Confirmando...' : 'Confirmar'}
               </Button>
             </form>
           )}

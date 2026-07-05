@@ -13,8 +13,20 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
 import { RowActions } from '@/components/shared/RowActions';
-import { useUsuarios, type Usuario } from '@/data/usuariosStore';
-import { useDemoStore } from '@/store/useDemoStore';
+import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioEstado } from '@/services/useUsuarios';
+
+export type Usuario = {
+  id: number | string;
+  num: number | string;
+  email: string;
+  nombreCompleto: string;
+  rol: 'Administrador' | 'Auxiliar Administrativo' | string;
+  rolApi?: string;
+  estado: 'Activo' | 'Inhabilitado' | string;
+  miembroDesde: string;
+  ultimaActualizacion: string;
+  createdAt: number;
+};
 
 const statusColors: Record<string, string> = {
   Activo: 'bg-success/20 text-success',
@@ -22,11 +34,32 @@ const statusColors: Record<string, string> = {
 };
 
 export function UsuariosPage() {
-  const usuarios = useUsuarios();
-  const toggleEstado = useDemoStore(s => s.toggleUsuarioEstado);
-  const addUsuario = useDemoStore(s => s.addUsuario);
-  const updateUsuario = useDemoStore(s => s.updateUsuario);
+  const { data: apiUsuarios = [] } = useUsuarios();
+  const createUsuario = useCreateUsuario();
+  const updateUsuario = useUpdateUsuario();
+  const toggleEstado = useToggleUsuarioEstado();
 
+  const usuariosTransformados = useMemo(() => apiUsuarios.map((u: any, idx: number) => ({
+    id: u.id || idx,
+    num: u.id || idx,
+    email: u.email || '',
+    nombreCompleto: u.nombre || u.nombres || '',
+    rol: u.rol === 'ADMIN' ? 'Administrador' : u.rol === 'ADMIN_AUXILIAR' ? 'Auxiliar Administrativo' : u.rol || 'Auxiliar Administrativo',
+    rolApi: u.rol || 'ADMIN_AUXILIAR',
+    estado: u.estado === 'inhabilitado' ? 'Inhabilitado' : 'Activo',
+    miembroDesde: u.createdAt || new Date().toISOString().slice(0, 10),
+    ultimaActualizacion: u.updatedAt || new Date().toISOString().slice(0, 10),
+    createdAt: Date.now()
+  })), [apiUsuarios]);
+
+  const [userList, setUserList] = useState<typeof usuariosTransformados>([]);
+
+  // Sync userList when apiUsuarios changes (API load)
+  useMemo(() => {
+    if (usuariosTransformados.length > 0 && userList.length === 0) {
+      setUserList(usuariosTransformados);
+    }
+  }, [usuariosTransformados]);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Usuario | null>(null);
   const [search, setSearch] = useState('');
@@ -34,56 +67,84 @@ export function UsuariosPage() {
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [confirmToggle, setConfirmToggle] = useState<Usuario | null>(null);
   const [registroUser, setRegistroUser] = useState<Usuario | null>(null);
-  const [newUser, setNewUser] = useState({ nombreCompleto: '', email: '', rol: '' });
+  const [newUser, setNewUser] = useState({ nombreCompleto: '', email: '', rol: '', password: '' });
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return usuarios.filter(u => {
+    return userList.filter(u => {
       if (filterRol !== 'todos' && u.rol !== filterRol) return false;
       if (filterEstado !== 'todos' && u.estado !== filterEstado) return false;
       if (!q) return true;
       return u.nombreCompleto.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     });
-  }, [usuarios, search, filterRol, filterEstado]);
+  }, [userList, search, filterRol, filterEstado]);
 
   const handleSave = () => {
-    if (editingUser) {
-      updateUsuario(editingUser.num, {
-        nombreCompleto: newUser.nombreCompleto || editingUser.nombreCompleto,
-        email: newUser.email || editingUser.email,
-        rol: (newUser.rol as Usuario['rol']) || editingUser.rol,
-      });
-      toast.success('Usuario actualizado');
-    } else if (newUser.nombreCompleto && newUser.email && newUser.rol) {
-      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
-      addUsuario({
-        email: newUser.email,
-        nombreCompleto: newUser.nombreCompleto,
-        rol: newUser.rol as Usuario['rol'],
-        miembroDesde: nowStr,
-        ultimaActualizacion: nowStr,
-        estado: 'Activo',
-      });
-      toast.success('Usuario creado');
+    if (!newUser.nombreCompleto.trim() || !newUser.email.trim() || !newUser.rol) {
+      toast.error('Todos los campos son obligatorios');
+      return;
     }
-    setShowModal(false);
-    setEditingUser(null);
-    setNewUser({ nombreCompleto: '', email: '', rol: '' });
+
+    if (editingUser) {
+      // Update existing user via API
+      updateUsuario.mutate({
+        id: Number(editingUser.id),
+        data: {
+          nombre: newUser.nombreCompleto,
+          email: newUser.email,
+          rol: newUser.rol === 'Administrador' ? 'ADMIN' : 'ADMIN_AUXILIAR',
+        }
+      }, {
+        onSuccess: () => {
+          toast.success('Usuario actualizado');
+          setShowModal(false);
+          setEditingUser(null);
+          setNewUser({ nombreCompleto: '', email: '', rol: '', password: '' });
+          setUserList(usuariosTransformados);
+        },
+        onError: () => toast.error('Error al actualizar usuario'),
+      });
+    } else {
+      // Create new user via API
+      if (!newUser.password || newUser.password.length < 8) {
+        toast.error('La contraseña debe tener al menos 8 caracteres');
+        return;
+      }
+      createUsuario.mutate({
+        nombre: newUser.nombreCompleto,
+        email: newUser.email,
+        password: newUser.password,
+        rol: newUser.rol === 'Administrador' ? 'ADMIN' : 'ADMIN_AUXILIAR',
+      }, {
+        onSuccess: () => {
+          toast.success('Usuario creado exitosamente');
+          setShowModal(false);
+          setNewUser({ nombreCompleto: '', email: '', rol: '', password: '' });
+          setUserList(usuariosTransformados);
+        },
+        onError: () => toast.error('Error al crear usuario'),
+      });
+    }
   };
 
-  const openEdit = (u: Usuario) => {
+  const openEdit = (u: typeof usuariosTransformados[0]) => {
     setEditingUser(u);
-    setNewUser({ nombreCompleto: u.nombreCompleto, email: u.email, rol: u.rol });
+    setNewUser({ nombreCompleto: u.nombreCompleto, email: u.email, rol: u.rol, password: '' });
     setShowModal(true);
   };
 
   const doToggle = () => {
     if (!confirmToggle) return;
-    toggleEstado(confirmToggle.num);
-    toast.success(
-      confirmToggle.estado === 'Activo' ? 'Usuario inhabilitado' : 'Usuario habilitado',
-    );
-    setConfirmToggle(null);
+    toggleEstado.mutate(Number(confirmToggle.id), {
+      onSuccess: () => {
+        toast.success(
+          confirmToggle.estado === 'Activo' ? 'Usuario inhabilitado' : 'Usuario habilitado',
+        );
+        setConfirmToggle(null);
+        setUserList(usuariosTransformados);
+      },
+      onError: () => toast.error('Error al cambiar estado del usuario'),
+    });
   };
 
   const resetPassword = (u: Usuario) => {
@@ -98,7 +159,7 @@ export function UsuariosPage() {
           <p className="text-muted-foreground">Gestión de usuarios del sistema</p>
         </div>
         <Button className="bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => { setEditingUser(null); setNewUser({ nombreCompleto: '', email: '', rol: '' }); setShowModal(true); }}>
+          onClick={() => { setEditingUser(null); setNewUser({ nombreCompleto: '', email: '', rol: '', password: '' }); setShowModal(true); }}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Usuario
         </Button>
@@ -187,7 +248,7 @@ export function UsuariosPage() {
           <DialogHeader>
             <DialogTitle className="text-foreground">{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {editingUser ? `Nº ${editingUser.num}` : `Nº: ${usuarios.length + 1} — los campos de auditoría se llenan automáticamente`}
+              {editingUser ? `Nº ${editingUser.num}` : `Nº: ${userList.length + 1} — los campos de auditoría se llenan automáticamente`}
             </DialogDescription>
           </DialogHeader>
 
@@ -200,6 +261,17 @@ export function UsuariosPage() {
               <Label className="text-foreground">Correo electrónico</Label>
               <Input type="email" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
             </div>
+            {!editingUser && (
+              <div className="space-y-2">
+                <Label className="text-foreground">Contraseña inicial</Label>
+                <Input 
+                  type="password" 
+                  value={newUser.password} 
+                  onChange={e => setNewUser({ ...newUser, password: e.target.value })} 
+                  placeholder="Mínimo 8 caracteres"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-foreground">Rol</Label>
               <Select value={newUser.rol} onValueChange={v => setNewUser({ ...newUser, rol: v })}>
