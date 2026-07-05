@@ -48,10 +48,7 @@ export function AuditoriasPage() {
           </h1>
           <p className="text-muted-foreground">Registro de actividades del sistema</p>
         </div>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Exportar Logs
-        </Button>
+
       </div>
 
       <div className="flex flex-wrap gap-3">
