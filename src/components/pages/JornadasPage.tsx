@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Clock, Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2 } from 'lucide-react';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2, TrendingUp, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { MetricCard } from '@/components/dashboard/MetricCard';
+import { getSemaforo } from '@/lib/kpi-semaforos';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AvailabilityTable, DoctorAvailability, AvailabilityEvent } from './jornadas/AvailabilityTable';
+
 
 const doctors = [
   { mpps: 'MPPS-001', nombre: 'Juan', apellido: 'López', especialidad: 'Cardiología' },
