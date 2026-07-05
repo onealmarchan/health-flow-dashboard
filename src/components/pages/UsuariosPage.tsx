@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, MoreVertical, Clock } from 'lucide-react';
+import { Plus, Clock, Pencil, KeyRound, Lock, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,14 +8,13 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
-import { usuariosMock, type Usuario } from '@/data/usuariosStore';
+import { RowActions } from '@/components/shared/RowActions';
+import { useUsuarios, type Usuario } from '@/data/usuariosStore';
+import { useDemoStore } from '@/store/useDemoStore';
 
 const statusColors: Record<string, string> = {
   Activo: 'bg-success/20 text-success',
@@ -22,30 +22,72 @@ const statusColors: Record<string, string> = {
 };
 
 export function UsuariosPage() {
+  const usuarios = useUsuarios();
+  const toggleEstado = useDemoStore(s => s.toggleUsuarioEstado);
+  const addUsuario = useDemoStore(s => s.addUsuario);
+  const updateUsuario = useDemoStore(s => s.updateUsuario);
+
   const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<Usuario | null>(null);
   const [search, setSearch] = useState('');
   const [filterRol, setFilterRol] = useState<string>('todos');
   const [filterEstado, setFilterEstado] = useState<string>('todos');
-  const [confirmDisable, setConfirmDisable] = useState<number | null>(null);
+  const [confirmToggle, setConfirmToggle] = useState<Usuario | null>(null);
   const [registroUser, setRegistroUser] = useState<Usuario | null>(null);
   const [newUser, setNewUser] = useState({ nombreCompleto: '', email: '', rol: '' });
 
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return usuariosMock.filter(u => {
+    return usuarios.filter(u => {
       if (filterRol !== 'todos' && u.rol !== filterRol) return false;
       if (filterEstado !== 'todos' && u.estado !== filterEstado) return false;
       if (!q) return true;
-      return (
-        u.nombreCompleto.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q)
-      );
+      return u.nombreCompleto.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
     });
-  }, [search, filterRol, filterEstado]);
+  }, [usuarios, search, filterRol, filterEstado]);
 
   const handleSave = () => {
+    if (editingUser) {
+      updateUsuario(editingUser.num, {
+        nombreCompleto: newUser.nombreCompleto || editingUser.nombreCompleto,
+        email: newUser.email || editingUser.email,
+        rol: (newUser.rol as Usuario['rol']) || editingUser.rol,
+      });
+      toast.success('Usuario actualizado');
+    } else if (newUser.nombreCompleto && newUser.email && newUser.rol) {
+      const nowStr = new Date().toISOString().slice(0, 16).replace('T', ' ');
+      addUsuario({
+        email: newUser.email,
+        nombreCompleto: newUser.nombreCompleto,
+        rol: newUser.rol as Usuario['rol'],
+        miembroDesde: nowStr,
+        ultimaActualizacion: nowStr,
+        estado: 'Activo',
+      });
+      toast.success('Usuario creado');
+    }
     setShowModal(false);
+    setEditingUser(null);
     setNewUser({ nombreCompleto: '', email: '', rol: '' });
+  };
+
+  const openEdit = (u: Usuario) => {
+    setEditingUser(u);
+    setNewUser({ nombreCompleto: u.nombreCompleto, email: u.email, rol: u.rol });
+    setShowModal(true);
+  };
+
+  const doToggle = () => {
+    if (!confirmToggle) return;
+    toggleEstado(confirmToggle.num);
+    toast.success(
+      confirmToggle.estado === 'Activo' ? 'Usuario inhabilitado' : 'Usuario habilitado',
+    );
+    setConfirmToggle(null);
+  };
+
+  const resetPassword = (u: Usuario) => {
+    toast.success(`Enlace de recuperación enviado a ${u.email}`);
   };
 
   return (
@@ -55,7 +97,8 @@ export function UsuariosPage() {
           <h1 className="text-2xl font-bold text-foreground">Usuarios</h1>
           <p className="text-muted-foreground">Gestión de usuarios del sistema</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setShowModal(true)}>
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90"
+          onClick={() => { setEditingUser(null); setNewUser({ nombreCompleto: '', email: '', rol: '' }); setShowModal(true); }}>
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Usuario
         </Button>
@@ -94,7 +137,7 @@ export function UsuariosPage() {
           <table className="w-full text-sm">
             <thead className="bg-secondary/50">
               <tr>
-                {['Nº', 'Correo electrónico', 'Nombre completo', 'Rol', 'Miembro desde', 'Última actualización', 'Estado', 'Acciones'].map(h => (
+                {['Nº', 'Correo electrónico', 'Nombre completo', 'Rol', 'Historial', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -106,47 +149,45 @@ export function UsuariosPage() {
                   <td className="px-3 py-2 text-foreground">{u.email}</td>
                   <td className="px-3 py-2 font-medium text-foreground">{u.nombreCompleto}</td>
                   <td className="px-3 py-2 text-foreground">{u.rol}</td>
-                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{u.miembroDesde}</td>
-                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{u.ultimaActualizacion}</td>
+                  <td className="px-3 py-2">
+                    <Button variant="ghost" size="icon" title="Ver historial" onClick={() => setRegistroUser(u)}>
+                      <Clock className="w-4 h-4" />
+                    </Button>
+                  </td>
                   <td className="px-3 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[u.estado]}`}>
                       {u.estado}
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" title="Ver historial" onClick={() => setRegistroUser(u)}>
-                        <Clock className="w-4 h-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><MoreVertical className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-popover border border-border z-50">
-                          <DropdownMenuItem className="cursor-pointer">Editar</DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer text-destructive" onClick={() => setConfirmDisable(u.num)}>
-                            Inhabilitar
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <RowActions actions={[
+                      { icon: Pencil, label: 'Editar datos', onClick: () => openEdit(u) },
+                      { icon: KeyRound, label: 'Restablecer contraseña', onClick: () => resetPassword(u) },
+                      {
+                        icon: u.estado === 'Activo' ? Lock : Unlock,
+                        label: u.estado === 'Activo' ? 'Inhabilitar' : 'Habilitar',
+                        onClick: () => setConfirmToggle(u),
+                        variant: u.estado === 'Activo' ? 'destructive' : 'success',
+                        animateOnClick: true,
+                      },
+                    ]} />
                   </td>
                 </tr>
               ))}
               {filteredUsers.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-8 text-muted-foreground">Sin resultados</td></tr>
+                <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">Sin resultados</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <Dialog open={showModal} onOpenChange={setShowModal}>
+      <Dialog open={showModal} onOpenChange={(o) => { if (!o) { setShowModal(false); setEditingUser(null); } }}>
         <DialogContent className="bg-card border border-border max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-foreground">Nuevo Usuario</DialogTitle>
+            <DialogTitle className="text-foreground">{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              Nº: {usuariosMock.length + 1} — Los campos de auditoría se llenan automáticamente
+              {editingUser ? `Nº ${editingUser.num}` : `Nº: ${usuarios.length + 1} — los campos de auditoría se llenan automáticamente`}
             </DialogDescription>
           </DialogHeader>
 
@@ -174,17 +215,19 @@ export function UsuariosPage() {
           <ModalFormButtons
             onSave={handleSave}
             onSaveAndAnother={() => { handleSave(); setShowModal(true); }}
-            onCancel={() => setShowModal(false)}
+            onCancel={() => { setShowModal(false); setEditingUser(null); }}
           />
         </DialogContent>
       </Dialog>
 
       <ConfirmDialog
-        open={confirmDisable !== null}
-        onOpenChange={(o) => !o && setConfirmDisable(null)}
-        onConfirm={() => setConfirmDisable(null)}
-        title="¿Inhabilitar usuario?"
-        description="El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente."
+        open={confirmToggle !== null}
+        onOpenChange={(o) => !o && setConfirmToggle(null)}
+        onConfirm={doToggle}
+        title={confirmToggle?.estado === 'Activo' ? '¿Inhabilitar usuario?' : '¿Habilitar usuario?'}
+        description={confirmToggle?.estado === 'Activo'
+          ? 'El usuario no podrá acceder al sistema hasta que sea habilitado nuevamente.'
+          : 'El usuario recuperará acceso al sistema.'}
       />
 
       <Dialog open={registroUser !== null} onOpenChange={(o) => !o && setRegistroUser(null)}>

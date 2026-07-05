@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Clock, Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2 } from 'lucide-react';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2, TrendingUp, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,9 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { MetricCard } from '@/components/dashboard/MetricCard';
+import { getSemaforo } from '@/lib/kpi-semaforos';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { AvailabilityTable, DoctorAvailability, AvailabilityEvent } from './jornadas/AvailabilityTable';
+
 
 const doctors = [
   { mpps: 'MPPS-001', nombre: 'Juan', apellido: 'López', especialidad: 'Cardiología' },
@@ -449,35 +452,36 @@ export function JornadasPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="metric-card">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-primary/20"><Clock className="w-6 h-6 text-primary" /></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">168</p>
-              <p className="text-sm text-muted-foreground">Horas/Semana</p>
-            </div>
+      {(() => {
+        // Bloques totales estimados = 7 días × 3 turnos × doctores
+        const totalDoctors = doctors.length;
+        const totalBlocks = 7 * 3 * totalDoctors;
+        const bloqueados = Object.values(store).reduce((n, d) => n + d.bloqueos.length, 0);
+        const ocupados = Object.values(store).reduce((n, d) => n + d.rows.filter(r => r.saved).length, 0);
+        const ocupacionPct = totalBlocks > 0 ? (ocupados / totalBlocks) * 100 : 0;
+        const bloqueosPct = totalBlocks > 0 ? (bloqueados / totalBlocks) * 100 : 0;
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MetricCard
+              title="% Ocupación de Agenda"
+              value={`${ocupacionPct.toFixed(0)}%`}
+              subtitle="Bloques ocupados / totales"
+              icon={Calendar}
+              semaforo={getSemaforo('ocupacionAgenda', ocupacionPct)}
+              trend={{ value: 0, isPositive: true }}
+            />
+            <MetricCard
+              title="% Bloqueos de Agenda"
+              value={`${bloqueosPct.toFixed(0)}%`}
+              subtitle="Bloqueos manuales / totales"
+              icon={ShieldOff}
+              semaforo={getSemaforo('bloqueosAgenda', bloqueosPct)}
+              trend={{ value: 0, isPositive: false }}
+            />
           </div>
-        </div>
-        <div className="metric-card">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-success/20"><Calendar className="w-6 h-6 text-success" /></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">24</p>
-              <p className="text-sm text-muted-foreground">Especialistas</p>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-accent/20"><Clock className="w-6 h-6 text-accent" /></div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">95%</p>
-              <p className="text-sm text-muted-foreground">Ocupación</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
+
 
       {/* Unified Availability Table (replaces old "Jornadas Registradas") */}
       <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} />
