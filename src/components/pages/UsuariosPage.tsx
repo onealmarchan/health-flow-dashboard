@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Plus, MoreVertical, Clock } from 'lucide-react';
+import { Plus, Clock, Pencil, KeyRound, Lock, Unlock } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,14 +8,14 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
-import { usuariosMock, type Usuario } from '@/data/usuariosStore';
+import { RowActions } from '@/components/shared/RowActions';
+import { useUsuarios, type Usuario } from '@/data/usuariosStore';
+import { useDemoStore } from '@/store/useDemoStore';
+
 
 const statusColors: Record<string, string> = {
   Activo: 'bg-success/20 text-success',
