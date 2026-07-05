@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
-import { FileSearch, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { FileSearch } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
 import { historialMock, type AccionRealizada } from '@/data/historialStore';
 import { cn } from '@/lib/utils';
+
 
 const accionColors: Record<AccionRealizada, string> = {
   Crear: 'bg-success/20 text-success',
