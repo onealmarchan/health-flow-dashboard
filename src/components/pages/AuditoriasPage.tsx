@@ -4,9 +4,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
-import { historialMock, type AccionRealizada } from '@/data/historialStore';
+import { useDemoStore, type AccionRealizada } from '@/store/useDemoStore';
 import { cn } from '@/lib/utils';
-
 
 const accionColors: Record<AccionRealizada, string> = {
   Crear: 'bg-success/20 text-success',
@@ -15,18 +14,21 @@ const accionColors: Record<AccionRealizada, string> = {
 };
 
 export function AuditoriasPage() {
+  const historial = useDemoStore(s => s.historial);
   const [search, setSearch] = useState('');
   const [filterSeccion, setFilterSeccion] = useState<string>('todas');
   const [filterAccion, setFilterAccion] = useState<string>('todas');
 
   const secciones = useMemo(
-    () => Array.from(new Set(historialMock.map(h => h.seccion))).sort(),
-    []
+    () => Array.from(new Set(historial.map(h => h.seccion))).sort(),
+    [historial]
   );
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return historialMock.filter(r => {
+    // Order: newest first (higher createdAt/id first).
+    const sorted = [...historial].sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0) || b.id - a.id);
+    return sorted.filter(r => {
       if (filterSeccion !== 'todas' && r.seccion !== filterSeccion) return false;
       if (filterAccion !== 'todas' && r.accion !== filterAccion) return false;
       if (!q) return true;
@@ -36,7 +38,7 @@ export function AuditoriasPage() {
         r.responsable.toLowerCase().includes(q)
       );
     });
-  }, [search, filterSeccion, filterAccion]);
+  }, [historial, search, filterSeccion, filterAccion]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -46,9 +48,8 @@ export function AuditoriasPage() {
             <FileSearch className="w-6 h-6 text-primary" />
             Historial de Cambios
           </h1>
-          <p className="text-muted-foreground">Registro de actividades del sistema</p>
+          <p className="text-muted-foreground">Registro de actividades del sistema · {historial.length} entradas</p>
         </div>
-
       </div>
 
       <div className="flex flex-wrap gap-3">
