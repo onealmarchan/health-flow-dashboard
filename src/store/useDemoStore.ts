@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // ============================================================================
-// Types (mirror existing stores so wrappers can re-export types unchanged)
+// Types
 // ============================================================================
 
 export type Patient = {
@@ -85,11 +85,35 @@ export interface AgendaBloqueo {
   createdAt: number;
 }
 
+export type Sintoma = { nombre: string; descripcion: string; gravedad: number };
+export type Diagnostico = {
+  id: number;
+  numCitaOrigen: string;
+  paciente: string;
+  ci: string;
+  nombres: string;
+  apellidos: string;
+  fechaCita: string;
+  fechaDiagnostico: string;
+  motivo: string;
+  tratamientoPrevio: string;
+  urgencia: boolean;
+  sintomas: Sintoma[];
+  enfermedad: { nombre: string; descripcion: string; cronico: boolean };
+  critico: boolean;
+  etapa: 'Inicial' | 'Avanzada' | string;
+  estado: 'Activo' | 'Resuelto' | string;
+  createdAt: number;
+};
+
 // ============================================================================
 // Seed data
 // ============================================================================
 
 const now = () => Date.now();
+const fmtNow = () => new Date().toLocaleString('es-VE', { hour12: false }).replace(',', '');
+
+const SESSION_USER = 'Roberto García';
 
 const seedPatients: Patient[] = [
   { num: 1, ci: '12345678', nombres: 'María', apellidos: 'García López', fechaNac: '1990-05-15', sexo: 'F', direccion: 'Calle 1', telefono: '04141234567', nacionalidad: 'Venezolano', estadoCivil: 'Soltero/a', estado: 'Activo', comunidad: 'Centro', estadoGeo: 'Caracas', municipio: 'Libertador', parroquia: 'San Pedro', createdAt: now() },
@@ -136,8 +160,41 @@ const seedHistorial: HistorialEntry[] = [
   { id: 8, seccion: 'Diagnósticos',  registroAfectado: 'DIAG-0047',             accion: 'Crear',    cambio: 'Nuevo diagnóstico: Angina de pecho',                 responsable: 'Carmen Ruiz',     fechaHora: '2024-01-28 10:02:19', createdAt: now() },
 ];
 
+const seedDiagnosticos: Diagnostico[] = [
+  {
+    id: 1, numCitaOrigen: 'CITA-001', paciente: 'Carlos Pérez', ci: 'V-12345678',
+    nombres: 'Carlos', apellidos: 'Pérez', fechaCita: '2026-04-10', fechaDiagnostico: '2026-04-10',
+    motivo: 'Dolor torácico recurrente', tratamientoPrevio: 'Ninguno', urgencia: true,
+    sintomas: [
+      { nombre: 'Dolor en el pecho', descripcion: 'Intermitente, opresivo', gravedad: 4 },
+      { nombre: 'Disnea', descripcion: 'Al esfuerzo moderado', gravedad: 3 },
+    ],
+    enfermedad: { nombre: 'Angina de pecho', descripcion: 'Sospecha de cardiopatía isquémica', cronico: true },
+    critico: true, etapa: 'Inicial', estado: 'Activo', createdAt: now(),
+  },
+  {
+    id: 2, numCitaOrigen: 'CITA-002', paciente: 'María González', ci: 'V-23456789',
+    nombres: 'María', apellidos: 'González', fechaCita: '2026-04-12', fechaDiagnostico: '2026-04-12',
+    motivo: 'Erupción cutánea', tratamientoPrevio: 'Antihistamínico oral', urgencia: false,
+    sintomas: [
+      { nombre: 'Prurito', descripcion: 'En zona de brazos', gravedad: 2 },
+      { nombre: 'Enrojecimiento', descripcion: 'Localizado', gravedad: 2 },
+    ],
+    enfermedad: { nombre: 'Dermatitis alérgica', descripcion: 'Reacción a contacto', cronico: false },
+    critico: false, etapa: 'Avanzada', estado: 'Resuelto', createdAt: now(),
+  },
+  {
+    id: 3, numCitaOrigen: 'CITA-003', paciente: 'Luis Rodríguez', ci: 'V-34567890',
+    nombres: 'Luis', apellidos: 'Rodríguez', fechaCita: '2026-04-15', fechaDiagnostico: '2026-04-15',
+    motivo: 'Cefalea persistente', tratamientoPrevio: 'Analgésicos', urgencia: false,
+    sintomas: [{ nombre: 'Dolor de cabeza', descripcion: 'Diario', gravedad: 3 }],
+    enfermedad: { nombre: 'Migraña', descripcion: 'Sin signos focales', cronico: true },
+    critico: false, etapa: 'Inicial', estado: 'Activo', createdAt: now(),
+  },
+];
+
 // ============================================================================
-// Store shape & actions
+// Store
 // ============================================================================
 
 interface DemoState {
@@ -147,6 +204,7 @@ interface DemoState {
   usuarios: Usuario[];
   historial: HistorialEntry[];
   bloqueos: AgendaBloqueo[];
+  diagnosticos: Diagnostico[];
 
   addPatient: (p: Omit<Patient, 'num' | 'createdAt'>) => void;
   updatePatient: (num: number, patch: Partial<Patient>) => void;
@@ -162,6 +220,10 @@ interface DemoState {
   updateUsuario: (num: number, patch: Partial<Usuario>) => void;
   toggleUsuarioEstado: (num: number) => void;
 
+  addDiagnostico: (d: Omit<Diagnostico, 'id' | 'createdAt'>) => void;
+  updateDiagnostico: (id: number, patch: Partial<Diagnostico>) => void;
+  removeDiagnostico: (id: number) => void;
+
   addHistorial: (h: Omit<HistorialEntry, 'id' | 'createdAt'>) => void;
 
   addBloqueo: (b: Omit<AgendaBloqueo, 'id' | 'createdAt'>) => void;
@@ -170,70 +232,127 @@ interface DemoState {
   removeExpired: () => void;
 }
 
-const TTL = 40 * 60 * 1000; // 40 minutes
+const TTL = 40 * 60 * 1000;
+
+// ---- audit helpers (module-scope, use getState so wrappers stay tiny) ----
+function pushAudit(seccion: string, registroAfectado: string, accion: AccionRealizada, cambio: string) {
+  useDemoStore.getState().addHistorial({
+    seccion, registroAfectado, accion, cambio,
+    responsable: SESSION_USER, fechaHora: fmtNow(),
+  });
+}
+function diffFields<T extends Record<string, unknown>>(prev: T, patch: Partial<T>): string {
+  const parts: string[] = [];
+  for (const k of Object.keys(patch)) {
+    const pv = prev[k as keyof T];
+    const nv = (patch as Record<string, unknown>)[k];
+    if (pv !== nv && typeof nv !== 'object') parts.push(`${k}: ${String(pv ?? '—')} → ${String(nv ?? '—')}`);
+  }
+  return parts.length ? parts.join(' · ') : 'Actualización sin cambios visibles';
+}
 
 export const useDemoStore = create<DemoState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       patients: seedPatients,
       appointments: seedAppointments,
       especialistas: seedEspecialistas,
       usuarios: seedUsuarios,
       historial: seedHistorial,
       bloqueos: [],
+      diagnosticos: seedDiagnosticos,
 
-      addPatient: (p) => set(s => ({
-        patients: [...s.patients, { ...p, num: (s.patients.at(-1)?.num ?? 0) + 1, createdAt: Date.now() }],
-      })),
-      updatePatient: (num, patch) => set(s => ({
-        patients: s.patients.map(p => p.num === num ? { ...p, ...patch } : p),
-      })),
+      addPatient: (p) => {
+        const num = (get().patients.at(-1)?.num ?? 0) + 1;
+        set(s => ({ patients: [...s.patients, { ...p, num, createdAt: Date.now() }] }));
+        pushAudit('Pacientes', `V-${p.ci}`, 'Crear', `Nuevo paciente: ${p.nombres} ${p.apellidos}`);
+      },
+      updatePatient: (num, patch) => {
+        const prev = get().patients.find(p => p.num === num);
+        set(s => ({ patients: s.patients.map(p => p.num === num ? { ...p, ...patch } : p) }));
+        if (prev) pushAudit('Pacientes', `V-${prev.ci}`, 'Editar', diffFields(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>));
+      },
 
-      addAppointment: (a) => set(s => ({
-        appointments: [...s.appointments, { ...a, id: (s.appointments.at(-1)?.id ?? 0) + 1, createdAt: Date.now() }],
-      })),
-      updateAppointment: (id, patch) => set(s => ({
-        appointments: s.appointments.map(a => a.id === id ? { ...a, ...patch } : a),
-      })),
-      removeAppointment: (id) => set(s => ({
-        appointments: s.appointments.filter(a => a.id !== id),
-      })),
+      addAppointment: (a) => {
+        const id = (get().appointments.at(-1)?.id ?? 0) + 1;
+        set(s => ({ appointments: [...s.appointments, { ...a, id, createdAt: Date.now() }] }));
+        pushAudit('Citas', `CITA-${String(id).padStart(6, '0')}`, 'Crear', `Nueva cita para ${a.patient} con ${a.doctor} (${a.specialty}) el ${a.date} ${a.time}`);
+      },
+      updateAppointment: (id, patch) => {
+        const prev = get().appointments.find(a => a.id === id);
+        set(s => ({ appointments: s.appointments.map(a => a.id === id ? { ...a, ...patch } : a) }));
+        if (prev) pushAudit('Citas', `CITA-${String(id).padStart(6, '0')}`, 'Editar', diffFields(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>));
+      },
+      removeAppointment: (id) => {
+        const prev = get().appointments.find(a => a.id === id);
+        set(s => ({ appointments: s.appointments.filter(a => a.id !== id) }));
+        if (prev) pushAudit('Citas', `CITA-${String(id).padStart(6, '0')}`, 'Eliminar', `Cita cancelada (${prev.patient} · ${prev.date} ${prev.time})`);
+      },
 
-      addEspecialista: (e) => set(s => ({
-        especialistas: [...s.especialistas, { ...e, id: (s.especialistas.at(-1)?.id ?? 0) + 1, createdAt: Date.now() }],
-      })),
-      updateEspecialista: (id, patch) => set(s => ({
-        especialistas: s.especialistas.map(e => e.id === id ? { ...e, ...patch } : e),
-      })),
+      addEspecialista: (e) => {
+        const id = (get().especialistas.at(-1)?.id ?? 0) + 1;
+        set(s => ({ especialistas: [...s.especialistas, { ...e, id, createdAt: Date.now() }] }));
+        pushAudit('Especialistas', e.mpps, 'Crear', `Nuevo especialista: ${e.nombre} ${e.apellido} (${e.especialidad})`);
+      },
+      updateEspecialista: (id, patch) => {
+        const prev = get().especialistas.find(e => e.id === id);
+        set(s => ({ especialistas: s.especialistas.map(e => e.id === id ? { ...e, ...patch } : e) }));
+        if (prev) pushAudit('Especialistas', prev.mpps, 'Editar', diffFields(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>));
+      },
 
-      addUsuario: (u) => set(s => ({
-        usuarios: [...s.usuarios, { ...u, num: (s.usuarios.at(-1)?.num ?? 0) + 1, createdAt: Date.now() }],
-      })),
-      updateUsuario: (num, patch) => set(s => ({
-        usuarios: s.usuarios.map(u => u.num === num ? { ...u, ...patch } : u),
-      })),
-      toggleUsuarioEstado: (num) => set(s => ({
-        usuarios: s.usuarios.map(u => u.num === num
-          ? { ...u, estado: u.estado === 'Activo' ? 'Inhabilitado' : 'Activo' }
-          : u),
-      })),
+      addUsuario: (u) => {
+        const num = (get().usuarios.at(-1)?.num ?? 0) + 1;
+        set(s => ({ usuarios: [...s.usuarios, { ...u, num, createdAt: Date.now() }] }));
+        pushAudit('Usuarios', u.email, 'Crear', `Nuevo usuario: ${u.nombreCompleto} (${u.rol})`);
+      },
+      updateUsuario: (num, patch) => {
+        const prev = get().usuarios.find(u => u.num === num);
+        set(s => ({ usuarios: s.usuarios.map(u => u.num === num ? { ...u, ...patch, ultimaActualizacion: new Date().toISOString().slice(0, 16).replace('T', ' ') } : u) }));
+        if (prev) pushAudit('Usuarios', prev.email, 'Editar', diffFields(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>));
+      },
+      toggleUsuarioEstado: (num) => {
+        const prev = get().usuarios.find(u => u.num === num);
+        set(s => ({
+          usuarios: s.usuarios.map(u => u.num === num
+            ? { ...u, estado: u.estado === 'Activo' ? 'Inhabilitado' : 'Activo' }
+            : u),
+        }));
+        if (prev) pushAudit('Usuarios', prev.email, 'Editar', `Estado: ${prev.estado} → ${prev.estado === 'Activo' ? 'Inhabilitado' : 'Activo'}`);
+      },
+
+      addDiagnostico: (d) => {
+        const id = (get().diagnosticos.at(-1)?.id ?? 0) + 1;
+        set(s => ({ diagnosticos: [{ ...d, id, createdAt: Date.now() }, ...s.diagnosticos] }));
+        pushAudit('Diagnósticos', `DIAG-${String(id).padStart(4, '0')}`, 'Crear', `Nuevo diagnóstico: ${d.enfermedad.nombre} (${d.paciente})`);
+      },
+      updateDiagnostico: (id, patch) => {
+        const prev = get().diagnosticos.find(d => d.id === id);
+        set(s => ({ diagnosticos: s.diagnosticos.map(d => d.id === id ? { ...d, ...patch } : d) }));
+        if (prev) pushAudit('Diagnósticos', `DIAG-${String(id).padStart(4, '0')}`, 'Editar', diffFields(prev as unknown as Record<string, unknown>, patch as Record<string, unknown>));
+      },
+      removeDiagnostico: (id) => {
+        const prev = get().diagnosticos.find(d => d.id === id);
+        set(s => ({ diagnosticos: s.diagnosticos.filter(d => d.id !== id) }));
+        if (prev) pushAudit('Diagnósticos', `DIAG-${String(id).padStart(4, '0')}`, 'Eliminar', `Diagnóstico eliminado: ${prev.enfermedad.nombre}`);
+      },
 
       addHistorial: (h) => set(s => ({
         historial: [{ ...h, id: (s.historial.at(-1)?.id ?? 0) + 1, createdAt: Date.now() }, ...s.historial],
       })),
 
-      addBloqueo: (b) => set(s => ({
-        bloqueos: [...s.bloqueos, { ...b, id: `BLQ-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, createdAt: Date.now() }],
-      })),
-      removeBloqueo: (id) => set(s => ({
-        bloqueos: s.bloqueos.filter(b => b.id !== id),
-      })),
+      addBloqueo: (b) => {
+        const id = `BLQ-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        set(s => ({ bloqueos: [...s.bloqueos, { ...b, id, createdAt: Date.now() }] }));
+        pushAudit('Jornadas', b.mpps, 'Crear', `Bloqueo ${b.razon} ${b.fechaInicio} → ${b.fechaFin} (${b.turno})`);
+      },
+      removeBloqueo: (id) => {
+        const prev = get().bloqueos.find(b => b.id === id);
+        set(s => ({ bloqueos: s.bloqueos.filter(b => b.id !== id) }));
+        if (prev) pushAudit('Jornadas', prev.mpps, 'Eliminar', `Bloqueo eliminado (${prev.razon})`);
+      },
 
       removeExpired: () => set(s => {
         const cutoff = Date.now() - TTL;
-        // Only remove entries created during this session (after seed).
-        // Seed entries created at store hydration are preserved by using createdAt only for user-added items
-        // that exceed TTL.
         const keep = <T extends { createdAt: number }>(arr: T[], seedIds: Set<number | string>, idKey: keyof T) =>
           arr.filter(r => seedIds.has(r[idKey] as number | string) || r.createdAt >= cutoff);
         return {
@@ -242,6 +361,7 @@ export const useDemoStore = create<DemoState>()(
           especialistas: keep(s.especialistas, new Set(seedEspecialistas.map(e => e.id)),  'id'),
           usuarios:      keep(s.usuarios,      new Set(seedUsuarios.map(u => u.num)),      'num'),
           historial:     keep(s.historial,     new Set(seedHistorial.map(h => h.id)),      'id'),
+          diagnosticos:  keep(s.diagnosticos,  new Set(seedDiagnosticos.map(d => d.id)),   'id'),
           bloqueos:      s.bloqueos.filter(b => b.createdAt >= cutoff),
         };
       }),
@@ -249,6 +369,10 @@ export const useDemoStore = create<DemoState>()(
     {
       name: 'medicitas-demo',
       storage: createJSONStorage(() => sessionStorage),
+      version: 2,
     },
   ),
 );
+
+// Selectors for diagnosticos
+export const useDiagnosticos = () => useDemoStore(s => s.diagnosticos);

@@ -20,7 +20,7 @@ const menuItems = [
   { id: 'auditorias', label: 'Historial de Cambios', icon: FileSearch },
   { id: 'ajustes', label: 'Ajustes', icon: Settings },
   { id: 'faq', label: 'FAQ', icon: HelpCircle },
-  { id: 'helpdesk', label: 'Help Desk', icon: LifeBuoy },
+  { id: 'helpdesk', label: 'Soporte Técnico', icon: LifeBuoy },
 ];
 
 export function Sidebar({ currentPage, onPageChange }: SidebarProps) {

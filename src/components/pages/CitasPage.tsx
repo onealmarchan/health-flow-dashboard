@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown } from 'lucide-react';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, X } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { RowActions } from '@/components/shared/RowActions';
 import { cn } from '@/lib/utils';
 import { usePatients, addPatient, type Patient } from '@/data/patientsStore';
-import { useAppointments, addAppointment } from '@/data/appointmentsStore';
+import { useAppointments, addAppointment, removeAppointment } from '@/data/appointmentsStore';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
 
@@ -379,7 +380,7 @@ export function CitasPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
-                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado'].map(h => (
+                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
                 ))}
               </tr>
@@ -401,6 +402,22 @@ export function CitasPage() {
                       <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${statusColors[apt.status]}`}>
                         {apt.status}
                       </span>
+                    </td>
+                    <td className="p-3">
+                      <RowActions actions={[
+                        {
+                          icon: X,
+                          label: 'Cancelar cita',
+                          variant: 'destructive',
+                          animateOnClick: true,
+                          onClick: () => {
+                            if (confirm(`¿Cancelar la cita de ${apt.patient} el ${apt.date} ${apt.time}?`)) {
+                              removeAppointment(apt.id);
+                              toast.success('Cita cancelada');
+                            }
+                          },
+                        },
+                      ]} />
                     </td>
                   </tr>
                 );

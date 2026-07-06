@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import type { Especialista } from '@/data/especialistasStore';
-import { META, divergingColor, severityLabel } from './utils';
+import { META, zoneColor, zoneLabel } from './utils';
 
 interface Props {
   specialists: Especialista[];
@@ -10,32 +10,29 @@ interface Props {
 interface Row {
   especialidad: string;
   promedio_pacientes: number;
-  desviacion: number;
+  desviacion: number; // %
   cantidad_medicos: number;
 }
 
 interface TipState { x: number; y: number; row: Row; }
 
 const LEGEND = [
-  { c: '#c0392b', t: '> +60 Crítico' },
-  { c: '#e05252', t: '+30 a +60 Moderado' },
-  { c: '#f09090', t: '0 a +30 Leve' },
-  { c: '#7dcfb6', t: '−30 a 0 Leve' },
-  { c: '#0f9e7b', t: '−60 a −30 Holgado' },
-  { c: '#0a5c48', t: '< −60 Subutilizado' },
+  { c: 'hsl(var(--success))',     t: 'Verde · |desv| ≤ 10 %' },
+  { c: 'hsl(var(--warning))',     t: 'Ámbar · 10 – 20 %' },
+  { c: 'hsl(var(--destructive))', t: 'Rojo · > 20 %' },
 ];
 
 export function DivergingBar({ specialists }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [size, setSize] = useState({ w: 600, h: 420 });
+  const [width, setWidth] = useState(600);
   const [tip, setTip] = useState<TipState | null>(null);
 
   useEffect(() => {
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       const cr = entries[0].contentRect;
-      setSize({ w: Math.max(400, cr.width), h: Math.max(360, cr.height) });
+      setWidth(Math.max(420, cr.width));
     });
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
@@ -51,57 +48,63 @@ export function DivergingBar({ specialists }: Props) {
     const out: Row[] = [];
     map.forEach((vals, especialidad) => {
       const prom = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const desv = ((prom / META) - 1) * 100;
       out.push({
         especialidad,
         promedio_pacientes: Math.round(prom * 10) / 10,
-        desviacion: Math.round((prom - META) * 10) / 10,
+        desviacion: Math.round(desv * 10) / 10,
         cantidad_medicos: vals.length,
       });
     });
     return out.sort((a, b) => a.desviacion - b.desviacion);
   }, [specialists]);
 
+  // Height driven by # rows to guarantee separation.
+  const ROW_H = 42;
+  const marginTop = 46, marginBottom = 60, marginLeft = 170, marginRight = 90;
+  const innerH = Math.max(rows.length * ROW_H, 200);
+  const height = innerH + marginTop + marginBottom;
+
   useEffect(() => {
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
     if (rows.length === 0) return;
 
-    const { w, h } = size;
-    const margin = { top: 36, right: 80, bottom: 56, left: 130 };
-    const innerW = w - margin.left - margin.right;
-    const innerH = h - margin.top - margin.bottom;
+    const innerW = width - marginLeft - marginRight;
+    const maxAbs = Math.max(25, d3.max(rows, r => Math.abs(r.desviacion)) ?? 25);
+    const x = d3.scaleLinear().domain([-maxAbs * 1.15, maxAbs * 1.15]).range([0, innerW]);
+    const y = d3.scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.55);
 
-    const maxAbs = Math.max(80, d3.max(rows, r => Math.abs(r.desviacion)) ?? 80);
-    const x = d3.scaleLinear().domain([-maxAbs * 1.1, maxAbs * 1.1]).range([0, innerW]);
-    const y = d3.scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.3);
+    const g = svg.append('g').attr('transform', `translate(${marginLeft},${marginTop})`);
 
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    // Zone labels
+    g.append('text').attr('x', 0).attr('y', -22).attr('font-size', 10).attr('font-weight', 600)
+      .attr('fill', 'hsl(var(--success))').text('← Capacidad disponible');
+    g.append('text').attr('x', innerW).attr('y', -22).attr('text-anchor', 'end').attr('font-size', 10).attr('font-weight', 600)
+      .attr('fill', 'hsl(var(--destructive))').text('Sobrecarga →');
 
-    // zone labels
-    g.append('text').attr('x', 0).attr('y', -18).attr('font-size', 9).attr('font-weight', 600).attr('fill', '#0f9e7b').text('← Capacidad disponible');
-    g.append('text').attr('x', innerW).attr('y', -18).attr('text-anchor', 'end').attr('font-size', 9).attr('font-weight', 600).attr('fill', '#e05252').text('Sobrecarga →');
+    // Meta label
+    g.append('text').attr('x', x(0)).attr('y', -6).attr('text-anchor', 'middle')
+      .attr('font-size', 10).attr('fill', 'hsl(var(--muted-foreground))').text('Meta 250 pac./médico');
 
-    // meta label
-    g.append('text').attr('x', x(0)).attr('y', -4).attr('text-anchor', 'middle').attr('font-size', 9.5).attr('fill', '#888').text('Meta 250 pac./médico');
-
-    // x axis
+    // X axis (percent)
     g.append('g').attr('transform', `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(7).tickSize(0).tickFormat(d => (d as number > 0 ? `+${d}` : `${d}`)))
+      .call(d3.axisBottom(x).ticks(7).tickSize(0).tickFormat(d => `${d as number > 0 ? '+' : ''}${d}%`))
       .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--muted-foreground))').attr('font-size', 10); });
 
-    // y axis (specialty labels)
-    g.append('g').call(d3.axisLeft(y).tickSize(0))
+    // Y axis (specialty labels, left)
+    g.append('g').call(d3.axisLeft(y).tickSize(0).tickPadding(12))
       .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--foreground))').attr('font-size', 12); });
 
-    // bars
+    // Bars
     g.selectAll('rect.bar').data(rows).enter().append('rect')
       .attr('class', 'bar')
       .attr('y', d => y(d.especialidad) ?? 0)
       .attr('height', y.bandwidth())
       .attr('x', d => d.desviacion >= 0 ? x(0) : x(d.desviacion))
       .attr('width', d => Math.abs(x(d.desviacion) - x(0)))
-      .attr('fill', d => divergingColor(d.desviacion))
-      .attr('rx', 3)
+      .attr('fill', d => zoneColor(d.desviacion))
+      .attr('rx', 4)
       .style('cursor', 'pointer')
       .on('mousemove', (event: MouseEvent, d: Row) => {
         const rect = (svgRef.current as SVGSVGElement).getBoundingClientRect();
@@ -109,50 +112,41 @@ export function DivergingBar({ specialists }: Props) {
       })
       .on('mouseleave', () => setTip(null));
 
-    // value labels
+    // Value labels
     g.selectAll('text.val').data(rows).enter().append('text')
       .attr('class', 'val')
-      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 - 1)
-      .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
+      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 4)
+      .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 8 : x(d.desviacion) - 8)
       .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 11.5).attr('font-weight', 700)
-      .attr('fill', d => divergingColor(d.desviacion))
-      .text(d => `${d.desviacion >= 0 ? '+' : ''}${d.desviacion.toFixed(1)}`);
+      .attr('font-size', 12).attr('font-weight', 700)
+      .attr('fill', d => zoneColor(d.desviacion))
+      .text(d => `${d.desviacion >= 0 ? '+' : ''}${d.desviacion.toFixed(1)}%`);
 
-    g.selectAll('text.avg').data(rows).enter().append('text')
-      .attr('class', 'avg')
-      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 11)
-      .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
-      .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 9.5)
-      .attr('fill', 'hsl(var(--muted-foreground))')
-      .text(d => `(${d.promedio_pacientes} pac.)`);
-
-    // center line
+    // Center line (meta)
     g.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', innerH)
-      .attr('stroke', '#bbb').attr('stroke-width', 1.5);
-  }, [rows, size]);
+      .attr('stroke', 'hsl(var(--border))').attr('stroke-width', 1.5).attr('stroke-dasharray', '3 3');
+  }, [rows, width, innerH]);
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={wrapRef} className="relative flex-1 min-h-[360px]">
-        <svg ref={svgRef} width={size.w} height={size.h} />
+      <div ref={wrapRef} className="relative flex-1 min-h-[280px]">
+        <svg ref={svgRef} width={width} height={height} />
         {tip && (
           <div
             className="pointer-events-none absolute z-20 bg-popover text-popover-foreground border border-border rounded-md shadow-md px-3 py-2 text-xs"
-            style={{ left: Math.min(tip.x + 12, size.w - 220), top: Math.max(8, tip.y - 70) }}
+            style={{ left: Math.min(tip.x + 12, width - 220), top: Math.max(8, tip.y - 70) }}
           >
             <div className="font-semibold">{tip.row.especialidad}</div>
             <div>Promedio: <span className="font-semibold">{tip.row.promedio_pacientes}</span> pac.</div>
-            <div>Desviación: <span className="font-semibold">{tip.row.desviacion >= 0 ? '+' : ''}{tip.row.desviacion}</span></div>
+            <div>Desviación: <span className="font-semibold">{tip.row.desviacion >= 0 ? '+' : ''}{tip.row.desviacion}%</span></div>
             <div>Médicos: {tip.row.cantidad_medicos}</div>
-            <div className="text-muted-foreground mt-1">{severityLabel(tip.row.desviacion)}</div>
+            <div className="text-muted-foreground mt-1">{zoneLabel(tip.row.desviacion)}</div>
           </div>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-x-4 gap-y-1 mt-3 px-2">
+      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mt-4 pt-3 border-t border-border">
         {LEGEND.map(l => (
-          <div key={l.t} className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground">
+          <div key={l.t} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.c }} />
             <span>{l.t}</span>
           </div>

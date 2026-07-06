@@ -10,7 +10,7 @@ import { AuditoriasPage } from '@/components/pages/AuditoriasPage';
 import { DiagnosticosPage } from '@/components/pages/DiagnosticosPage';
 import { AjustesPage } from '@/components/pages/AjustesPage';
 import { FAQPage } from '@/components/pages/FAQPage';
-import { HelpDeskPage } from '@/components/pages/HelpDeskPage';
+import { SoporteTecnicoPage } from '@/components/pages/SoporteTecnicoPage';
 
 const pageComponents: Record<string, React.ComponentType> = {
   dashboard: DashboardContent,
@@ -22,7 +22,7 @@ const pageComponents: Record<string, React.ComponentType> = {
   auditorias: AuditoriasPage,
   ajustes: AjustesPage,
   faq: FAQPage,
-  helpdesk: HelpDeskPage,
+  helpdesk: SoporteTecnicoPage,
 };
 
 const Index = () => {

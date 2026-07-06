@@ -27,7 +27,6 @@ export function mulberry32(seed: number) {
   };
 }
 
-// Gaussian kernel density estimation
 export function kde(values: number[], bandwidth: number, points: number[]) {
   const k = (u: number) => Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
   return points.map(x => {
@@ -56,20 +55,20 @@ export function stats(values: number[]) {
   return { q1, median, q3, minWhisker, maxWhisker, min: sorted[0], max: sorted[sorted.length - 1] };
 }
 
-export function divergingColor(d: number): string {
-  if (d > 60) return '#c0392b';
-  if (d > 30) return '#e05252';
-  if (d > 0) return '#f09090';
-  if (d > -30) return '#7dcfb6';
-  if (d > -60) return '#0f9e7b';
-  return '#0a5c48';
+/**
+ * 3-zone semáforo para Diverging Bar (Ratio vs Meta):
+ * Verde |desv| ≤ 10 % · Ámbar 10-20 % · Rojo > 20 %.
+ */
+export function zoneColor(desvPct: number): string {
+  const a = Math.abs(desvPct);
+  if (a <= 10) return 'hsl(var(--success))';
+  if (a <= 20) return 'hsl(var(--warning))';
+  return 'hsl(var(--destructive))';
 }
 
-export function severityLabel(d: number): string {
-  if (d > 60) return 'Crítico — intervención urgente';
-  if (d > 30) return 'Moderado — atención requerida';
-  if (d > 0) return 'Leve — monitorear';
-  if (d > -30) return 'Leve — capacidad mínima';
-  if (d > -60) return 'Holgado — capacidad disponible';
-  return 'Subutilizado — reasignar recursos';
+export function zoneLabel(desvPct: number): string {
+  const a = Math.abs(desvPct);
+  if (a <= 10) return 'En rango (±10 %)';
+  if (a <= 20) return desvPct > 0 ? 'Sobrecarga leve (+10–20 %)' : 'Capacidad disponible (−10–20 %)';
+  return desvPct > 0 ? 'Sobrecarga crítica (>+20 %)' : 'Subutilizado (<−20 %)';
 }
