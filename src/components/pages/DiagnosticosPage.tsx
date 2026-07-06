@@ -25,6 +25,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
+import { useDemoStore, type Diagnostico as StoreDiagnostico } from '@/store/useDemoStore';
 
 type Sintoma = { nombre: string; descripcion: string; gravedad: number };
 
@@ -143,7 +144,8 @@ function HealthMeter({ value }: { value: number }) {
 }
 
 export function DiagnosticosPage() {
-  const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>(initialDiagnosticos);
+  const diagnosticos = useDemoStore(s => s.diagnosticos) as Diagnostico[];
+  const addDiagnostico = useDemoStore(s => s.addDiagnostico);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [viewing, setViewing] = useState<Diagnostico | null>(null);
   const [form, setForm] = useState(emptyForm());
@@ -191,8 +193,7 @@ export function DiagnosticosPage() {
       form.sintomas.length > 0
         ? form.sintomas.reduce((acc, s) => acc + (Number(s.gravedad) || 0), 0) / form.sintomas.length
         : 3;
-    const nuevo: Diagnostico = {
-      id: Date.now(),
+    addDiagnostico({
       numCitaOrigen: form.numCitaOrigen,
       paciente: `${form.nombres} ${form.apellidos}`.trim(),
       ci: form.ci,
@@ -208,8 +209,7 @@ export function DiagnosticosPage() {
       critico: avg >= 4 || form.urgencia,
       etapa: 'Inicial',
       estado: 'Activo',
-    };
-    setDiagnosticos(d => [nuevo, ...d]);
+    } as Omit<StoreDiagnostico, 'id' | 'createdAt'>);
     setForm(emptyForm());
     setRegisterOpen(false);
     setConfirmOpen(false);
