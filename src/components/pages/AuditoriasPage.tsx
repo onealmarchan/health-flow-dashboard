@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
+import { BackupActions } from '@/components/backup/BackupActions';
 import { cn } from '@/lib/utils';
 import { useAuditorias } from '@/services/useAuditorias';
 
@@ -88,32 +89,35 @@ export function AuditoriasPage() {
 
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <SearchBar value={search} onChange={setSearch} placeholder="Buscar por registro, cambio o responsable..." />
-        <FiltersButton onClear={() => { setFilterSeccion('todas'); setFilterAccion('todas'); }}>
-          <div className="space-y-2">
-            <Label className="text-foreground text-xs">Sección</Label>
-            <Select value={filterSeccion} onValueChange={setFilterSeccion}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-[60]">
-                <SelectItem value="todas">Todas</SelectItem>
-                {secciones.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-foreground text-xs">Acción</Label>
-            <Select value={filterAccion} onValueChange={setFilterAccion}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-[60]">
-                <SelectItem value="todas">Todas</SelectItem>
-                <SelectItem value="Crear">Crear</SelectItem>
-                <SelectItem value="Editar">Editar</SelectItem>
-                <SelectItem value="Eliminar">Eliminar</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </FiltersButton>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3">
+          <SearchBar value={search} onChange={setSearch} placeholder="Buscar por registro, cambio o responsable..." />
+          <FiltersButton onClear={() => { setFilterSeccion('todas'); setFilterAccion('todas'); }}>
+            <div className="space-y-2">
+              <Label className="text-foreground text-xs">Sección</Label>
+              <Select value={filterSeccion} onValueChange={setFilterSeccion}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-[60]">
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {secciones.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground text-xs">Acción</Label>
+              <Select value={filterAccion} onValueChange={setFilterAccion}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-[60]">
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="Crear">Crear</SelectItem>
+                  <SelectItem value="Editar">Editar</SelectItem>
+                  <SelectItem value="Eliminar">Eliminar</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </FiltersButton>
+        </div>
+        <BackupActions />
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
