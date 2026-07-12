@@ -20,7 +20,7 @@ export function FiltersButton({ children, onClear, onApply, label = 'Filtros' }:
           {label}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 bg-popover border border-border z-50" align="end">
+      <PopoverContent className="w-80 bg-popover/95 backdrop-blur-sm border border-border z-50" align="end">
         <div className="space-y-3">
           <p className="text-sm font-semibold text-popover-foreground">Filtros</p>
           <div className="space-y-3">{children}</div>

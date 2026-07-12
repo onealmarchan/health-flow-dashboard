@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2, TrendingUp, ShieldOff } from 'lucide-react';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Save, Ban, Trash2, Edit, Link2, TrendingUp, ShieldOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,13 +16,6 @@ import { AvailabilityTable, DoctorAvailability, AvailabilityEvent } from './jorn
 import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { buildCreateSesionPayload, useSesionesMedicas, useCreateSesion, useUpdateSesion, useDeleteSesion, useBloqueos, useCreateBloqueo, useUpdateBloqueo, useDeleteBloqueo } from '@/services/useJornadas';
 
-
-const doctors = [
-  { mpps: 'MPPS-001', nombre: 'Juan', apellido: 'López', especialidad: 'Cardiología' },
-  { mpps: 'MPPS-002', nombre: 'Ana', apellido: 'Martínez', especialidad: 'Pediatría' },
-  { mpps: 'MPPS-003', nombre: 'Carlos', apellido: 'Sánchez', especialidad: 'Dermatología' },
-  { mpps: 'MPPS-004', nombre: 'María', apellido: 'Díaz', especialidad: 'Neurología' },
-];
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 const DAYS_HEAD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -133,10 +126,10 @@ const YEARS = Array.from({ length: 3 }, (_, i) => currentYear + i);
 
 export function JornadasPage() {
   // API Hooks
-  const { data: apiMedicos = [] } = useMedicos();
+  const { data: apiMedicos = [], isLoading: isLoadingMedicos } = useMedicos();
   const { data: apiEspecialidades = [] } = useEspecialidades();
-  const { data: apiSesiones = [] } = useSesionesMedicas();
-  const { data: apiBloqueos = [] } = useBloqueos();
+  const { data: apiSesiones = [], isLoading: isLoadingSesiones } = useSesionesMedicas();
+  const { data: apiBloqueos = [], isLoading: isLoadingBloqueos } = useBloqueos();
   
   const createSesion = useCreateSesion();
   const updateSesion = useUpdateSesion();
@@ -535,23 +528,22 @@ export function JornadasPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Planificación de Jornadas Médicas</h1>
-          <p className="text-muted-foreground">Configuración de jornadas de atención</p>
+          <h1 className="text-xl font-bold text-foreground">Planificación de Jornadas Médicas</h1>
+          <p className="text-sm text-muted-foreground">Configuración de jornadas de atención</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setShowModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
+        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" onClick={() => setShowModal(true)}>
+          <Plus className="w-3.5 h-3.5 mr-1.5" />
           Agregar Jornada
         </Button>
       </div>
 
       {(() => {
-        // Bloques totales estimados = 7 días × 3 turnos × doctores
         const totalDoctors = doctors.length;
         const totalBlocks = 7 * 3 * totalDoctors;
-        const bloqueados = Object.values(store).reduce((n, d) => n + d.bloqueos.length, 0);
-        const ocupados = Object.values(store).reduce((n, d) => n + d.rows.filter(r => r.saved).length, 0);
-        const ocupacionPct = totalBlocks > 0 ? (ocupados / totalBlocks) * 100 : 0;
-        const bloqueosPct = totalBlocks > 0 ? (bloqueados / totalBlocks) * 100 : 0;
+        const apiSesionesCount = apiSesiones.length;
+        const apiBloqueosCount = apiBloqueos.length;
+        const ocupacionPct = totalBlocks > 0 ? (apiSesionesCount / totalBlocks) * 100 : 0;
+        const bloqueosPct = totalBlocks > 0 ? (apiBloqueosCount / totalBlocks) * 100 : 0;
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div role="button" tabIndex={0} onClick={() => setAvailabilityFilter('sessions')} onKeyDown={() => setAvailabilityFilter('sessions')}
@@ -559,7 +551,7 @@ export function JornadasPage() {
               <MetricCard
                 title="% Ocupación de Agenda"
                 value={`${ocupacionPct.toFixed(0)}%`}
-                subtitle="Bloques ocupados / totales"
+                subtitle={`${apiSesionesCount} sesiones activas de ${totalBlocks} bloques`}
                 icon={Calendar}
                 semaforo={getSemaforo('ocupacionAgenda', ocupacionPct)}
                 trend={{ value: 0, isPositive: true }}
@@ -570,7 +562,7 @@ export function JornadasPage() {
               <MetricCard
                 title="% Bloqueos de Agenda"
                 value={`${bloqueosPct.toFixed(0)}%`}
-                subtitle="Bloqueos manuales / totales"
+                subtitle={`${apiBloqueosCount} bloqueos de ${totalBlocks} bloques`}
                 icon={ShieldOff}
                 semaforo={getSemaforo('bloqueosAgenda', bloqueosPct)}
                 trend={{ value: 0, isPositive: false }}
@@ -582,7 +574,14 @@ export function JornadasPage() {
 
 
       {/* Unified Availability Table (replaces old "Jornadas Registradas") */}
-      <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} filter={availabilityFilter} onFilterChange={setAvailabilityFilter} />
+      {isLoadingMedicos || isLoadingSesiones || isLoadingBloqueos ? (
+        <div className="flex items-center justify-center py-12 bg-card border border-border rounded-lg">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Cargando jornadas...</span>
+        </div>
+      ) : (
+        <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} filter={availabilityFilter} onFilterChange={setAvailabilityFilter} />
+      )}
 
       {/* Add Jornada Modal — 4 cuadrantes */}
       <Dialog open={showModal} onOpenChange={setShowModal}>

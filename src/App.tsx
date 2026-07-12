@@ -14,7 +14,15 @@ import { useEffect } from 'react';
 import { clearAuthToken } from '@/services/apiClient';
 import { useNavigate } from 'react-router-dom';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   return (

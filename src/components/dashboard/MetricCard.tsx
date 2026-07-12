@@ -19,24 +19,30 @@ interface MetricCardProps {
 
 const variantStyles: Record<NonNullable<MetricCardProps['variant']>, string> = {
   default: 'bg-card',
-  primary: 'bg-primary/10 border-primary/20',
-  success: 'bg-success/10 border-success/20',
-  warning: 'bg-warning/10 border-warning/20',
-  accent: 'bg-accent/10 border-accent/20',
+  primary: 'bg-primary/5 border-primary/15',
+  success: 'bg-success/5 border-success/15',
+  warning: 'bg-warning/5 border-warning/15',
+  accent: 'bg-accent/5 border-accent/15',
 };
 
 const iconVariantStyles: Record<NonNullable<MetricCardProps['variant']>, string> = {
   default: 'bg-secondary text-foreground',
-  primary: 'bg-primary text-primary-foreground',
-  success: 'bg-success text-success-foreground',
-  warning: 'bg-warning text-warning-foreground',
-  accent: 'bg-accent text-accent-foreground',
+  primary: 'bg-primary/10 text-primary',
+  success: 'bg-success/10 text-success',
+  warning: 'bg-warning/10 text-warning',
+  accent: 'bg-accent/10 text-accent',
 };
 
 const semaforoIconBg: Record<SemaforoColor, string> = {
-  verde: 'bg-success text-success-foreground',
-  ambar: 'bg-warning text-warning-foreground',
-  rojo:  'bg-destructive text-destructive-foreground',
+  verde: 'bg-success/10 text-success',
+  ambar: 'bg-warning/10 text-warning',
+  rojo:  'bg-destructive/10 text-destructive',
+};
+
+const semaforoBorderLeft: Record<SemaforoColor, string> = {
+  verde: 'border-l-success',
+  ambar: 'border-l-warning',
+  rojo:  'border-l-destructive',
 };
 
 export function MetricCard({
@@ -48,26 +54,26 @@ export function MetricCard({
   return (
     <div className={cn(
       'metric-card animate-fade-in border',
-      sem ? cn(sem.bg, sem.border) : variantStyles[variant],
+      sem ? cn(sem.bg, sem.border, 'border-l-[3px]', semaforoBorderLeft[semaforo!]) : variantStyles[variant],
     )}>
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2 min-w-0">
-          <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
-          <p className={cn('text-3xl font-bold', sem ? sem.text : 'text-foreground')}>{value}</p>
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        <div className="space-y-1.5 min-w-0">
+          <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
+          <p className={cn('text-2xl font-bold tracking-tight', sem ? sem.text : 'text-foreground')}>{value}</p>
+          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
           {trend && (
             <div className={cn(
-              'inline-flex items-center gap-1 text-sm font-medium',
+              'inline-flex items-center gap-1 text-xs font-medium',
               isPositive ? 'text-success' : 'text-destructive',
             )}>
               <span>{isPositive ? '↑' : '↓'}</span>
               <span>{Math.abs(trend.value).toFixed(1)}%</span>
-              <span className="text-muted-foreground">vs mes anterior</span>
+              <span className="text-muted-foreground font-normal">vs mes anterior</span>
             </div>
           )}
         </div>
-        <div className={cn('p-3 rounded-xl shrink-0', semaforo ? semaforoIconBg[semaforo] : iconVariantStyles[variant])}>
-          <Icon className="w-6 h-6" />
+        <div className={cn('p-2.5 rounded-lg shrink-0', semaforo ? semaforoIconBg[semaforo!] : iconVariantStyles[variant])}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
     </div>

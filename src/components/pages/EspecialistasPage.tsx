@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { UserCog, Plus, Phone, Search, Download } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { UserCog, Plus, Phone, Search, Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +12,14 @@ import { useMedicos, useCreateMedico, useUpdateMedico, useDeleteMedico, useEspec
 import { EspecialistasExportDrawer } from '@/components/reports/EspecialistasExportDrawer';
 import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
+import { TablePagination } from '@/components/shared/TablePagination';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Pencil, Trash2 } from 'lucide-react';
 
 type ModalView = 'closed' | 'search' | 'new' | 'edit';
 
 export function EspecialistasPage() {
-  const { data: apiMedicos = [] } = useMedicos();
+  const { data: apiMedicos = [], isLoading: isLoadingMedicos } = useMedicos();
   const createMedico = useCreateMedico();
   const updateMedico = useUpdateMedico();
   const deleteMedico = useDeleteMedico();
@@ -60,6 +61,8 @@ export function EspecialistasPage() {
   const [newEspecialidad, setNewEspecialidad] = useState({ nombre: '', descripcion: '' });
   const [exportOpen, setExportOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const especialidades = useMemo(() => apiEspecialidades, [apiEspecialidades]);
 
@@ -84,6 +87,14 @@ export function EspecialistasPage() {
       );
     });
   }, [specialists, cardSearch, filterEspecialidad, filterDisponible]);
+
+  const totalPages = Math.max(1, Math.ceil(cardList.length / itemsPerPage));
+  const paginatedCardList = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return cardList.slice(start, start + itemsPerPage);
+  }, [cardList, currentPage]);
+
+  useEffect(() => { setCurrentPage(1); }, [cardSearch, filterEspecialidad, filterDisponible]);
 
   const handleSave = async () => {
     if (!newSpec.nombre.trim() || !newSpec.apellido.trim() || !newSpec.mpps.trim() || !newSpec.especialidadId || !newSpec.telefono.trim()) {
@@ -163,16 +174,16 @@ export function EspecialistasPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Especialistas Médicos</h1>
-          <p className="text-muted-foreground">Directorio de profesionales de la salud</p>
+          <h1 className="text-xl font-bold text-foreground">Especialistas Médicos</h1>
+          <p className="text-sm text-muted-foreground">Directorio de profesionales de la salud</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setExportOpen(true)}>
-            <Download className="w-4 h-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
+            <Download className="w-3.5 h-3.5 mr-1.5" />
             Exportar
           </Button>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setModalView('search')}>
-            <Plus className="w-4 h-4 mr-2" />
+          <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" onClick={() => setModalView('search')}>
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
             Agregar Especialista
           </Button>
         </div>
@@ -212,49 +223,59 @@ export function EspecialistasPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-        {cardList.map(s => (
-          <div key={s.id} className="metric-card">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                <UserCog className="w-6 h-6 text-primary-foreground" />
+        {isLoadingMedicos ? (
+          <div className="col-span-full flex items-center justify-center py-10">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Cargando especialistas...</span>
+          </div>
+        ) : paginatedCardList.length === 0 ? (
+          <div className="col-span-full text-center text-muted-foreground py-10">
+            {cardList.length === 0 ? 'No se encontraron especialistas con los filtros seleccionados.' : 'Sin especialistas en esta página.'}
+          </div>
+        ) : paginatedCardList.map(s => (
+          <div key={s.id} className="metric-card group">
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-11 h-11 rounded-full gradient-primary flex items-center justify-center shadow-sm">
+                <UserCog className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                s.disponible ? 'bg-success/20 text-success' : 'bg-muted text-muted-foreground'
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                s.disponible ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground'
               }`}>
                 {s.disponible ? 'Disponible' : 'No disponible'}
               </span>
             </div>
 
-            <h3 className="font-semibold text-foreground">Dr(a). {s.nombre} {s.apellido}</h3>
-            <p className="text-sm text-primary mb-1">{s.especialidad}</p>
-            <p className="text-xs text-muted-foreground font-mono mb-3">{s.mpps}</p>
+            <h3 className="font-semibold text-foreground text-sm">Dr(a). {s.nombre} {s.apellido}</h3>
+            <p className="text-xs text-primary font-medium mb-0.5">{s.especialidad}</p>
+            <p className="text-[11px] text-muted-foreground font-mono mb-2">{s.mpps}</p>
 
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-sm text-muted-foreground">{s.pacientes} pacientes</span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-xs text-muted-foreground">{s.pacientes} pacientes</span>
             </div>
 
-            <div className="pt-3 border-t border-border flex justify-between items-center">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="w-4 h-4" />
+            <div className="pt-2.5 border-t border-border/60 flex justify-between items-center">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Phone className="w-3.5 h-3.5" />
                 <span>{s.telefono}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/20" onClick={() => handleEdit(s)}>
-                  <Pencil className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-primary/10 transition-colors" onClick={() => handleEdit(s)}>
+                  <Pencil className="h-3.5 w-3.5 text-primary" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-destructive/20 hover:text-destructive" onClick={() => setConfirmDelete(s.id)}>
-                  <Trash2 className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => setConfirmDelete(s.id)}>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
           </div>
         ))}
-        {cardList.length === 0 && (
-          <div className="col-span-full text-center text-muted-foreground py-10">
-            No se encontraron especialistas con los filtros seleccionados.
-          </div>
-        )}
       </div>
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={cardList.length}
+        onPageChange={setCurrentPage}
+      />
 
       <EspecialistasExportDrawer
         open={exportOpen}
@@ -285,7 +306,7 @@ export function EspecialistasPage() {
               <thead>
                 <tr className="border-b border-border">
                   {['Nº MPPS', 'Nombre', 'Apellido', 'Teléfono', 'Carga de Pacientes'].map(h => (
-                    <th key={h} className="text-left p-2 text-xs font-medium text-muted-foreground">{h}</th>
+                    <th key={h} className="text-left p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>

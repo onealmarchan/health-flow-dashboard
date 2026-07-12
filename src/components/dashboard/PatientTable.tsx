@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Search, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
+import { TablePagination } from '@/components/shared/TablePagination';
 import { usePacientes } from '@/services/usePacientes';
 import { useComunidades } from '@/services/useComunidades';
 
@@ -83,6 +84,8 @@ export function PatientTable() {
   const [comunidadFilter, setComunidadFilter] = useState<string>('all');
   const [complDetail, setComplDetail] = useState<Patient | null>(null);
   const [comunDetail, setComunDetail] = useState<Patient | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const communities = useMemo(() => Array.from(new Set(patients.map(p => p.comunidad))), [patients]);
 
@@ -96,6 +99,14 @@ export function PatientTable() {
     const okComunidad = comunidadFilter === 'all' || p.comunidad === comunidadFilter;
     return okSearch && okEstado && okComunidad;
   }), [patients, search, estadoFilter, comunidadFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
+  const paginatedPatients = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filtered.slice(start, start + itemsPerPage);
+  }, [filtered, currentPage]);
+
+  useEffect(() => { setCurrentPage(1); }, [search, estadoFilter, comunidadFilter]);
 
   const reportModule: ReportableModule<Patient> = useMemo(() => ({
     name: 'Pacientes',
@@ -149,8 +160,8 @@ export function PatientTable() {
       <div className="chart-container animate-fade-in">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Pacientes Registrados</h3>
-            <p className="text-sm text-muted-foreground">{filtered.length} de {patients.length} pacientes</p>
+            <h3 className="text-base font-semibold text-foreground">Pacientes Registrados</h3>
+            <p className="text-xs text-muted-foreground">{filtered.length} de {patients.length} pacientes</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
@@ -179,43 +190,48 @@ export function PatientTable() {
         {reports.ContextBar}
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{reports.HeaderCheckbox}</th>
                 {['Nº', 'C.I.', 'Nombres', 'Apellidos', 'Detalles Complementarios', 'Detalles Comunitarios', 'Estado'].map(h => (
-                  <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
+                  <th key={h} className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p, idx) => {
+              {paginatedPatients.length === 0 && (
+                <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">
+                  {filtered.length === 0 ? 'No se encontraron pacientes' : 'Sin pacientes registrados'}
+                </td></tr>
+              )}
+              {paginatedPatients.map((p, idx) => {
                 const selected = reports.isRowSelected(p.num);
+                const rowNum = (currentPage - 1) * itemsPerPage + idx + 1;
                 return (
                   <tr key={p.num}
                     className={cn(
                       'border-b border-border/50 transition-colors',
-                      selected ? 'bg-primary/10' : (idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'),
-                      'hover:bg-secondary/50'
+                      selected ? 'bg-primary/10' : 'hover:bg-secondary/30'
                     )}>
                     <td className="p-3"><reports.RowCheckbox id={p.num} /></td>
-                    <td className="p-3 text-sm font-mono text-foreground">{p.num}</td>
-                    <td className="p-3 text-sm font-mono text-foreground">{p.ci}</td>
-                    <td className="p-3 text-sm text-foreground">{p.nombres}</td>
-                    <td className="p-3 text-sm text-foreground">{p.apellidos}</td>
+                    <td className="p-3 font-mono text-muted-foreground text-xs">{p.num}</td>
+                    <td className="p-3 font-mono text-foreground text-xs">{p.ci}</td>
+                    <td className="p-3 text-foreground">{p.nombres}</td>
+                    <td className="p-3 text-foreground">{p.apellidos}</td>
                     <td className="p-3">
-                      <Button variant="ghost" size="sm" onClick={() => setComplDetail(p)}>
-                        <Eye className="w-4 h-4 mr-1" /> Ver
+                      <Button variant="ghost" size="sm" onClick={() => setComplDetail(p)} className="h-7 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Ver
                       </Button>
                     </td>
                     <td className="p-3">
-                      <Button variant="ghost" size="sm" onClick={() => setComunDetail(p)}>
-                        <Eye className="w-4 h-4 mr-1" /> Ver
+                      <Button variant="ghost" size="sm" onClick={() => setComunDetail(p)} className="h-7 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> Ver
                       </Button>
                     </td>
                     <td className="p-3">
                       <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium',
-                        p.estado === 'Activo' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning')}>
+                        p.estado === 'Activo' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning')}>
                         {p.estado}
                       </span>
                     </td>
@@ -225,9 +241,12 @@ export function PatientTable() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">No se encontraron pacientes.</div>
-        )}
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filtered.length}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {reports.ReportSheet}

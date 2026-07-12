@@ -24,4 +24,5 @@ export function setAuthToken(token: string) {
  */
 export function clearAuthToken() {
   localStorage.removeItem('token');
+  api.setToken('');
 }

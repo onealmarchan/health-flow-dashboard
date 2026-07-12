@@ -1,50 +1,107 @@
-import { useMemo } from 'react';
-import { usePacientes } from './usePacientes';
-import { useCitas } from './useCitas';
-import { useMedicos } from './useMedicos';
-import { useSesionesMedicas } from './useJornadas';
+import { useQuery } from '@tanstack/react-query';
+import { api } from './apiClient';
 
 export const DASHBOARD_KEY = ['dashboard'] as const;
 
 export function useDashboardMetrics() {
-  const { data: pacientes = [], isLoading: isLoadingPacientes } = usePacientes();
-  const { data: citas = [], isLoading: isLoadingCitas } = useCitas();
-  const { data: medicos = [], isLoading: isLoadingMedicos } = useMedicos();
-  const { data: sesiones = [], isLoading: isLoadingSesiones } = useSesionesMedicas();
+  const pacientes = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'total-pacientes'],
+    queryFn: async () => {
+      const res = await api.DashboardController_getTotalPacientes();
+      return res.data;
+    },
+  });
 
-  const data = useMemo(() => {
-    const totalPacientes = pacientes.length;
-    const totalConsultas = citas.length;
+  const consultas = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'total-consultas'],
+    queryFn: async () => {
+      const res = await api.DashboardController_getTotalConsultas();
+      return res.data;
+    },
+  });
 
-    // Citas de hoy
-    const hoyStr = new Date().toISOString().split('T')[0];
-    const citasHoyList = citas.filter((c: any) => (c.fecha || c.date) === hoyStr);
-    const citasHoyAtendidas = citasHoyList.filter((c: any) => c.estado_cita === 'atendida' || c.estado_cita === 'confirmada' || c.status === 'confirmada');
-    const citasHoyPct = citasHoyList.length > 0 ? (citasHoyAtendidas.length / citasHoyList.length) * 100 : 0;
+  const citasHoy = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'citas-hoy'],
+    queryFn: async () => {
+      const res = await api.DashboardController_getCitasHoy();
+      return res.data;
+    },
+  });
 
-    // Consultas Mensuales (del mes actual)
-    const mesActual = hoyStr.substring(0, 7); // YYYY-MM
-    const consultasMensuales = citas.filter((c: any) => (c.fecha || c.date)?.startsWith(mesActual)).length;
+  const ocupacion = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'ocupacion-agenda'],
+    queryFn: async () => {
+      const res = await api.DashboardController_getOcupacionAgenda();
+      return res.data;
+    },
+  });
 
-    // Urgencias (emergencia)
-    const urgencias = citas.filter((c: any) => c.tipo_cita === 'emergencia').length;
-    const urgenciasPct = totalConsultas > 0 ? (urgencias / totalConsultas) * 100 : 0;
+  const bloqueos = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'bloqueos-agenda'],
+    queryFn: async () => {
+      const res = await api.DashboardController_getBloqueoAgenda();
+      return res.data;
+    },
+  });
 
-    // Carga media (promedio de pacientes por médico)
-    const cargaMedia = medicos.length > 0 ? (totalPacientes / medicos.length) : 0;
+  const cargaPromedio = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'carga-promedio'],
+    queryFn: async () => {
+      const res = await api.IndicadoresDosController_cargaPromedioPorEspecialista();
+      return res.data;
+    },
+  });
 
-    return {
-      totalPacientes: { total: totalPacientes, change: 0 },
-      citasHoy: { total: citasHoyList.length, percentage: citasHoyPct, change: 0 },
-      consultasMensuales: { total: consultasMensuales, change: 0 },
-      ocupacionAgenda: { percentage: urgenciasPct, change: 0 },
-      bloqueosAgenda: { percentage: 0, change: 0 },
-      cargaMedia: { total: cargaMedia, change: 0 }
-    };
-  }, [pacientes, citas, medicos, sesiones]);
+  const urgencias = useQuery({
+    queryKey: [...DASHBOARD_KEY, 'urgencias'],
+    queryFn: async () => {
+      const res = await api.IndicadoresDosController_porcentajeUrgenciasConsultas();
+      return res.data;
+    },
+  });
 
-  return {
-    data,
-    isLoading: isLoadingPacientes || isLoadingCitas || isLoadingMedicos || isLoadingSesiones,
+  const isLoading = pacientes.isLoading || consultas.isLoading || citasHoy.isLoading || ocupacion.isLoading || bloqueos.isLoading || cargaPromedio.isLoading || urgencias.isLoading;
+
+  const toDelta = (variacion?: { porcentaje: number; tendencia: string } | null): number => {
+    if (!variacion) return 0;
+    const pct = variacion.porcentaje || 0;
+    return variacion.tendencia === 'bajo' ? -pct : pct;
   };
+
+  const data = {
+    totalPacientes: {
+      total: pacientes.data?.totalPacientes ?? 0,
+      change: toDelta(pacientes.data?.variacionMensual),
+    },
+    citasHoy: {
+      total: citasHoy.data?.totalCitasHoy ?? 0,
+      change: toDelta(citasHoy.data?.variacion),
+    },
+    consultasMensuales: {
+      total: consultas.data?.totalConsultas ?? 0,
+      change: toDelta(consultas.data?.variacionMensual),
+    },
+    ocupacionAgenda: {
+      percentage: ocupacion.data?.valorIndicador ?? 0,
+      horasActivas: ocupacion.data?.horasSesionActiva ?? 0,
+      horasTotales: ocupacion.data?.horasTotalesConfiguradas ?? 0,
+    },
+    bloqueosAgenda: {
+      percentage: bloqueos.data?.valorIndicador ?? 0,
+      horasBloqueadas: bloqueos.data?.horasBloqueadas ?? 0,
+      horasTotales: bloqueos.data?.horasTotalesAgenda ?? 0,
+    },
+    cargaMedia: {
+      total: cargaPromedio.data?.promedio ?? cargaPromedio.data?.promedioCarga ?? 0,
+      change: toDelta(cargaPromedio.data?.variacion),
+      meta: cargaPromedio.data?.meta ?? 250,
+    },
+    urgencias: {
+      percentage: urgencias.data?.valorIndicador ?? urgencias.data?.porcentaje ?? 0,
+      totalConsultas: urgencias.data?.totalConsultas ?? 0,
+      totalUrgencias: urgencias.data?.totalUrgencias ?? 0,
+    },
+  };
+
+  return { data, isLoading };
 }

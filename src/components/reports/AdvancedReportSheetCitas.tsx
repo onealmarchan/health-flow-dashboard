@@ -3,12 +3,13 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import type { ReportableModule, ExportFormat, SortMode } from './types';
-import { exportReport } from './exporters';
+import { exportReport, generarReporteGeneral } from './exporters';
 import { AdvancedSheetShell, ReportTypeRadio, AdvancedReportType } from './AdvancedSheetShell';
 
-type CitasReportType = 'total' | 'menor' | 'mayor' | 'promedio';
+type CitasReportType = 'general' | 'total' | 'menor' | 'mayor' | 'promedio';
 
 const types: AdvancedReportType<CitasReportType>[] = [
+  { id: 'general', label: 'Reporte General', description: 'PDF completo con portada, resumen ejecutivo, métricas y tabla de datos detallada.' },
   { id: 'total', label: 'Total de citas registradas', description: 'Total dentro del rango — desglose por estado.' },
   { id: 'menor', label: 'Volumen menor de citas', description: 'Especialidad con la menor cantidad de citas.' },
   { id: 'mayor', label: 'Volumen mayor de citas', description: 'Especialidad con la mayor cantidad de citas.' },
@@ -88,11 +89,12 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
 
   const dateRangeInvalid = from && to && from > to;
   const dateRangeMissing = !from || !to;
+  const isGeneral = type === 'general';
 
   let validationMessage: string | null = null;
   if (!type) validationMessage = 'Debes seleccionar un tipo de reporte antes de continuar.';
-  else if (dateRangeMissing) validationMessage = 'El rango de fechas es obligatorio para este tipo de reporte.';
-  else if (dateRangeInvalid) validationMessage = 'La fecha final debe ser posterior a la inicial.';
+  else if (!isGeneral && dateRangeMissing) validationMessage = 'El rango de fechas es obligatorio para este tipo de reporte.';
+  else if (!isGeneral && dateRangeInvalid) validationMessage = 'La fecha final debe ser posterior a la inicial.';
   else if (activeFields.length === 0) validationMessage = 'Selecciona al menos un campo para exportar.';
   else if (filteredRows.length === 0) validationMessage = 'Los filtros aplicados no arrojan registros. Ajusta las opciones e intenta nuevamente.';
 
@@ -100,19 +102,33 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
 
   const previewLines = [
     { label: 'Alcance', value: scopeText },
-    { label: 'Campos', value: `${activeFields.length} de ${module.fields.length}` },
+    { label: 'Campos', value: `${activeFields.length} of ${module.fields.length}` },
     { label: 'Registros', value: String(filteredRows.length) },
     { label: 'Tipo', value: type ? types.find(t => t.id === type)!.label : '— no seleccionado —' },
-    { label: 'Formato', value: format.toUpperCase() },
-    ...(includeMetrics ? [{ label: 'Métricas', value: chartOptions.find(c => c.id === chart)!.label }] : []),
+    { label: 'Formato', value: isGeneral ? 'PDF (completo con portada)' : format.toUpperCase() },
+    ...(!isGeneral && includeMetrics ? [{ label: 'Métricas', value: chartOptions.find(c => c.id === chart)!.label }] : []),
   ];
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
-    await exportReport(format, module, filteredRows, activeFields, {
-      scope: scopeText,
-      includeMetrics,
-    });
+    if (isGeneral) {
+      const metrics = module.metrics ? module.metrics(filteredRows) : {
+        'Total registros': filteredRows.length,
+      };
+      generarReporteGeneral(
+        `Reporte General — ${module.name}`,
+        scopeText,
+        filteredRows,
+        activeFields,
+        metrics,
+        `Reporte_General_${module.name.replace(/\s+/g, '_')}`
+      );
+    } else {
+      await exportReport(format, module, filteredRows, activeFields, {
+        scope: scopeText,
+        includeMetrics,
+      });
+    }
     toast.success('Reporte generado correctamente');
     onOpenChange(false);
   };
@@ -141,16 +157,19 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
       sortMode={sortMode} onSortModeChange={setSortMode}
       format={format} onFormatChange={setFormat}
       includeMetrics={includeMetrics} onIncludeMetricsChange={setIncludeMetrics}
+      hideFormatAndMetrics={isGeneral}
       metricsExtra={
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground">Tipo de gráfico</Label>
-          <Select value={chart} onValueChange={setChart}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent className="bg-popover border border-border z-50">
-              {chartOptions.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        !isGeneral ? (
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Tipo de gráfico</Label>
+            <Select value={chart} onValueChange={setChart}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-50">
+                {chartOptions.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : undefined
       }
       previewLines={previewLines}
       validationMessage={validationMessage}

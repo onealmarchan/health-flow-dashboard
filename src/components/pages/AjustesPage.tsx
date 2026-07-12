@@ -21,17 +21,17 @@ export function AjustesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Palette className="w-6 h-6 text-primary" />
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Palette className="w-5 h-5 text-primary" />
           Ajustes
         </h1>
-        <p className="text-muted-foreground">Personaliza la apariencia y el comportamiento del sistema</p>
+        <p className="text-sm text-muted-foreground">Personaliza la apariencia y el comportamiento del sistema</p>
       </div>
 
-      <section className="bg-card border border-border rounded-lg p-6 space-y-6">
+      <section className="bg-card border border-border rounded-xl p-6 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Apariencia</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-base font-semibold text-foreground">Apariencia</h2>
+          <p className="text-xs text-muted-foreground">
             Elige el color que se usará al cambiar entre Modo Claro y Modo Oscuro desde el encabezado.
           </p>
         </div>

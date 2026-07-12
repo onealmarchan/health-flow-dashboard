@@ -43,6 +43,8 @@ interface BaseShellProps {
   includeMetrics: boolean;
   onIncludeMetricsChange: (v: boolean) => void;
   metricsExtra?: ReactNode;
+  /** Hide format/metrics sections (e.g. for Reporte General which is always PDF) */
+  hideFormatAndMetrics?: boolean;
   /** Preview block */
   previewLines: { label: string; value: string }[];
   /** Validation */
@@ -72,6 +74,7 @@ export function AdvancedSheetShell({
   enableSort, onEnableSortChange, sortMode, onSortModeChange,
   format, onFormatChange,
   includeMetrics, onIncludeMetricsChange, metricsExtra,
+  hideFormatAndMetrics,
   previewLines, validationMessage, canGenerate, onGenerate,
 }: BaseShellProps) {
   return (
@@ -138,36 +141,40 @@ export function AdvancedSheetShell({
             )}
           </section>
 
-          <section className="space-y-2">
-            <Label className="text-foreground font-semibold">Formato de salida</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {formats.map(f => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => onFormatChange(f.id)}
-                  className={cn(
-                    'flex items-center justify-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors',
-                    format === f.id
-                      ? 'border-primary bg-primary/10 text-primary font-medium'
-                      : 'border-border text-foreground hover:bg-muted'
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          {!hideFormatAndMetrics && (
+            <section className="space-y-2">
+              <Label className="text-foreground font-semibold">Formato de salida</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {formats.map(f => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => onFormatChange(f.id)}
+                    className={cn(
+                      'flex items-center justify-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors',
+                      format === f.id
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-border text-foreground hover:bg-muted'
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
-          <section className="space-y-2">
-            <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
-              <Checkbox checked={includeMetrics} onCheckedChange={v => onIncludeMetricsChange(v === true)} />
-              <span className="font-medium">Incluir métricas y gráficos</span>
-            </label>
-            {includeMetrics && metricsExtra && (
-              <div className="pl-6">{metricsExtra}</div>
-            )}
-          </section>
+          {!hideFormatAndMetrics && (
+            <section className="space-y-2">
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <Checkbox checked={includeMetrics} onCheckedChange={v => onIncludeMetricsChange(v === true)} />
+                <span className="font-medium">Incluir métricas y gráficos</span>
+              </label>
+              {includeMetrics && metricsExtra && (
+                <div className="pl-6">{metricsExtra}</div>
+              )}
+            </section>
+          )}
 
           <section className="rounded-md bg-muted p-3 text-xs space-y-1">
             <div className="font-semibold text-foreground mb-1">Vista previa estimada</div>

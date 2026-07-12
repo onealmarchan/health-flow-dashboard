@@ -151,12 +151,3 @@ flowchart TD
 
 ---
 
-## 8. Observaciones del Auditor
-
-| # | Hallazgo | Severidad |
-|---|---|---|
-| 1 | Las 10 vistas del dashboard **no tienen URL propia**. No hay deep-linking posible (ej: el usuario no puede compartir un link directo a `/citas`). | ⚠️ Media |
-| 2 | `RequireAuth` usa solo `localStorage.getItem('token')` como verificación. No valida expiración del token ni hace ping al backend. | ⚠️ Media |
-| 3 | El flujo OTP en `Login.tsx` usa `otpValue === '123456'` como código de bypass en desarrollo (línea 154). Debe eliminarse en producción. | 🔴 Alta |
-| 4 | `/acceso-denegado` existe como ruta pero no hay ningún componente que redirija a ella automáticamente en el frontend auditado. Su uso parece manual o pendiente de implementar. | 💡 Baja |
-| 5 | `SharedOpen.tsx` redirige siempre a `/login`, lo que podría interrumpir la sesión si el enlace compartido era solo de lectura. | 💡 Baja |

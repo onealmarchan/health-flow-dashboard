@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Plus, Eye, Trash2, Stethoscope, X } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Plus, Eye, Trash2, Stethoscope, X, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,12 +22,16 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { SearchBar } from '@/components/shared/SearchBar';
+import { FiltersButton } from '@/components/shared/FiltersButton';
+import { TablePagination } from '@/components/shared/TablePagination';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
-import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma } from '@/services/useDiagnosticos';
+import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma, useCreateDiagnosticoSintoma } from '@/services/useDiagnosticos';
 import { useCitas } from '@/services/useCitas';
 import { usePacientes } from '@/services/usePacientes';
+import { api } from '@/services/apiClient';
 
 type Sintoma = { nombre: string; descripcion: string; gravedad: number };
 
@@ -100,7 +104,7 @@ function HealthMeter({ value }: { value: number }) {
 
 export function DiagnosticosPage() {
   // API Hooks
-  const { data: apiDiagnosticos = [] } = useDiagnosticos();
+  const { data: apiDiagnosticos = [], isLoading } = useDiagnosticos();
   const { data: apiEnfermedades = [] } = useEnfermedades();
   const { data: apiSintomas = [] } = useSintomas();
   const { data: apiCitas = [] } = useCitas();
@@ -110,6 +114,7 @@ export function DiagnosticosPage() {
   const deleteDiagnostico = useDeleteDiagnostico();
   const createEnfermedad = useCreateEnfermedad();
   const createSintoma = useCreateSintoma();
+  const createDiagnosticoSintoma = useCreateDiagnosticoSintoma();
 
   // Transform API data to local format
   const diagnosticos: Diagnostico[] = useMemo(() => {
@@ -128,7 +133,7 @@ export function DiagnosticosPage() {
         id: d.id || d.pk_num_diagnostico_enfermedad || idx + 1,
         numCitaOrigen: `CITA-${cita?.pk_num_cita_medica || cita?.pk_num_cita || cita?.id || idx + 1}`,
         paciente: paciente ? `${paciente.nombres || ''} ${paciente.apellidos || ''}`.trim() : 'Sin paciente',
-        pacienteId: d.fk_ps_b001_num_paciente || 0,
+        pacienteId: Number(d.fk_ps_b001_num_paciente) || 0,
         ci: paciente?.ci || 'N/D',
         nombres: paciente?.nombres || '',
         apellidos: paciente?.apellidos || '',
@@ -155,6 +160,11 @@ export function DiagnosticosPage() {
   const [viewing, setViewing] = useState<Diagnostico | null>(null);
   const [form, setForm] = useState(emptyForm());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterEtapa, setFilterEtapa] = useState<string>('todas');
+  const [filterCriticidad, setFilterCriticidad] = useState<string>('todas');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Transform citas for selection dropdown
   const citasDisponibles = useMemo(() => apiCitas.map((c: any, idx: number) => {
@@ -168,7 +178,7 @@ export function DiagnosticosPage() {
       nombres: paciente?.nombres || '',
       apellidos: paciente?.apellidos || '',
       fechaCita: c.fecha || '',
-      pacienteId: c.fk_ps_b001_num_paciente,
+      pacienteId: Number(c.fk_ps_b001_num_paciente),
     };
   }), [apiCitas, apiPacientes]);
 
@@ -226,26 +236,48 @@ export function DiagnosticosPage() {
         ? form.sintomas.reduce((acc, s) => acc + (Number(s.gravedad) || 0), 0) / form.sintomas.length
         : 3;
 
-    const crearDiagnostico = (enfermedadId: number) => {
-      createDiagnostico.mutate({
-        fk_ps_b001_num_paciente: form.pacienteId,
-        fk_cm_a002_num_enfermedad: enfermedadId,
-        fk_cm_b002_num_cita_medica: form.citaId,
-        critico: avg >= 4 || form.urgencia,
-        tratamiento: form.tratamientoPrevio,
-        etapa: (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada',
-        fecha_diagnostico: new Date().toISOString().slice(0, 10),
-      }, {
-        onSuccess: () => {
-          toast.success('Diagnóstico registrado exitosamente');
-          setForm(emptyForm());
-          setRegisterOpen(false);
-          setConfirmOpen(false);
-        },
-        onError: (error: any) => {
-          toast.error(error?.response?.data?.message || 'Error al registrar diagnóstico');
+    const crearDiagnostico = async (enfermedadId: number) => {
+      try {
+        const res = await createDiagnostico.mutateAsync({
+          fk_ps_b001_num_paciente: Number(form.pacienteId),
+          fk_cm_a002_num_enfermedad: enfermedadId,
+          fk_cm_b002_num_cita_medica: form.citaId,
+          critico: avg >= 4 || form.urgencia,
+          tratamiento: form.tratamientoPrevio,
+          etapa: (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada',
+          fecha_diagnostico: new Date().toISOString().slice(0, 10),
+        });
+
+        const diagnosticoId = res?.id || res?.pk_num_diagnostico_enfermedad;
+        if (diagnosticoId && form.sintomas.length > 0) {
+          for (const s of form.sintomas) {
+            if (!s.nombre.trim()) continue;
+            try {
+              const sintomaRes = await api.SintomaController_createSintoma({
+                nombre: s.nombre,
+                descripcion: s.descripcion,
+                gravedad: String(Math.min(5, Math.max(1, Math.round(s.gravedad)))) as '1' | '2' | '3' | '4' | '5',
+              });
+              const sintomaId = sintomaRes.data?.id || sintomaRes.data?.pk_num_sintoma;
+              if (sintomaId) {
+                await api.DiagnosticoSintomaController_create({
+                  fk_num_diagnostico_enfermedad: diagnosticoId,
+                  fk_cm_a003_num_sintoma: sintomaId,
+                });
+              }
+            } catch {
+              // Symptom creation is best-effort; don't block the diagnosis
+            }
+          }
         }
-      });
+
+        toast.success('Diagnóstico registrado exitosamente');
+        setForm(emptyForm());
+        setRegisterOpen(false);
+        setConfirmOpen(false);
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message || 'Error al registrar diagnóstico');
+      }
     };
 
     // Si ya se seleccionó una enfermedad existente, usarla directamente
@@ -277,6 +309,30 @@ export function DiagnosticosPage() {
     return 3;
   }, [viewing]);
 
+  const filteredDiagnosticos = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return diagnosticos.filter(d => {
+      if (filterEtapa !== 'todas' && d.etapa.toLowerCase() !== filterEtapa) return false;
+      if (filterCriticidad === 'criticos' && !d.critico) return false;
+      if (filterCriticidad === 'no-criticos' && d.critico) return false;
+      if (!q) return true;
+      return (
+        d.paciente.toLowerCase().includes(q) ||
+        d.enfermedad.nombre.toLowerCase().includes(q) ||
+        d.numCitaOrigen.toLowerCase().includes(q) ||
+        d.ci.toLowerCase().includes(q)
+      );
+    });
+  }, [diagnosticos, search, filterEtapa, filterCriticidad]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredDiagnosticos.length / itemsPerPage));
+  const paginatedDiagnosticos = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredDiagnosticos.slice(start, start + itemsPerPage);
+  }, [filteredDiagnosticos, currentPage]);
+
+  useEffect(() => { setCurrentPage(1); }, [search, filterEtapa, filterCriticidad]);
+
   const diagModule: ReportableModule<Diagnostico> = useMemo(() => ({
     name: 'Diagnósticos',
     itemSingular: 'diagnóstico',
@@ -307,84 +363,123 @@ export function DiagnosticosPage() {
     },
   }), [diagnosticos]);
 
-  const diagReports = useReportableTable({ module: diagModule, visibleRows: diagnosticos });
+  const diagReports = useReportableTable({ module: diagModule, visibleRows: filteredDiagnosticos });
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Stethoscope className="w-6 h-6 text-primary" />
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Stethoscope className="w-5 h-5 text-primary" />
             Control de Diagnósticos
           </h1>
-          <p className="text-muted-foreground">Registro y seguimiento de diagnósticos médicos</p>
+          <p className="text-sm text-muted-foreground">Registro y seguimiento de diagnósticos médicos</p>
         </div>
         <div className="flex items-center gap-2">
           {diagReports.SplitButton}
           <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            size="sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             onClick={() => { setForm(emptyForm()); setRegisterOpen(true); }}
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-3.5 h-3.5 mr-1.5" />
             Registrar Diagnóstico
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <SearchBar value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} placeholder="Buscar por paciente, enfermedad o cita..." />
+        <FiltersButton onClear={() => { setFilterEtapa('todas'); setFilterCriticidad('todas'); }}>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Etapa</Label>
+            <Select value={filterEtapa} onValueChange={setFilterEtapa}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todas">Todas</SelectItem>
+                <SelectItem value="leve">Leve</SelectItem>
+                <SelectItem value="inicial">Inicial</SelectItem>
+                <SelectItem value="avanzada">Avanzada</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-foreground text-xs">Criticidad</Label>
+            <Select value={filterCriticidad} onValueChange={setFilterCriticidad}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-popover border border-border z-[60]">
+                <SelectItem value="todas">Todos</SelectItem>
+                <SelectItem value="criticos">Críticos</SelectItem>
+                <SelectItem value="no-criticos">No críticos</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </FiltersButton>
       </div>
 
       {diagReports.ContextBar}
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Cargando diagnósticos...</span>
+            </div>
+          ) : (
           <table className="w-full text-sm">
-            <thead className="bg-secondary/50">
+            <thead className="bg-muted/50">
               <tr>
-                <th className="w-10 px-3 py-2">{diagReports.HeaderCheckbox}</th>
-                {['Nº', 'Paciente', 'Nº Cita Origen', 'Enfermedad', 'Crítico', 'Etapa', 'Fecha', 'Estado', 'Acciones'].map(h => (
-                  <th key={h} className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">{h}</th>
+                <th className="w-10 px-3 py-2.5">{diagReports.HeaderCheckbox}</th>
+                {['Nº', 'Paciente', 'Nº Cita Origen', 'Enfermedad', 'Crítico', 'Etapa', 'Fecha', 'Acciones'].map(h => (
+                  <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {diagnosticos.length === 0 && (
+              {paginatedDiagnosticos.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="text-center py-8 text-muted-foreground">
-                    Sin diagnósticos registrados
+                  <td colSpan={9} className="text-center py-12 text-muted-foreground">
+                    {filteredDiagnosticos.length === 0 ? 'No se encontraron diagnósticos' : 'Sin diagnósticos registrados'}
                   </td>
                 </tr>
               )}
-              {diagnosticos.map((d, i) => {
+              {paginatedDiagnosticos.map((d, i) => {
                 const selected = diagReports.isRowSelected(d.id);
+                const rowNum = (currentPage - 1) * itemsPerPage + i + 1;
                 return (
-                  <tr key={d.id} className={cn('border-t border-border hover:bg-secondary/30', selected && 'bg-primary/10')}>
-                    <td className="px-3 py-2"><diagReports.RowCheckbox id={d.id} /></td>
-                    <td className="px-3 py-2 text-foreground">{i + 1}</td>
-                    <td className="px-3 py-2 text-foreground">{d.paciente}</td>
-                    <td className="px-3 py-2 text-foreground font-mono">{d.numCitaOrigen}</td>
-                    <td className="px-3 py-2 text-foreground">{d.enfermedad.nombre}</td>
-                    <td className="px-3 py-2">
+                  <tr key={d.id} className={cn(
+                    'border-t border-border/50 transition-colors hover:bg-secondary/30',
+                    selected && 'bg-primary/10'
+                  )}>
+                    <td className="px-3 py-2.5"><diagReports.RowCheckbox id={d.id} /></td>
+                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{rowNum}</td>
+                    <td className="px-3 py-2.5 text-foreground font-medium">{d.paciente}</td>
+                    <td className="px-3 py-2.5 text-foreground font-mono text-xs">{d.numCitaOrigen}</td>
+                    <td className="px-3 py-2.5 text-foreground">{d.enfermedad.nombre}</td>
+                    <td className="px-3 py-2.5">
                       <span className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                        d.critico ? 'bg-destructive/20 text-destructive' : 'bg-muted text-muted-foreground'
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                        d.critico ? 'bg-destructive/15 text-destructive' : 'bg-muted text-muted-foreground'
                       )}>
-                        {d.critico ? 'Sí' : 'No'}
+                        {d.critico ? 'Crítico' : 'No'}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-foreground">{d.etapa}</td>
-                    <td className="px-3 py-2 text-muted-foreground">{d.fechaDiagnostico}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-2.5">
                       <span className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                        d.estado === 'Activo' ? 'bg-success/20 text-success' :
-                        d.estado === 'Resuelto' ? 'bg-primary/20 text-primary' :
-                        'bg-muted text-muted-foreground'
+                        'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                        d.etapa === 'avanzada' ? 'bg-destructive/15 text-destructive' :
+                        d.etapa === 'inicial' ? 'bg-warning/15 text-warning' :
+                        'bg-success/15 text-success'
                       )}>
-                        {d.estado}
+                        {d.etapa}
                       </span>
                     </td>
-                    <td className="px-3 py-2">
-                      <Button size="sm" variant="outline" onClick={() => setViewing(d)}>
-                        <Eye className="w-4 h-4 mr-1" />
-                        Ver diagnóstico
+                    <td className="px-3 py-2.5 text-muted-foreground text-xs">{d.fechaDiagnostico}</td>
+                    <td className="px-3 py-2.5">
+                      <Button size="sm" variant="ghost" onClick={() => setViewing(d)} className="h-7 text-xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        Ver
                       </Button>
                     </td>
                   </tr>
@@ -392,7 +487,14 @@ export function DiagnosticosPage() {
               })}
             </tbody>
           </table>
+          )}
         </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredDiagnosticos.length}
+          onPageChange={setCurrentPage}
+        />
       </div>
       {diagReports.ReportSheet}
 

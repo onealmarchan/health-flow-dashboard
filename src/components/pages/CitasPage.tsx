@@ -7,7 +7,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown } from 'lucide-react';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
@@ -92,10 +92,10 @@ function formatDateKey(year: number, month: number, day: number): string {
 export function CitasPage() {
   const [modalStep, setModalStep] = useState<ModalStep>('closed');
   const [patientSearch, setPatientSearch] = useState('');
-  const { data: apiPacientes = [] } = usePacientes();
+  const { data: apiPacientes = [], isLoading: isLoadingPacientes } = usePacientes();
   const createPaciente = useCreatePaciente();
-  const { data: apiMedicos = [] } = useMedicos();
-  const { data: apiSesiones = [] } = useSesionesMedicas();
+  const { data: apiMedicos = [], isLoading: isLoadingMedicos } = useMedicos();
+  const { data: apiSesiones = [], isLoading: isLoadingSesiones } = useSesionesMedicas();
 
   // Build lookup maps — all IDs come as strings from the backend
   const pacienteMap = useMemo(() => {
@@ -171,7 +171,7 @@ export function CitasPage() {
   }), [apiPacientes, comunidadMap]);
 
   const [localAppointments, setLocalAppointments] = useState<any[]>([]);
-  const { data: apiCitas = [] } = useCitas();
+  const { data: apiCitas = [], isLoading: isLoadingCitas } = useCitas();
   const createCita = useCreateCita();
   const createMotivoConsulta = useCreateMotivoConsulta();
 
@@ -683,10 +683,10 @@ export function CitasPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Citas Médicas</h1>
-          <p className="text-muted-foreground">Gestión de citas y programación</p>
+          <h1 className="text-xl font-bold text-foreground">Citas Médicas</h1>
+          <p className="text-sm text-muted-foreground">Gestión de citas y programación</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setModalStep('search')}>
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" onClick={() => setModalStep('search')}>
           <Plus className="w-4 h-4 mr-2" />
           Nueva Cita
         </Button>
@@ -734,19 +734,25 @@ export function CitasPage() {
       </div>
 
       {/* Appointments Table */}
-      <div className="chart-container">
+        <div className="chart-container">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-foreground">Próximas Citas Médicas</h3>
+          <h3 className="text-base font-semibold text-foreground">Próximas Citas Médicas</h3>
           {appointmentsReports.SplitButton}
         </div>
         {appointmentsReports.ContextBar}
+        {isLoadingPacientes || isLoadingMedicos || isLoadingCitas || isLoadingSesiones ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-sm text-muted-foreground">Cargando citas...</span>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
                 {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado'].map(h => (
-                  <th key={h} className="text-left p-3 text-sm font-medium text-muted-foreground">{h}</th>
+                  <th key={h} className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -780,6 +786,7 @@ export function CitasPage() {
             </tbody>
           </table>
         </div>
+        )}
         <div className="mt-4 flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Mostrando {paginatedAppointments.length} de {appointments.length} citas

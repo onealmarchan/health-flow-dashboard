@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 export default function AccesoDenegado() {
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-6">
-      <div className="flex flex-col items-center text-center max-w-lg">
+      <div className="flex flex-col items-center text-center max-w-lg animate-fade-in">
         {/* Animated medical illustration */}
         <div className="relative w-56 h-56 mb-8">
           <svg viewBox="0 0 200 200" className="w-full h-full">

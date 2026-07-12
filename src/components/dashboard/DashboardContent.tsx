@@ -21,14 +21,6 @@ const SLOT_COMPONENTS = [
   GeographicKPI,
 ];
 
-// Deterministic pseudo-previous baseline so trend chips vary but are stable.
-function baseline(seed: string, curr: number, factor = 0.8): number {
-  let h = 0;
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
-  const jitter = ((h % 30) - 15) / 100; // ±0.15
-  return Math.max(1, curr * (factor + jitter));
-}
-
 export function DashboardContent() {
   const [config, setConfig] = useState<KPIConfigValue>({ types: 'random', count: 5 });
   const [showConfig, setShowConfig] = useState(false);
@@ -36,35 +28,24 @@ export function DashboardContent() {
   const { data: dashData, isLoading } = useDashboardMetrics();
 
   const metrics = useMemo(() => {
-    // If endpoints are mocked/empty, use safe defaults
-    const fallback = { total: 0, change: 0, percentage: 0 };
-    const citas = dashData?.citasHoy || fallback;
-    const consultas = dashData?.consultasMensuales || fallback;
-    const pacientes = dashData?.totalPacientes || fallback;
-    const ocupacion = dashData?.ocupacionAgenda || fallback;
-    // We are mapping the backend endpoints to the UI cards as best as possible
-    // Backend may need adjustments to provide exactly what the UI needs
-    
-    // For now, we mock the delta values for the visual trends if backend doesn't provide them
-    const deltaFor = (curr: number, seed: string) => {
-      const prev = baseline(seed, curr);
-      return curr === 0 ? 0 : ((curr - prev) / prev) * 100;
-    };
-
-    const cargaMedia = 250; // default meta
-    const desviacionCarga = 0; // default 0
+    const citas = dashData?.citasHoy || { total: 0, change: 0 };
+    const consultas = dashData?.consultasMensuales || { total: 0, change: 0 };
+    const pacientes = dashData?.totalPacientes || { total: 0, change: 0 };
+    const carga = dashData?.cargaMedia || { total: 0, change: 0, meta: 250 };
+    const urg = dashData?.urgencias || { percentage: 0, change: 0 };
 
     return {
-      citasHoyPct: citas.percentage || 0,
-      citasHoyDelta: citas.change || deltaFor(citas.percentage || 0, 'citas'),
+      totalCitasHoy: citas.total || 0,
+      citasHoyDelta: citas.change || 0,
       totalConsultas: consultas.total || 0,
-      consultasDelta: consultas.change || deltaFor(consultas.total || 0, 'consultas'),
+      consultasDelta: consultas.change || 0,
       totalPacientes: pacientes.total || 0,
-      pacientesDelta: pacientes.change || deltaFor(pacientes.total || 0, 'pacientes'),
-      cargaMedia: cargaMedia,
-      desviacionCarga: desviacionCarga,
-      urgenciasPct: ocupacion.percentage || 0,
-      urgenciasDelta: ocupacion.change || deltaFor(ocupacion.percentage || 0, 'urgencias'),
+      pacientesDelta: pacientes.change || 0,
+      cargaMedia: carga.total || 0,
+      cargaMeta: carga.meta || 250,
+      desviacionCarga: carga.change || 0,
+      urgenciasPct: urg.percentage || 0,
+      urgenciasDelta: urg.change || 0,
     };
   }, [dashData]);
 
@@ -97,12 +78,12 @@ export function DashboardContent() {
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <MetricCard
-          title="% Citas de Hoy"
-          value={`${metrics.citasHoyPct.toFixed(0)}%`}
-          subtitle="Confirmadas / Programadas"
+          title="Citas de Hoy"
+          value={metrics.totalCitasHoy}
+          subtitle="Programadas para hoy"
           icon={CalendarCheck}
           trend={{ value: metrics.citasHoyDelta }}
-          semaforo={getSemaforo('citasHoy', metrics.citasHoyPct)}
+          semaforo={getSemaforo('citasHoy', metrics.totalCitasHoy)}
         />
         <MetricCard
           title="Total de Consultas"
@@ -122,15 +103,15 @@ export function DashboardContent() {
         />
         <MetricCard
           title="Carga por Especialista"
-          value={`${metrics.cargaMedia}`}
-          subtitle={`Meta 250 · desv ${metrics.desviacionCarga >= 0 ? '+' : ''}${metrics.desviacionCarga.toFixed(1)}%`}
+          value={metrics.cargaMedia}
+          subtitle={`Meta ${metrics.cargaMeta} · desv ${metrics.desviacionCarga >= 0 ? '+' : ''}${metrics.desviacionCarga.toFixed(1)}%`}
           icon={Stethoscope}
           semaforo={getSemaforo('cargaEspecialista', metrics.desviacionCarga)}
         />
         <MetricCard
           title="% de Urgencias"
           value={`${metrics.urgenciasPct.toFixed(0)}%`}
-          subtitle="Sobre total de citas"
+          subtitle="Sobre total de consultas"
           icon={AlertTriangle}
           trend={{ value: metrics.urgenciasDelta }}
           semaforo={getSemaforo('urgencias', metrics.urgenciasPct)}
@@ -138,9 +119,9 @@ export function DashboardContent() {
       </div>
 
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Indicadores Clave</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)}>
-          <Settings className="w-4 h-4 mr-1" />
+        <h2 className="section-header">Indicadores Clave</h2>
+        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="text-xs">
+          <Settings className="w-3.5 h-3.5 mr-1" />
           Configurar KPIs
         </Button>
       </div>

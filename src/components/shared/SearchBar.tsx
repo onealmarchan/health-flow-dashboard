@@ -11,12 +11,12 @@ interface Props {
 export function SearchBar({ value, onChange, placeholder = 'Buscar...', className = '' }: Props) {
   return (
     <div className={`relative flex-1 min-w-[200px] ${className}`}>
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
       <Input
         placeholder={placeholder}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="pl-9"
+        className="pl-9 h-9 text-sm bg-secondary/40 border-border/60 focus:bg-background transition-colors duration-200"
       />
     </div>
   );

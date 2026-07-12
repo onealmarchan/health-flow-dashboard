@@ -114,14 +114,20 @@ export interface ResetPasswordDto {
 
 export interface CreateUsuarioDto {
   email: string;
+  cedula: string;
   nombre: string;
+  apellido?: string;
+  telefono?: string;
   password: string;
   rol: 'ADMIN' | 'ADMIN_AUXILIAR';
 }
 
 export interface UpdateUsuarioDto {
   email?: string;
+  cedula?: string;
   nombre?: string;
+  apellido?: string;
+  telefono?: string;
   password?: string;
   rol?: 'ADMIN' | 'ADMIN_AUXILIAR';
 }

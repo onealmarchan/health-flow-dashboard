@@ -30,7 +30,7 @@ export function KPIWrapper({ views, className }: KPIWrapperProps) {
             <button
               onClick={() => setCurrentView(v => v - 1)}
               aria-label="Anterior"
-              className="p-1.5 rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="p-1.5 rounded-md border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200"
               title="KPI anterior"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -40,7 +40,7 @@ export function KPIWrapper({ views, className }: KPIWrapperProps) {
             <button
               onClick={() => setCurrentView(v => v + 1)}
               aria-label="Siguiente"
-              className="p-1.5 rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="p-1.5 rounded-md border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200"
               title="KPI siguiente"
             >
               <ArrowRight className="w-3.5 h-3.5" />
@@ -50,13 +50,13 @@ export function KPIWrapper({ views, className }: KPIWrapperProps) {
             <button
               onClick={() => setCurrentView(0)}
               aria-label="Reiniciar"
-              className="p-1.5 rounded-md border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              className="p-1.5 rounded-md border border-border/60 text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200"
               title="Reiniciar"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
-          <div className="w-px h-5 bg-border mx-0.5" aria-hidden="true" />
+          <div className="w-px h-4 bg-border mx-0.5" aria-hidden="true" />
           <KPIExportPopover
             kpiId={active.id ?? active.label}
             kpiLabel={active.label}
@@ -74,12 +74,12 @@ export function KPIWrapper({ views, className }: KPIWrapperProps) {
         </div>
       )}
       {views.length > 1 && (
-        <div className="absolute top-3 left-3 flex gap-1">
+        <div className="absolute top-3.5 left-3 flex gap-1.5">
           {views.map((_, idx) => (
             <div key={idx}
               className={cn(
-                "w-1.5 h-1.5 rounded-full transition-colors",
-                idx === currentView ? "bg-primary" : "bg-muted-foreground/30"
+                "w-1.5 h-1.5 rounded-full transition-all duration-300",
+                idx === currentView ? "bg-primary scale-110" : "bg-muted-foreground/25"
               )}
             />
           ))}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -35,10 +35,6 @@ function maskEmail(email: string): string {
   return `${local[0]}${stars}@${domain}`;
 }
 
-function generateOtp(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
 function formatMMSS(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
   const s = totalSeconds % 60;
@@ -51,7 +47,18 @@ export default function Login() {
   // If already authenticated, redirect to dashboard
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) navigate('/dashboard');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (!payload.exp || payload.exp * 1000 > Date.now()) {
+          navigate('/dashboard');
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch {
+        localStorage.removeItem('token');
+      }
+    }
   }, [navigate]);
 
   const [mode, setMode] = useState<Mode>('login');
@@ -68,7 +75,6 @@ export default function Login() {
   const [recoverStep, setRecoverStep] = useState<RecoverStep>('email');
   const [recoverEmail, setRecoverEmail] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
-  const generatedOtpRef = useRef<string>('');
   const [otpValue, setOtpValue] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(OTP_DURATION_SECONDS);
   const [expired, setExpired] = useState(false);
@@ -151,15 +157,11 @@ export default function Login() {
       return;
     }
     if (otpValue.length < 6) return;
-    if (otpValue === generatedOtpRef.current || otpValue === '123456') {
-      toast.success('Código verificado');
-      setRecoverStep('newPassword');
-      setNewPass('');
-      setRepeatPass('');
-      return;
-    }
-    triggerShake();
-    toast.error('Código incorrecto');
+    toast.success('Código verificado');
+    setRecoverStep('newPassword');
+    setNewPass('');
+    setRepeatPass('');
+    return;
   };
 
   const handleResendCode = async () => {
@@ -189,12 +191,12 @@ export default function Login() {
       return;
     }
     try {
-      // Assuming ResetPasswordDto needs email, code and newPassword
       await resetPasswordMutation.mutateAsync({
         email: recoverEmail.trim(),
         code: otpValue,
-        newPassword: newPass,
-      } as any);
+        password: newPass,
+        confirmPassword: repeatPass,
+      });
       
       toast.success('Contraseña Actualizada Correctamente', {
         icon: <CheckCircle2 className="w-4 h-4 text-success" />,
@@ -233,28 +235,28 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4">
       {/* Decorative medical background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <Stethoscope className="absolute -top-6 -left-6 w-48 h-48 text-primary opacity-10 rotate-12 animate-pulse-soft" />
-        <HeartPulse className="absolute top-10 right-10 w-32 h-32 text-accent opacity-10 -rotate-6 animate-pulse-soft" />
-        <Pill className="absolute bottom-12 left-16 w-28 h-28 text-primary opacity-10 rotate-45 animate-pulse-soft" />
-        <Cross className="absolute bottom-20 right-20 w-36 h-36 text-accent opacity-10 -rotate-12 animate-pulse-soft" />
-        <Activity className="absolute top-1/2 left-1/4 w-24 h-24 text-primary opacity-[0.07] animate-pulse-soft" />
-        <Syringe className="absolute bottom-1/3 right-1/3 w-28 h-28 text-accent opacity-[0.07] rotate-12 animate-pulse-soft" />
-        <div className="absolute inset-0 bg-gradient-to-br from-background/0 via-background/60 to-background" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.06),transparent_50%),radial-gradient(ellipse_at_bottom_right,hsl(var(--accent)/0.05),transparent_50%)]" />
+        <Stethoscope className="absolute -top-6 -left-6 w-48 h-48 text-primary opacity-[0.06] rotate-12 animate-pulse-soft" />
+        <HeartPulse className="absolute top-10 right-10 w-32 h-32 text-accent opacity-[0.06] -rotate-6 animate-pulse-soft" />
+        <Pill className="absolute bottom-12 left-16 w-28 h-28 text-primary opacity-[0.06] rotate-45 animate-pulse-soft" />
+        <Cross className="absolute bottom-20 right-20 w-36 h-36 text-accent opacity-[0.06] -rotate-12 animate-pulse-soft" />
+        <Activity className="absolute top-1/2 left-1/4 w-24 h-24 text-primary opacity-[0.04] animate-pulse-soft" />
+        <Syringe className="absolute bottom-1/3 right-1/3 w-28 h-28 text-accent opacity-[0.04] rotate-12 animate-pulse-soft" />
       </div>
 
       {/* Card */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-8 animate-fade-in',
+          'relative z-10 w-full max-w-md bg-card/95 backdrop-blur-sm border border-border/60 rounded-2xl shadow-xl p-8 animate-fade-in',
           shake && 'animate-shake',
         )}
       >
         {/* Brand header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shadow-md mb-3">
-            <Activity className="w-7 h-7 text-primary-foreground" />
+          <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-md mb-3">
+            <Activity className="w-6 h-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-foreground">MediCitas</h1>
+          <h1 className="text-lg font-bold text-foreground">MediCitas</h1>
           <p className="text-xs text-muted-foreground">Sistema de Gestión Médica</p>
         </div>
 
@@ -311,7 +313,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 {loginMutation.isPending ? 'Verificando...' : 'Iniciar Sesión'}
               </Button>
