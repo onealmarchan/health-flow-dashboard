@@ -75,8 +75,8 @@ export function DashboardContent() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         <MetricCard
           title="Citas de Hoy"
           value={metrics.totalCitasHoy}
@@ -86,7 +86,7 @@ export function DashboardContent() {
           semaforo={getSemaforo('citasHoy', metrics.totalCitasHoy)}
         />
         <MetricCard
-          title="Total de Consultas"
+          title="Consultas"
           value={metrics.totalConsultas}
           subtitle="Registradas"
           icon={Activity}
@@ -94,7 +94,7 @@ export function DashboardContent() {
           semaforo={getSemaforo('totalConsultas', metrics.consultasDelta)}
         />
         <MetricCard
-          title="Total de Pacientes"
+          title="Pacientes"
           value={metrics.totalPacientes}
           subtitle="Registrados"
           icon={Users}
@@ -102,16 +102,16 @@ export function DashboardContent() {
           semaforo={getSemaforo('totalPacientes', metrics.pacientesDelta)}
         />
         <MetricCard
-          title="Carga por Especialista"
+          title="Carga / Esp."
           value={metrics.cargaMedia}
-          subtitle={`Meta ${metrics.cargaMeta} · desv ${metrics.desviacionCarga >= 0 ? '+' : ''}${metrics.desviacionCarga.toFixed(1)}%`}
+          subtitle={`Meta ${metrics.cargaMeta} · ${metrics.desviacionCarga >= 0 ? '+' : ''}${metrics.desviacionCarga.toFixed(1)}%`}
           icon={Stethoscope}
           semaforo={getSemaforo('cargaEspecialista', metrics.desviacionCarga)}
         />
         <MetricCard
-          title="% de Urgencias"
+          title="% Urgencias"
           value={`${metrics.urgenciasPct.toFixed(0)}%`}
-          subtitle="Sobre total de consultas"
+          subtitle="Sobre total"
           icon={AlertTriangle}
           trend={{ value: metrics.urgenciasDelta }}
           semaforo={getSemaforo('urgencias', metrics.urgenciasPct)}
@@ -120,7 +120,7 @@ export function DashboardContent() {
 
       <div className="flex items-center justify-between">
         <h2 className="section-header">Indicadores Clave</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="text-xs">
+        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="text-xs hidden sm:flex">
           <Settings className="w-3.5 h-3.5 mr-1" />
           Configurar KPIs
         </Button>

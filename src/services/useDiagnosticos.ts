@@ -109,13 +109,23 @@ export const DIAGNOSTICO_SINTOMA_KEY = ['diagnostico-sintoma'] as const;
 export function useCreateDiagnosticoSintoma() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (data: { fk_num_diagnostico_enfermedad: number; fk_cm_a003_num_sintoma: number }) => {
+    mutationFn: async (data: { fk_cm_b003_num_diagnostico: number; fk_cm_a003_num_sintoma: number }) => {
       const res = await api.DiagnosticoSintomaController_create(data);
       return res.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DIAGNOSTICO_SINTOMA_KEY });
       qc.invalidateQueries({ queryKey: DIAGNOSTICOS_KEY });
+    },
+  });
+}
+
+export function useDiagnosticoSintomas() {
+  return useQuery({
+    queryKey: DIAGNOSTICO_SINTOMA_KEY,
+    queryFn: async () => {
+      const res = await api.DiagnosticoSintomaController_getAll();
+      return res.data as any[];
     },
   });
 }

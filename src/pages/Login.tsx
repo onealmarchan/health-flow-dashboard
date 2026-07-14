@@ -44,23 +44,6 @@ function formatMMSS(totalSeconds: number): string {
 export default function Login() {
   const navigate = useNavigate();
 
-  // If already authenticated, redirect to dashboard
-  useEffect(() => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (!payload.exp || payload.exp * 1000 > Date.now()) {
-          navigate('/dashboard');
-        } else {
-          localStorage.removeItem('token');
-        }
-      } catch {
-        localStorage.removeItem('token');
-      }
-    }
-  }, [navigate]);
-
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -232,22 +215,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden p-4 sm:p-6">
       {/* Decorative medical background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,hsl(var(--primary)/0.06),transparent_50%),radial-gradient(ellipse_at_bottom_right,hsl(var(--accent)/0.05),transparent_50%)]" />
-        <Stethoscope className="absolute -top-6 -left-6 w-48 h-48 text-primary opacity-[0.06] rotate-12 animate-pulse-soft" />
-        <HeartPulse className="absolute top-10 right-10 w-32 h-32 text-accent opacity-[0.06] -rotate-6 animate-pulse-soft" />
-        <Pill className="absolute bottom-12 left-16 w-28 h-28 text-primary opacity-[0.06] rotate-45 animate-pulse-soft" />
-        <Cross className="absolute bottom-20 right-20 w-36 h-36 text-accent opacity-[0.06] -rotate-12 animate-pulse-soft" />
-        <Activity className="absolute top-1/2 left-1/4 w-24 h-24 text-primary opacity-[0.04] animate-pulse-soft" />
-        <Syringe className="absolute bottom-1/3 right-1/3 w-28 h-28 text-accent opacity-[0.04] rotate-12 animate-pulse-soft" />
+        <Stethoscope className="absolute -top-6 -left-6 w-32 h-32 sm:w-48 sm:h-48 text-primary opacity-[0.06] rotate-12 animate-pulse-soft" />
+        <HeartPulse className="absolute top-10 right-10 w-24 h-24 sm:w-32 sm:h-32 text-accent opacity-[0.06] -rotate-6 animate-pulse-soft" />
+        <Pill className="absolute bottom-12 left-16 w-20 h-20 sm:w-28 sm:h-28 text-primary opacity-[0.06] rotate-45 animate-pulse-soft" />
+        <Cross className="absolute bottom-20 right-20 w-28 h-28 sm:w-36 sm:h-36 text-accent opacity-[0.06] -rotate-12 animate-pulse-soft" />
+        <Activity className="absolute top-1/2 left-1/4 w-16 h-16 sm:w-24 sm:h-24 text-primary opacity-[0.04] animate-pulse-soft" />
+        <Syringe className="absolute bottom-1/3 right-1/3 w-20 h-20 sm:w-28 sm:h-28 text-accent opacity-[0.04] rotate-12 animate-pulse-soft" />
       </div>
 
       {/* Card */}
       <div
         className={cn(
-          'relative z-10 w-full max-w-md bg-card/95 backdrop-blur-sm border border-border/60 rounded-2xl shadow-xl p-8 animate-fade-in',
+          'relative z-10 w-full max-w-sm sm:max-w-md bg-card/95 backdrop-blur-sm border border-border/60 rounded-2xl shadow-xl p-6 sm:p-8 animate-fade-in',
           shake && 'animate-shake',
         )}
       >

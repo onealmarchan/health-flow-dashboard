@@ -56,24 +56,24 @@ export function MetricCard({
       'metric-card animate-fade-in border',
       sem ? cn(sem.bg, sem.border, 'border-l-[3px]', semaforoBorderLeft[semaforo!]) : variantStyles[variant],
     )}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground truncate">{title}</p>
-          <p className={cn('text-2xl font-bold tracking-tight', sem ? sem.text : 'text-foreground')}>{value}</p>
-          {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
+        <div className="space-y-1 min-w-0">
+          <p className="text-[11px] sm:text-xs font-medium text-muted-foreground truncate">{title}</p>
+          <p className={cn('text-xl sm:text-2xl font-bold tracking-tight', sem ? sem.text : 'text-foreground')}>{value}</p>
+          {subtitle && <p className="text-[11px] sm:text-xs text-muted-foreground">{subtitle}</p>}
           {trend && (
             <div className={cn(
-              'inline-flex items-center gap-1 text-xs font-medium',
+              'inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium',
               isPositive ? 'text-success' : 'text-destructive',
             )}>
               <span>{isPositive ? '↑' : '↓'}</span>
               <span>{Math.abs(trend.value).toFixed(1)}%</span>
-              <span className="text-muted-foreground font-normal">vs mes anterior</span>
+              <span className="text-muted-foreground font-normal hidden sm:inline">vs mes anterior</span>
             </div>
           )}
         </div>
-        <div className={cn('p-2.5 rounded-lg shrink-0', semaforo ? semaforoIconBg[semaforo!] : iconVariantStyles[variant])}>
-          <Icon className="w-5 h-5" />
+        <div className={cn('p-2 sm:p-2.5 rounded-lg shrink-0', semaforo ? semaforoIconBg[semaforo!] : iconVariantStyles[variant])}>
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
     </div>

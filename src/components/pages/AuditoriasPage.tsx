@@ -243,8 +243,8 @@ export function AuditoriasPage() {
   useEffect(() => { setCurrentPage(1); }, [search, filterSeccion, filterAccion]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileSearch className="w-6 h-6 text-primary" />
@@ -254,8 +254,8 @@ export function AuditoriasPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <SearchBar value={search} onChange={setSearch} placeholder="Buscar por registro, cambio o responsable..." />
           <FiltersButton onClear={() => { setFilterSeccion('todas'); setFilterAccion('todas'); }}>
             <div className="space-y-2">
@@ -294,7 +294,7 @@ export function AuditoriasPage() {
               <span className="ml-2 text-sm text-muted-foreground">Cargando historial...</span>
             </div>
           ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 {['Sección', 'Registro', 'Acción', 'Cambio', 'Responsable', 'Fecha', ''].map(h => (

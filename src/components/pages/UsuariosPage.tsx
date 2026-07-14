@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Loader2, User, Mail, Phone, CreditCard, Shield, Calendar, Info } from 'lucide-react';
-import { Plus, Clock, Pencil, KeyRound, Lock, Unlock, Eye } from 'lucide-react';
+import { Plus, Clock, Pencil, KeyRound, Lock, Unlock, Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { ModalFormButtons } from '@/components/shared/ModalFormButtons';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SearchBar } from '@/components/shared/SearchBar';
@@ -16,6 +17,7 @@ import { FiltersButton } from '@/components/shared/FiltersButton';
 import { RowActions } from '@/components/shared/RowActions';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioEstado } from '@/services/useUsuarios';
+import { useRequestCode, useResetPassword } from '@/services/useAuth';
 
 export type Usuario = {
   id: number | string;
@@ -82,6 +84,20 @@ export function UsuariosPage() {
     password: '',
   });
 
+  // Password reset OTP flow
+  type ResetStep = 'closed' | 'sending' | 'otp' | 'newPassword' | 'success';
+  const [resetUser, setResetUser] = useState<Usuario | null>(null);
+  const [resetStep, setResetStep] = useState<ResetStep>('closed');
+  const [otpValue, setOtpValue] = useState('');
+  const [secondsLeft, setSecondsLeft] = useState(900);
+  const [otpExpired, setOtpExpired] = useState(false);
+  const [newPass, setNewPass] = useState('');
+  const [repeatPass, setRepeatPass] = useState('');
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showRepeatPass, setShowRepeatPass] = useState(false);
+  const requestCodeMutation = useRequestCode();
+  const resetPasswordMutation = useResetPassword();
+
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase();
     return usuarios.filter(u => {
@@ -103,6 +119,32 @@ export function UsuariosPage() {
   }, [filteredUsers, currentPage]);
 
   useEffect(() => { setCurrentPage(1); }, [search, filterRol, filterEstado]);
+
+  // OTP countdown timer
+  useEffect(() => {
+    if (resetStep !== 'otp' || otpExpired) return;
+    if (secondsLeft <= 0) {
+      setOtpExpired(true);
+      return;
+    }
+    const t = window.setInterval(() => {
+      setSecondsLeft(s => {
+        if (s <= 1) {
+          setOtpExpired(true);
+          window.clearInterval(t);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [resetStep, otpExpired, secondsLeft]);
+
+  const formatMMSS = (total: number) => {
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const handleSave = () => {
     if (!newUser.nombre.trim() || !newUser.email.trim() || !newUser.rol) {
@@ -189,25 +231,93 @@ export function UsuariosPage() {
     });
   };
 
-  const resetPassword = (u: Usuario) => {
-    toast.success(`Enlace de recuperación enviado a ${u.email}`);
+  const resetPassword = async (u: Usuario) => {
+    setResetUser(u);
+    setResetStep('sending');
+    setOtpValue('');
+    setSecondsLeft(900);
+    setOtpExpired(false);
+    setNewPass('');
+    setRepeatPass('');
+    try {
+      await requestCodeMutation.mutateAsync({ email: u.email });
+      setResetStep('otp');
+      toast.success(`Código enviado a ${u.email}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error al enviar código');
+      setResetStep('closed');
+    }
+  };
+
+  const handleVerifyOtp = () => {
+    if (otpExpired) {
+      toast.error('El código ha expirado');
+      return;
+    }
+    if (otpValue.length < 6) return;
+    setResetStep('newPassword');
+  };
+
+  const handleResendCode = async () => {
+    if (!resetUser || requestCodeMutation.isPending) return;
+    try {
+      await requestCodeMutation.mutateAsync({ email: resetUser.email });
+      setOtpValue('');
+      setSecondsLeft(900);
+      setOtpExpired(false);
+      toast.success('Código reenviado');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error al reenviar código');
+    }
+  };
+
+  const handleConfirmReset = async () => {
+    if (!resetUser || resetPasswordMutation.isPending) return;
+    if (newPass.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPass !== repeatPass) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+    try {
+      await resetPasswordMutation.mutateAsync({
+        email: resetUser.email,
+        code: otpValue,
+        password: newPass,
+        confirmPassword: repeatPass,
+      });
+      setResetStep('success');
+      toast.success('Contraseña actualizada correctamente');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error al actualizar contraseña');
+    }
+  };
+
+  const closeResetModal = () => {
+    setResetUser(null);
+    setResetStep('closed');
+    setOtpValue('');
+    setNewPass('');
+    setRepeatPass('');
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl font-bold text-foreground">Usuarios</h1>
           <p className="text-sm text-muted-foreground">Gestión de usuarios del sistema</p>
         </div>
-        <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+        <Button size="sm" className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
           onClick={() => { setEditingUser(null); resetForm(); setShowModal(true); }}>
           <Plus className="w-3.5 h-3.5 mr-1.5" />
           Nuevo Usuario
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <SearchBar value={search} onChange={setSearch} placeholder="Buscar por correo, nombre o cédula..." />
         <FiltersButton onClear={() => { setFilterRol('todos'); setFilterEstado('todos'); }}>
           <div className="space-y-2">
@@ -243,7 +353,7 @@ export function UsuariosPage() {
               <span className="ml-2 text-sm text-muted-foreground">Cargando usuarios...</span>
             </div>
           ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 {['Nº', 'Cédula', 'Nombre completo', 'Correo electrónico', 'Rol', 'Estado', 'Acciones'].map(h => (
@@ -435,6 +545,172 @@ export function UsuariosPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setRegistroUser(null)}>Cerrar</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Password Reset OTP Modal */}
+      <Dialog open={resetStep !== 'closed'} onOpenChange={(o) => { if (!o) closeResetModal(); }}>
+        <DialogContent className="bg-card border border-border max-w-sm sm:max-w-md p-0 overflow-hidden">
+          {/* Step: Sending code */}
+          {resetStep === 'sending' && (
+            <div className="p-6 text-center">
+              <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-sm text-muted-foreground">Enviando código a <span className="font-medium text-foreground">{resetUser?.email}</span>...</p>
+            </div>
+          )}
+
+          {/* Step: OTP verification */}
+          {resetStep === 'otp' && (
+            <div className="p-5 sm:p-6">
+              <DialogHeader className="mb-4">
+                <DialogTitle className="text-foreground text-center">Verificar Código</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-center text-sm">
+                  Se envió un código de 6 dígitos a{' '}
+                  <span className="font-medium text-foreground">{resetUser?.email}</span>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex items-center justify-center mb-4">
+                {otpExpired ? (
+                  <span className="text-sm font-semibold text-destructive">Código expirado</span>
+                ) : (
+                  <span className="text-lg font-semibold text-primary tabular-nums">{formatMMSS(secondsLeft)}</span>
+                )}
+              </div>
+
+              <div className="flex justify-center mb-5">
+                <InputOTP maxLength={6} value={otpValue} onChange={setOtpValue} disabled={otpExpired}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+
+              <div className="space-y-2">
+                {otpExpired ? (
+                  <Button
+                    onClick={handleResendCode}
+                    disabled={requestCodeMutation.isPending}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    {requestCodeMutation.isPending ? 'Reenviando...' : 'Reenviar código'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleVerifyOtp}
+                    disabled={otpValue.length < 6}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    Verificar código
+                  </Button>
+                )}
+                <button
+                  onClick={() => { setResetStep('closed'); closeResetModal(); }}
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer pt-1"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step: New password */}
+          {resetStep === 'newPassword' && (
+            <div className="p-5 sm:p-6">
+              <DialogHeader className="mb-4">
+                <DialogTitle className="text-foreground text-center">Nueva Contraseña</DialogTitle>
+                <DialogDescription className="text-muted-foreground text-center text-sm">
+                  Establece una nueva contraseña para <span className="font-medium text-foreground">{resetUser?.nombreCompleto}</span>
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label className="text-foreground text-sm">Nueva contraseña</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type={showNewPass ? 'text' : 'password'}
+                      value={newPass}
+                      onChange={e => setNewPass(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="pl-9 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPass(s => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all cursor-pointer"
+                    >
+                      {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-foreground text-sm">Confirmar contraseña</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type={showRepeatPass ? 'text' : 'password'}
+                      value={repeatPass}
+                      onChange={e => setRepeatPass(e.target.value)}
+                      placeholder="Repetir contraseña"
+                      className="pl-9 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRepeatPass(s => !s)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all cursor-pointer"
+                    >
+                      {showRepeatPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                {newPass && repeatPass && newPass !== repeatPass && (
+                  <p className="text-xs text-destructive">Las contraseñas no coinciden</p>
+                )}
+              </div>
+
+              <div className="flex gap-2 mt-5">
+                <Button
+                  variant="outline"
+                  onClick={() => setResetStep('otp')}
+                  className="flex-1"
+                >
+                  <ArrowLeft className="w-4 h-4 mr-1" />
+                  Volver
+                </Button>
+                <Button
+                  onClick={handleConfirmReset}
+                  disabled={resetPasswordMutation.isPending || newPass.length < 6 || newPass !== repeatPass}
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                >
+                  {resetPasswordMutation.isPending ? 'Guardando...' : 'Guardar contraseña'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step: Success */}
+          {resetStep === 'success' && (
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle2 className="w-6 h-6 text-success" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-1">Contraseña actualizada</h3>
+              <p className="text-sm text-muted-foreground mb-5">
+                La contraseña de <span className="font-medium text-foreground">{resetUser?.nombreCompleto}</span> fue cambiada exitosamente.
+              </p>
+              <Button onClick={closeResetModal} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                Cerrar
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

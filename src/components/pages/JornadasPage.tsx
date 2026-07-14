@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { TablePagination } from '@/components/shared/TablePagination';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { getSemaforo } from '@/lib/kpi-semaforos';
 import { toast } from 'sonner';
@@ -62,6 +63,13 @@ interface DoctorStore {
 
 const pad = (n: number) => n.toString().padStart(2, '0');
 const toISO = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
+
+function extractId(obj: any): string | null {
+  const raw = obj?.id ?? obj?.pk_num_bloqueo ?? obj?.ID ?? obj?._id;
+  if (raw == null) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? String(n) : null;
+}
 
 function buildMonthGrid(year: number, month: number): (number | null)[] {
   const firstDay = new Date(year, month, 1).getDay();
@@ -354,42 +362,61 @@ export function JornadasPage() {
     blockModal.fechaFin >= blockModal.fechaInicio &&
     !!blockModal.turno;
 
+  const reloadBloqueosFromApi = () => {
+    if (!selectedMpps) return;
+    const medicoBloqueos = apiBloqueos
+      .filter((b: any) => String(b.fk_cm_b001_num_medico_ministerio_salud) === selectedMpps)
+      .map((b: any) => {
+        const id = extractId(b);
+        return id ? {
+          id,
+          fechaInicio: b.fecha_inicio,
+          fechaFin: b.fecha_fin,
+          razon: b.razon_bloqueo,
+          observaciones: b.motivo_bloqueo || '',
+          turno: (b.turno === 'mañana' ? 'Mañana' : b.turno === 'tarde' ? 'Tarde' : b.turno === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
+        } : null;
+      })
+      .filter((b): b is Bloqueo => b !== null);
+    setBloqueos(medicoBloqueos);
+  };
+
   const doSaveBlock = () => {
     if (!isBlockValid || !selectedMpps) return;
     
     const razonApi = RAZONES_API[blockModal.razon] || 'bloqueo_manual';
     
     if (blockModal.editingId) {
-      // Actualizar bloqueo existente
       updateBloqueo.mutate({
         id: Number(blockModal.editingId),
         data: {
           fecha_inicio: blockModal.fechaInicio,
           fecha_fin: blockModal.fechaFin,
           razon_bloqueo: razonApi,
-          motivo_bloqueo: blockModal.observaciones,
-        }
+          motivo_bloqueo: blockModal.observaciones || 'Sin observaciones',
+        },
       }, {
         onSuccess: () => {
           toast.success('Bloqueo actualizado');
           setBlockModal(s => ({ ...s, open: false }));
+          setTimeout(reloadBloqueosFromApi, 300);
         },
         onError: (error: any) => {
           toast.error(error?.response?.data?.message || 'Error al actualizar bloqueo');
         }
       });
     } else {
-      // Crear nuevo bloqueo
       createBloqueo.mutate({
         fk_cm_b001_num_medico_ministerio_salud: Number(selectedMpps),
         fecha_inicio: blockModal.fechaInicio,
         fecha_fin: blockModal.fechaFin,
         razon_bloqueo: razonApi,
-        motivo_bloqueo: blockModal.observaciones,
+        motivo_bloqueo: blockModal.observaciones || 'Sin observaciones',
       }, {
         onSuccess: () => {
           toast.success('Bloqueo registrado en el sistema');
           setBlockModal(s => ({ ...s, open: false }));
+          setTimeout(reloadBloqueosFromApi, 300);
         },
         onError: (error: any) => {
           toast.error(error?.response?.data?.message || 'Error al crear bloqueo');
@@ -399,10 +426,17 @@ export function JornadasPage() {
   };
 
   const doDeleteBlock = (id: string) => {
-    deleteBloqueo.mutate(Number(id), {
+    const numId = Number(id);
+    if (!Number.isFinite(numId) || numId <= 0) {
+      toast.error('ID de bloqueo inválido');
+      setConfirmDeleteBlock(null);
+      return;
+    }
+    deleteBloqueo.mutate(numId, {
       onSuccess: () => {
         toast.success('Bloqueo eliminado');
         setConfirmDeleteBlock(null);
+        setTimeout(reloadBloqueosFromApi, 300);
       },
       onError: (error: any) => {
         toast.error(error?.response?.data?.message || 'Error al eliminar bloqueo');
@@ -410,10 +444,24 @@ export function JornadasPage() {
     });
   };
 
+  const handleDeleteBlockFromTable = (id: string) => {
+    setConfirmDeleteBlock(id);
+  };
+
   const filteredBloqueos = useMemo(() => {
     if (blockTurnoFilter === 'Todos') return bloqueos;
     return bloqueos.filter(b => b.turno === blockTurnoFilter);
   }, [bloqueos, blockTurnoFilter]);
+
+  const [bloqueosPage, setBloqueosPage] = useState(1);
+  const bloqueosPerPage = 8;
+  const bloqueosTotalPages = Math.max(1, Math.ceil(filteredBloqueos.length / bloqueosPerPage));
+  const paginatedBloqueos = useMemo(() => {
+    const start = (bloqueosPage - 1) * bloqueosPerPage;
+    return filteredBloqueos.slice(start, start + bloqueosPerPage);
+  }, [filteredBloqueos, bloqueosPage]);
+
+  useEffect(() => { setBloqueosPage(1); }, [blockTurnoFilter]);
 
   // ---- Save All / load store ----
   const resetWorkingState = () => {
@@ -455,8 +503,56 @@ export function JornadasPage() {
   const openModalForEdit = (mpps: string) => {
     const data = store[mpps];
     setSelectedMpps(mpps);
-    setRows(data?.rows ?? []);
-    setBloqueos(data?.bloqueos ?? []);
+
+    // Load sessions from API
+    const medicoSesiones = apiSesiones
+      .filter((s: any) => String(s.fk_cm_b001_num_medico_ministerio_salud) === mpps)
+      .map((s: any) => {
+        const turno = s.turno === 'mañana' ? 'Mañana' : s.turno === 'tarde' ? 'Tarde' : 'Noche';
+        const dayMap: Record<string, string> = {
+          Lunes: 'Lun', Martes: 'Mar', Miercoles: 'Mié', Jueves: 'Jue', Viernes: 'Vie', Sabado: 'Sáb', Domingo: 'Dom',
+        };
+        const dayLabel = dayMap[s.dias_semana] || s.dias_semana;
+        // Find a representative date for this day of week in the current month
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        let representativeDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dt = new Date(now.getFullYear(), now.getMonth(), d);
+          const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+          if (dayNames[dt.getDay()] === dayLabel) {
+            representativeDate = toISO(dt.getFullYear(), dt.getMonth(), dt.getDate());
+            break;
+          }
+        }
+        return {
+          id: `api-${s.id || Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          iso: representativeDate,
+          turnoTipo: turno as TurnoTipo,
+          horaInicio: s.hora_inicio,
+          horaFin: s.hora_fin,
+          saved: true,
+        };
+      });
+    setRows(data?.rows?.length ? data.rows : medicoSesiones);
+
+    // Load blocks from API
+    const medicoBloqueos = apiBloqueos
+      .filter((b: any) => String(b.fk_cm_b001_num_medico_ministerio_salud) === mpps)
+      .map((b: any) => {
+        const id = extractId(b);
+        return id ? {
+          id,
+          fechaInicio: b.fecha_inicio,
+          fechaFin: b.fecha_fin,
+          razon: b.razon_bloqueo,
+          observaciones: b.motivo_bloqueo || '',
+          turno: (b.turno === 'mañana' ? 'Mañana' : b.turno === 'tarde' ? 'Tarde' : b.turno === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
+        } : null;
+      })
+      .filter((b): b is Bloqueo => b !== null);
+    setBloqueos(medicoBloqueos);
+
     setCalMonth(today.getMonth());
     setCalYear(today.getFullYear());
     setWeekOffset(0);
@@ -465,15 +561,28 @@ export function JornadasPage() {
 
   // ---- Build availability data for unified table ----
   const availabilityData: DoctorAvailability[] = useMemo(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Map day names to actual dates this month
+    const dayNameToDate: Record<string, string[]> = {};
+    const dayLabels = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dt = new Date(year, month, d);
+      const name = dayLabels[dt.getDay()];
+      if (!dayNameToDate[name]) dayNameToDate[name] = [];
+      dayNameToDate[name].push(`${year}-${pad(month + 1)}-${pad(d)}`);
+    }
+
     return doctors.map(d => {
       const events: AvailabilityEvent[] = [];
       
-      // Obtener sesiones del médico desde el API
       const medicoSesiones = apiSesiones.filter((s: any) => 
         String(s.fk_cm_b001_num_medico_ministerio_salud) === d.mpps
       );
       
-      // Group sessions by turno + horario
       const sessionMap = new Map<string, AvailabilityEvent & { kind: 'session' }>();
       for (const s of medicoSesiones) {
         const turno = s.turno === 'mañana' ? 'Mañana' : s.turno === 'tarde' ? 'Tarde' : 'Noche';
@@ -492,21 +601,35 @@ export function JornadasPage() {
           });
         }
       }
+      // Convert day names to date strings for display
+      for (const ev of sessionMap.values()) {
+        const dates: string[] = [];
+        for (const dn of ev.days) {
+          const ds = dayNameToDate[dn];
+          if (ds) dates.push(...ds);
+        }
+        if (dates.length > 0) {
+          (ev as any).dateRange = dates.length <= 2
+            ? dates.join(', ')
+            : `${dates[0]} – ${dates[dates.length - 1]} (${dates.length} días)`;
+        }
+      }
       events.push(...sessionMap.values());
       
-      // Obtener bloqueos del médico desde el API
       const medicoBloqueos = apiBloqueos.filter((b: any) => 
         String(b.fk_cm_b001_num_medico_ministerio_salud) === d.mpps
       );
       
       for (const b of medicoBloqueos) {
-        const turnoDisplay = b.razon_bloqueo === 'vacaciones' ? 'Todos los Turnos' 
-          : b.turno === 'mañana' ? 'Mañana' 
+        const blockId = extractId(b);
+        if (!blockId) continue;
+        const turnoDisplay = b.turno === 'mañana' ? 'Mañana' 
           : b.turno === 'tarde' ? 'Tarde' 
           : b.turno === 'noche' ? 'Noche' 
           : 'Todos los Turnos';
         events.push({
           kind: 'block',
+          blockId,
           razon: b.razon_bloqueo,
           fechaInicio: b.fecha_inicio,
           fechaFin: b.fecha_fin,
@@ -580,7 +703,7 @@ export function JornadasPage() {
           <span className="ml-2 text-sm text-muted-foreground">Cargando jornadas...</span>
         </div>
       ) : (
-        <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} filter={availabilityFilter} onFilterChange={setAvailabilityFilter} />
+        <AvailabilityTable data={availabilityData} onEdit={openModalForEdit} filter={availabilityFilter} onFilterChange={setAvailabilityFilter} onDeleteBlock={handleDeleteBlockFromTable} />
       )}
 
       {/* Add Jornada Modal — 4 cuadrantes */}
@@ -727,20 +850,41 @@ export function JornadasPage() {
                           return renderRows.map((row, idx) => {
                             const isPlaceholder = (row as { isPlaceholder?: boolean }).isPlaceholder;
                             const blocked = isDateBlocked(d.iso, bloqueos);
+                            const isBlocked = !!blocked;
                             const used = new Set(dayRows.map(r => r.turnoTipo).filter(Boolean));
                             const availableTurnos = TURNOS.filter(t => !used.has(t) || t === row.turnoTipo);
                             const canAdd = dayRows.length < 3 && TURNOS.some(t => !used.has(t));
 
                             const handleAdd = () => {
-                              if (isPlaceholder) {
-                                addRow(d.iso);
-                              } else {
-                                addRow(d.iso);
-                              }
+                              addRow(d.iso);
                             };
 
+                            if (isBlocked && isPlaceholder) {
+                              return (
+                                <tr key={row.id} className="border-b border-border/50 bg-destructive/5">
+                                  <td className="p-2">
+                                    {idx === 0 && (
+                                      <Button variant="ghost" size="icon" className="h-7 w-7" disabled title="Agregar turno">
+                                        <Plus className="w-3.5 h-3.5" />
+                                      </Button>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-foreground font-medium whitespace-nowrap">{d.label}</td>
+                                  <td colSpan={4} className="p-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive/15 text-destructive border border-destructive/20">
+                                        BLOQUEADO
+                                      </span>
+                                      <span className="text-xs text-destructive/80">{blocked!.razon}</span>
+                                      <span className="text-xs text-muted-foreground">{blocked!.turno}</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }
+
                             return (
-                              <tr key={row.id} className={cn('border-b border-border/50', blocked && 'opacity-60', row.saved && 'bg-success/5')}>
+                              <tr key={row.id} className={cn('border-b border-border/50', isBlocked && 'bg-destructive/5', row.saved && !isBlocked && 'bg-success/5')}>
                                 <td className="p-2">
                                   {idx === 0 && (
                                     <Button
@@ -748,7 +892,7 @@ export function JornadasPage() {
                                       size="icon"
                                       className="h-7 w-7"
                                       onClick={handleAdd}
-                                      disabled={!canAdd && !isPlaceholder}
+                                      disabled={isBlocked || (!canAdd && !isPlaceholder)}
                                       title="Agregar turno"
                                     >
                                       <Plus className="w-3.5 h-3.5" />
@@ -760,7 +904,7 @@ export function JornadasPage() {
                                   <Select
                                     value={row.turnoTipo || ''}
                                     onValueChange={v => !isPlaceholder && updateRow(row.id, { turnoTipo: v as TurnoTipo })}
-                                    disabled={isPlaceholder}
+                                    disabled={isPlaceholder || isBlocked}
                                   >
                                     <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="—" /></SelectTrigger>
                                     <SelectContent className="bg-popover border border-border z-50">
@@ -776,7 +920,7 @@ export function JornadasPage() {
                                     className="h-8 text-xs"
                                     value={row.horaInicio}
                                     onChange={e => !isPlaceholder && updateRow(row.id, { horaInicio: e.target.value })}
-                                    disabled={isPlaceholder || !row.turnoTipo}
+                                    disabled={isPlaceholder || isBlocked || !row.turnoTipo}
                                   />
                                 </td>
                                 <td className="p-2">
@@ -785,7 +929,7 @@ export function JornadasPage() {
                                     className="h-8 text-xs"
                                     value={row.horaFin}
                                     onChange={e => !isPlaceholder && updateRow(row.id, { horaFin: e.target.value })}
-                                    disabled={isPlaceholder || !row.horaInicio}
+                                    disabled={isPlaceholder || isBlocked || !row.horaInicio}
                                   />
                                 </td>
                                 <td className="p-2">
@@ -794,7 +938,7 @@ export function JornadasPage() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-7 w-7"
-                                      disabled={isPlaceholder}
+                                      disabled={isPlaceholder || isBlocked}
                                       onClick={() => !isPlaceholder && setConfirmSaveRow(row.id)}
                                       title="Guardar"
                                     >
@@ -805,7 +949,7 @@ export function JornadasPage() {
                                         variant="ghost"
                                         size="icon"
                                         className="h-7 w-7"
-                                        disabled={isPlaceholder}
+                                        disabled={isPlaceholder || isBlocked}
                                         onClick={() => !isPlaceholder && openBlockForRow(row as ScheduleRow)}
                                         title="Bloquear turno"
                                       >
@@ -813,19 +957,19 @@ export function JornadasPage() {
                                       </Button>
                                       <button
                                         type="button"
-                                        disabled={isPlaceholder}
+                                        disabled={isPlaceholder || isBlocked}
                                         onClick={() => !isPlaceholder && openBlockAllDay(d.iso)}
                                         title="Bloquear día completo"
                                         className={cn(
                                           'absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive/90 text-destructive-foreground flex items-center justify-center shadow-sm',
                                           'transition-transform duration-200 hover:scale-125 hover:rotate-12 active:animate-bounce',
-                                          isPlaceholder && 'opacity-50 cursor-not-allowed',
+                                          (isPlaceholder || isBlocked) && 'opacity-50 cursor-not-allowed',
                                         )}
                                       >
                                         <Link2 className="w-2.5 h-2.5" />
                                       </button>
                                     </div>
-                                    {!isPlaceholder && dayRows.length > 1 && (
+                                    {!isPlaceholder && !isBlocked && dayRows.length > 1 && (
                                       <Button
                                         variant="ghost"
                                         size="icon"
@@ -893,9 +1037,9 @@ export function JornadasPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {filteredBloqueos.map((b, i) => (
+                          {paginatedBloqueos.map((b, i) => (
                             <tr key={b.id} className="border-b border-border/50">
-                              <td className="p-2 text-muted-foreground">{i + 1}</td>
+                              <td className="p-2 text-muted-foreground">{(bloqueosPage - 1) * bloqueosPerPage + i + 1}</td>
                               <td className="p-2 text-foreground whitespace-nowrap">{b.fechaInicio}</td>
                               <td className="p-2 text-foreground whitespace-nowrap">{b.fechaFin}</td>
                               <td className="p-2 text-foreground whitespace-nowrap">{b.turno}</td>
@@ -915,6 +1059,12 @@ export function JornadasPage() {
                           ))}
                         </tbody>
                       </table>
+                      <TablePagination
+                        currentPage={bloqueosPage}
+                        totalPages={bloqueosTotalPages}
+                        totalItems={filteredBloqueos.length}
+                        onPageChange={setBloqueosPage}
+                      />
                     </div>
                   )}
                 </div>

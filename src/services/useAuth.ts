@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, setAuthToken, clearAuthToken } from './apiClient';
 import type { LoginDto, RequestCodeDto, ResetPasswordDto } from '@/api';
 
@@ -17,6 +17,7 @@ export function useLogin() {
 }
 
 export function useLogout() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
       const res = await api.AuthController_logout();
@@ -24,6 +25,7 @@ export function useLogout() {
     },
     onSuccess: () => {
       clearAuthToken();
+      queryClient.clear();
     },
   });
 }

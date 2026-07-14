@@ -14,7 +14,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
   if (totalPages <= 1) return null;
 
   const pages: (number | '...')[] = [];
-  if (totalPages <= 7) {
+  if (totalPages <= 5) {
     for (let i = 1; i <= totalPages; i++) pages.push(i);
   } else {
     pages.push(1);
@@ -27,11 +27,11 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
   }
 
   return (
-    <div className={cn('flex items-center justify-between px-4 py-3 border-t border-border bg-card/50', className)}>
+    <div className={cn('flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-t border-border bg-card/50', className)}>
       <p className="text-xs text-muted-foreground">
-        Mostrando {Math.min((currentPage - 1) * 10 + 1, totalItems)}–{Math.min(currentPage * 10, totalItems)} de {totalItems}
+        {Math.min((currentPage - 1) * 10 + 1, totalItems)}–{Math.min(currentPage * 10, totalItems)} / {totalItems}
       </p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 sm:gap-1">
         <Button
           variant="outline"
           size="icon"
@@ -43,7 +43,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
         </Button>
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`e${i}`} className="px-1 text-xs text-muted-foreground">…</span>
+            <span key={`e${i}`} className="px-0.5 sm:px-1 text-xs text-muted-foreground">…</span>
           ) : (
             <Button
               key={p}

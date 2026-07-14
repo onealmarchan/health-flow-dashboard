@@ -25,5 +25,5 @@ export function useCurrentUser() {
     } catch {
       return null;
     }
-  }, []);
+  }); // no deps — re-reads token on each render so login/logout updates propagate
 }

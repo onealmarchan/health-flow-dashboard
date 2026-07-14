@@ -62,8 +62,8 @@ function AppBroadcasts() {
         if (data?.type === 'open') {
           try { localStorage.removeItem('token'); } catch (e) {}
           try { clearAuthToken(); } catch (e) {}
-          // optionally remove activeSharedId
           try { localStorage.removeItem('activeSharedId'); } catch (e) {}
+          queryClient.clear();
           navigate('/login');
         }
       };
@@ -74,6 +74,7 @@ function AppBroadcasts() {
           try { localStorage.removeItem('token'); } catch (e) {}
           try { clearAuthToken(); } catch (e) {}
           try { localStorage.removeItem('activeSharedId'); } catch (e) {}
+          queryClient.clear();
           navigate('/login');
         }
       };

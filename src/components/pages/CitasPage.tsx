@@ -1,13 +1,6 @@
-import { useMemo, useState } from 'react';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2 } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
@@ -17,16 +10,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { TablePagination } from '@/components/shared/TablePagination';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
 import { usePacientes, useCreatePaciente, useUpdatePaciente, useDeletePaciente } from '@/services/usePacientes';
-import { buildCreateCitaPayload, useCitas, useCreateCita, useCreateMotivoConsulta, useUpdateCita, useDeleteCita } from '@/services/useCitas';
+import { CITAS_KEY, MOTIVOS_KEY, buildCreateCitaPayload, useCitas, useCreateCita, useCreateMotivoConsulta, useUpdateCita, useDeleteCita } from '@/services/useCitas';
 import { useMedicos } from '@/services/useMedicos';
 import { useSesionesMedicas, useCreateSesion } from '@/services/useJornadas';
-import { useComunidades } from '@/services/useComunidades';
+import { useComunidades, useCreateComunidad } from '@/services/useComunidades';
 
 export type Patient = {
   num: number | string;
@@ -46,7 +42,11 @@ export type Patient = {
   parroquia: string;
 };
 
-const baseTimeSlots = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00'];
+const baseTimeSlots = [
+  '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
+];
 
 const statusColors: Record<string, string> = {
   confirmada: 'bg-success/20 text-success',
@@ -96,6 +96,7 @@ export function CitasPage() {
   const createPaciente = useCreatePaciente();
   const { data: apiMedicos = [], isLoading: isLoadingMedicos } = useMedicos();
   const { data: apiSesiones = [], isLoading: isLoadingSesiones } = useSesionesMedicas();
+  const qc = useQueryClient();
 
   // Build lookup maps — all IDs come as strings from the backend
   const pacienteMap = useMemo(() => {
@@ -138,6 +139,7 @@ export function CitasPage() {
   }, [apiSesiones]);
 
   const { data: apiComunidades = [] } = useComunidades();
+  const createComunidad = useCreateComunidad();
 
   const comunidadMap = useMemo(() => {
     const map = new Map<string, any>();
@@ -186,14 +188,20 @@ export function CitasPage() {
   }, [apiCitas, localAppointments]);
 
   const appointments = useMemo(() => mergedAppointments.map((c: any, idx: number) => {
-    // Prefer direct `patient`/`doctor` fields from imported/local objects
-    const pacienteNombreDirect = c.patient || c.paciente || '';
-    const medicoNombreDirect = c.doctor || c.medico || '';
+    const extractName = (val: any): string => {
+      if (!val) return '';
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object') {
+        return `${val.nombres || val.nombre || ''} ${val.apellidos || val.apellido || ''}`.trim();
+      }
+      return String(val);
+    };
 
-    // IDs come as strings from backend
+    const pacienteNombreDirect = extractName(c.patient) || extractName(c.paciente);
+    const medicoNombreDirect = extractName(c.doctor) || extractName(c.medico);
+
     const pacienteId = String(c.fk_ps_b001_num_paciente ?? '');
     const sesionId = String(c.fk_cm_b005_num_sesion ?? '');
-    // Cita only has session FK; resolve medico via sesionMedicoMap
     const medicoId = sesionMedicoMap.get(sesionId) ?? '';
 
     const paciente = pacienteId ? pacienteMap.get(pacienteId) ?? null : null;
@@ -206,13 +214,19 @@ export function CitasPage() {
       ? `${medico.nombre || ''} ${medico.apellido || ''}`.trim()
       : '');
 
+    const especialidad = typeof medico?.especialidad === 'object'
+      ? medico?.especialidad?.nombre || 'General'
+      : typeof c.medico?.especialidad === 'object'
+        ? c.medico?.especialidad?.nombre || 'General'
+        : 'General';
+
     return {
       id: c.pk_num_cita_medica || c.pk_num_cita || c.id || idx + 1,
       patient: pacienteNombre || 'Sin paciente',
       doctor: medicoNombre || 'Sin médico',
-      specialty: medico?.especialidad?.nombre || 'General',
-      date: c.fecha || '',
-      time: c.hora || '',
+      specialty: especialidad,
+      date: typeof c.fecha === 'string' ? c.fecha : String(c.fecha || ''),
+      time: typeof c.hora === 'string' ? c.hora : String(c.hora || ''),
       status: c.estado_cita === 'confirmada' ? 'confirmada'
         : c.estado_cita === 'cancelada' ? 'cancelada'
         : c.estado_cita === 'atendida' ? 'atendida'
@@ -236,10 +250,25 @@ export function CitasPage() {
     return Object.values(groups);
   }, [apiMedicos]);
 
-  // Day availability mock
-  const [dayAvailability, setDayAvailability] = useState<Record<string, 'available' | 'reserved'>>({
-    '2024-01-28': 'reserved',
-  });
+  // Derive occupied dates from API appointments + local appointments
+  const apiReservedDates = useMemo(() => {
+    const reserved: Record<string, 'available' | 'reserved'> = {};
+    const allCitas = [...apiCitas, ...localAppointments];
+    for (const c of allCitas) {
+      const fecha = (c as any).fecha;
+      if (fecha && typeof fecha === 'string') {
+        reserved[fecha] = 'reserved';
+      }
+    }
+    return reserved;
+  }, [apiCitas, localAppointments]);
+
+  const [localDayOverrides, setLocalDayOverrides] = useState<Record<string, 'available' | 'reserved'>>({});
+
+  const dayAvailability = useMemo(() => ({
+    ...apiReservedDates,
+    ...localDayOverrides,
+  }), [apiReservedDates, localDayOverrides]);
 
   // New patient form state
   const [isMinor, setIsMinor] = useState(false);
@@ -249,6 +278,12 @@ export function CitasPage() {
     ciRepresentante: '',
     comunidad: '', estadoUbic: '', municipio: '', parroquia: '',
   });
+
+  const [comunidadOpen, setComunidadOpen] = useState(false);
+  const [comunidadSearch, setComunidadSearch] = useState('');
+  const [selectedComunidadId, setSelectedComunidadId] = useState<number | null>(null);
+  const [showNewComunidadForm, setShowNewComunidadForm] = useState(false);
+  const [newComunidad, setNewComunidad] = useState({ nombre_comunidad: '', estado: '', municipio: '', parroquia: '' });
 
   const [confirmAction, setConfirmAction] = useState<'save' | 'saveContinue' | 'cancel' | null>(null);
 
@@ -297,11 +332,15 @@ export function CitasPage() {
 
   const persistNewPatient = () => {
     if (!newPatient.nombres.trim() || !newPatient.apellidos.trim()) return;
+    if (!selectedComunidadId) {
+      toast.error('Seleccione una comunidad');
+      return;
+    }
     const ciFinal = isMinor && newPatient.ciRepresentante
       ? `${newPatient.ciRepresentante}-R01`
       : newPatient.ci;
     createPaciente.mutate({
-      fk_ps_a001_num_comunidad: 1, // mock, needs real community ID
+      fk_ps_a001_num_comunidad: selectedComunidadId,
       ci: ciFinal,
       nombres: newPatient.nombres,
       apellidos: newPatient.apellidos,
@@ -310,10 +349,10 @@ export function CitasPage() {
       direccion: newPatient.direccion || 'Sin dirección',
       telefono: newPatient.telefono || '00000000000',
       nacionalidad: newPatient.nacionalidad?.toLowerCase() === 'extranjero' ? 'extranjero' : 'venezolano',
-      estado_civil: 'soltero', // default mock
+      estado_civil: 'soltero',
       estado_paciente: newPatient.estado === 'Activo' ? 'activo' : 'encamado'
     });
-    toast.success('Paciente registrado (Simulado/Mock en API)');
+    toast.success('Paciente registrado exitosamente');
   };
 
   const handleSavePatient = () => {
@@ -321,18 +360,27 @@ export function CitasPage() {
     setModalStep('search');
     setNewPatient(emptyPatient);
     setIsMinor(false);
+    setSelectedComunidadId(null);
+    setShowNewComunidadForm(false);
+    setComunidadSearch('');
   };
 
   const handleSaveAndContinue = () => {
     persistNewPatient();
     setNewPatient(emptyPatient);
     setIsMinor(false);
+    setSelectedComunidadId(null);
+    setShowNewComunidadForm(false);
+    setComunidadSearch('');
   };
 
   const handleCancelRegister = () => {
     setNewPatient(emptyPatient);
     setIsMinor(false);
     setModalStep('search');
+    setSelectedComunidadId(null);
+    setShowNewComunidadForm(false);
+    setComunidadSearch('');
   };
 
   const handleMinorChange = (checked: boolean) => {
@@ -435,44 +483,55 @@ export function CitasPage() {
     const pacienteId = Number(selectedPatient.num) || 1;
     const medicoId = Number(selectedDoctor.id) || 1;
 
-    // Buscar una sesión válida para el médico que coincida con la fecha y hora seleccionadas
+    const toMinutes = (t: string) => {
+      const [hh, mm] = (t || '').split(':').map((v) => Number(v));
+      return Number.isFinite(hh) && Number.isFinite(mm) ? hh * 60 + mm : -1;
+    };
+
+    const weekdayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const selDate = new Date(selectedDate + 'T12:00:00');
+    const selDayName = weekdayNames[selDate.getDay()];
+    const targetMin = toMinutes(horaSeleccionada);
+
+    // Find matching session for this doctor, day, and time
     let sesionId = 0;
     let matchedSession: any = null;
-    try {
-      const toMinutes = (t: string) => {
-        const [hh, mm] = (t || '').split(':').map((v) => Number(v));
-        return Number.isFinite(hh) && Number.isFinite(mm) ? hh * 60 + mm : -1;
-      };
 
-      const weekdayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-      const selDate = new Date(selectedDate as string);
-      const selDayName = weekdayNames[selDate.getDay()];
-      const targetMin = toMinutes(horaSeleccionada);
+    for (const s of apiSesiones) {
+      const sesMedId = String(s.fk_cm_b001_num_medico_ministerio_salud ?? '');
+      if (!sesMedId || String(medicoId) !== sesMedId) continue;
 
+      const hi = toMinutes(s.hora_inicio || '');
+      const hf = toMinutes(s.hora_fin || '');
+      const diasRaw = String(s.dias_semana || '').trim();
+      const diasLower = diasRaw.toLowerCase();
+
+      // Exact day name match (e.g. "lunes" in "Lunes")
+      const dayMatches = !diasLower || diasLower.includes(selDayName.toLowerCase());
+      const timeMatches = targetMin >= 0 && hi >= 0 && hf > hi ? (targetMin >= hi && targetMin < hf) : true;
+
+      if (dayMatches && timeMatches) {
+        sesionId = Number(s.pk_num_sesion_medica ?? s.pk_num_sesion ?? s.id ?? 0);
+        matchedSession = s;
+        break;
+      }
+    }
+
+    // Fallback: any session for the doctor (try to match day first)
+    if (!sesionId) {
       for (const s of apiSesiones) {
-        const sesMedId = String(s.fk_cm_b001_num_medico_ministerio_salud ?? s.fk_cm_a001_num_medico ?? '');
+        const sesMedId = String(s.fk_cm_b001_num_medico_ministerio_salud ?? '');
         if (!sesMedId || String(medicoId) !== sesMedId) continue;
-
-        const hi = toMinutes(s.hora_inicio || s.hora || '');
-        const hf = toMinutes(s.hora_fin || s.hora_fin || '');
-        const dias = (s.dias_semana || s.dias || s.dia || '').toString();
-        const diasNorm = dias.toLowerCase();
-
-        const dayMatches = !diasNorm || diasNorm.includes(selDayName.toLowerCase());
-        const timeMatches = targetMin >= 0 && hi >= 0 && hf >= 0 ? (targetMin >= hi && targetMin < hf) : true;
-
-        if (dayMatches && timeMatches) {
+        const diasLower = String(s.dias_semana || '').toLowerCase();
+        if (diasLower.includes(selDayName.toLowerCase())) {
           sesionId = Number(s.pk_num_sesion_medica ?? s.pk_num_sesion ?? s.id ?? 0);
           matchedSession = s;
           break;
         }
       }
-    } catch (e) {
-      // ignore and fallback
-      sesionId = 0;
     }
 
-    // fallback: any session for the doctor
+    // Last fallback: any session for the doctor
     if (!sesionId) {
       sesionId = Number(doctorSessionMap.get(String(medicoId)) || 0);
       if (sesionId) {
@@ -481,39 +540,8 @@ export function CitasPage() {
     }
 
     if (!sesionId) {
-      toast.error('No hay una sesión médica válida para este doctor');
+      toast.error('No hay una sesión médica configurada para este doctor. Cree una jornada primero.');
       return;
-    }
-
-    // Validate that the selected date and time actually match the session (avoid backend 400)
-    try {
-      if (matchedSession) {
-        const toMinutes = (t: string) => {
-          const [hh, mm] = (t || '').split(':').map((v) => Number(v));
-          return Number.isFinite(hh) && Number.isFinite(mm) ? hh * 60 + mm : -1;
-        };
-        const weekdayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
-        const selDate = new Date(selectedDate as string);
-        const selDayName = weekdayNames[selDate.getDay()];
-        const targetMin = toMinutes(horaSeleccionada);
-
-        const dias = (matchedSession.dias_semana || matchedSession.dias || matchedSession.dia || '').toString().toLowerCase();
-        const dayMatches = !dias || dias.includes(selDayName.toLowerCase());
-        const hi = toMinutes(matchedSession.hora_inicio || matchedSession.hora || '');
-        const hf = toMinutes(matchedSession.hora_fin || matchedSession.hora_fin || '');
-        const timeMatches = targetMin >= 0 && hi >= 0 && hf >= 0 ? (targetMin >= hi && targetMin < hf) : true;
-
-        if (!dayMatches) {
-          toast.error(`La fecha indicada (${selDayName}) no corresponde al día de la sesión médica (${(matchedSession.dias_semana || matchedSession.dias || matchedSession.dia || 'N/D')})`);
-          return;
-        }
-        if (!timeMatches) {
-          toast.error('La hora seleccionada no está dentro del rango de la sesión médica');
-          return;
-        }
-      }
-    } catch (e) {
-      // ignore validation errors and continue
     }
 
     const motivoPayload = {
@@ -526,6 +554,7 @@ export function CitasPage() {
 
     createMotivoConsulta.mutate(motivoPayload, {
       onSuccess: (motivoCreado: any) => {
+        qc.invalidateQueries({ queryKey: MOTIVOS_KEY });
         const motivoId = Number(motivoCreado?.pk_num_motivo_consulta ?? motivoCreado?.id ?? 1);
         const citaPayload = buildCreateCitaPayload({
           pacienteId,
@@ -541,7 +570,6 @@ export function CitasPage() {
 
         createCita.mutate(citaPayload, {
           onSuccess: (created) => {
-            // Store local appointment as API-like object so name resolution works immediately
             const createdAppointment = created || {
               pk_num_cita_medica: Date.now(),
               fk_ps_b001_num_paciente: pacienteId,
@@ -553,7 +581,8 @@ export function CitasPage() {
             };
 
             setLocalAppointments(prev => [createdAppointment, ...prev]);
-            setDayAvailability(prev => ({ ...prev, [selectedDate]: 'reserved' }));
+            qc.invalidateQueries({ queryKey: CITAS_KEY });
+            qc.invalidateQueries({ queryKey: MOTIVOS_KEY });
             toast.success('Cita registrada correctamente');
             setModalStep('closed');
             setSelectedPatient(null);
@@ -567,13 +596,11 @@ export function CitasPage() {
             setCurrentPage(1);
           },
           onError: (error: any) => {
-            // Mostrar detalle cuando venga del API
             const apiBody = error?.response?.data;
             const apiMsg = apiBody?.message || error?.message;
             console.error('Error creating cita:', error);
-            console.error('Error creating cita - response body:', apiBody);
             const short = apiMsg || (apiBody ? JSON.stringify(apiBody) : null);
-            toast.error(short ? `No se pudo registrar la cita: ${short}` : 'No se pudo registrar la cita. Verifique los datos o la sesión médica.');
+            toast.error(short ? `No se pudo registrar la cita: ${short}` : 'No se pudo registrar la cita. Verifique los datos.');
           },
         });
       },
@@ -656,10 +683,10 @@ export function CitasPage() {
   const filteredAppointments = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return appointments.filter((apt) => {
-      const patient = (apt.patient || '').toLowerCase();
-      const doctor = (apt.doctor || '').toLowerCase();
-      const specialty = (apt.specialty || '').toLowerCase();
-      const date = (apt.date || '').toLowerCase();
+      const patient = String(apt.patient || '').toLowerCase();
+      const doctor = String(apt.doctor || '').toLowerCase();
+      const specialty = String(apt.specialty || '').toLowerCase();
+      const date = String(apt.date || '').toLowerCase();
       const matchesSearch = !term || patient.includes(term) || doctor.includes(term) || specialty.includes(term) || date.includes(term);
       const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
       const matchesDate = !dateFilter || apt.date === dateFilter;
@@ -675,59 +702,58 @@ export function CitasPage() {
     return filteredAppointments.slice(start, start + itemsPerPage);
   }, [filteredAppointments, currentPage]);
 
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-  };
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, statusFilter, dateFilter]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Citas Médicas</h1>
-          <p className="text-sm text-muted-foreground">Gestión de citas y programación</p>
+          <h1 className="text-lg sm:text-xl font-bold text-foreground">Citas Médicas</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Gestión de citas y programación</p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm" onClick={() => setModalStep('search')}>
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm w-full sm:w-auto" onClick={() => setModalStep('search')}>
           <Plus className="w-4 h-4 mr-2" />
           Nueva Cita
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-64">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+        <div className="relative flex-1 min-w-0 sm:min-w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por paciente, doctor o fecha"
-            className="pl-9"
+            className="pl-9 w-full"
             value={searchTerm}
             onChange={(event) => {
               setSearchTerm(event.target.value);
-              setCurrentPage(1);
             }}
           />
         </div>
-        <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as typeof statusFilter); setCurrentPage(1); }}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Estado" />
-          </SelectTrigger>
-          <SelectContent className="bg-popover border border-border z-[60]">
-            <SelectItem value="all">Todos los estados</SelectItem>
-            <SelectItem value="pendiente">Pendiente</SelectItem>
-            <SelectItem value="confirmada">Confirmada</SelectItem>
-            <SelectItem value="atendida">Atendida</SelectItem>
-            <SelectItem value="cancelada">Cancelada</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="w-[180px]">
-          <Input
-            type="date"
-            value={dateFilter}
-            onChange={(event) => {
-              setDateFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
+        <div className="flex gap-2">
+          <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as typeof statusFilter); }}>
+            <SelectTrigger className="flex-1 sm:flex-none sm:w-[180px]">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover border border-border z-[60]">
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pendiente">Pendiente</SelectItem>
+              <SelectItem value="confirmada">Confirmada</SelectItem>
+              <SelectItem value="atendida">Atendida</SelectItem>
+              <SelectItem value="cancelada">Cancelada</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex-1 sm:flex-none sm:w-[180px]">
+            <Input
+              type="date"
+              value={dateFilter}
+              onChange={(event) => {
+                setDateFilter(event.target.value);
+              }}
+              className="w-full"
+            />
+          </div>
         </div>
-        <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); setCurrentPage(1); }}>
+        <Button variant="outline" onClick={() => { setSearchTerm(''); setStatusFilter('all'); setDateFilter(''); }} className="hidden sm:flex">
           <Filter className="w-4 h-4 mr-2" />
           Limpiar
         </Button>
@@ -746,8 +772,8 @@ export function CitasPage() {
             <span className="ml-2 text-sm text-muted-foreground">Cargando citas...</span>
           </div>
         ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
@@ -787,28 +813,12 @@ export function CitasPage() {
           </table>
         </div>
         )}
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Mostrando {paginatedAppointments.length} de {appointments.length} citas
-          </p>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious onClick={() => goToPage(currentPage - 1)} className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-              </PaginationItem>
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
-                <PaginationItem key={page}>
-                  <PaginationLink isActive={page === currentPage} onClick={() => goToPage(page)} className="cursor-pointer">
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-              <PaginationItem>
-                <PaginationNext onClick={() => goToPage(currentPage + 1)} className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'} />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredAppointments.length}
+          onPageChange={setCurrentPage}
+        />
       </div>
       {appointmentsReports.ReportSheet}
 
@@ -1002,7 +1012,108 @@ export function CitasPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-foreground">Comunidad</Label>
-                <Input value={newPatient.comunidad} onChange={e => setNewPatient({ ...newPatient, comunidad: e.target.value })} />
+                <Popover open={comunidadOpen} onOpenChange={setComunidadOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={comunidadOpen}
+                      className="w-full justify-between text-foreground"
+                    >
+                      {selectedComunidadId
+                        ? apiComunidades.find((c: any) => String(c.pk_num_comunidad ?? c.id) === String(selectedComunidadId))?.nombre_comunidad || 'Seleccionar...'
+                        : 'Seleccionar comunidad...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Buscar comunidad..." value={comunidadSearch} onValueChange={setComunidadSearch} />
+                      <CommandList>
+                        <CommandEmpty>
+                          <div className="px-2 py-1.5 text-sm text-muted-foreground">No encontrada</div>
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {apiComunidades.map((c: any) => {
+                            const id = String(c.pk_num_comunidad ?? c.id);
+                            return (
+                              <CommandItem
+                                key={id}
+                                value={`${c.nombre_comunidad} ${c.estado} ${c.municipio} ${c.parroquia}`}
+                                onSelect={() => {
+                                  setSelectedComunidadId(Number(id));
+                                  setNewPatient({ ...newPatient, comunidad: c.nombre_comunidad, estadoUbic: c.estado, municipio: c.municipio, parroquia: c.parroquia });
+                                  setComunidadOpen(false);
+                                  setComunidadSearch('');
+                                }}
+                              >
+                                <Check className={cn('mr-2 h-4 w-4', selectedComunidadId === Number(id) ? 'opacity-100' : 'opacity-0')} />
+                                <div className="flex flex-col">
+                                  <span>{c.nombre_comunidad}</span>
+                                  <span className="text-xs text-muted-foreground">{c.estado} - {c.municipio} - {c.parroquia}</span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                          <CommandItem
+                            value="__create_new__"
+                            onSelect={() => {
+                              setShowNewComunidadForm(true);
+                              setNewComunidad({ nombre_comunidad: comunidadSearch || '', estado: '', municipio: '', parroquia: '' });
+                              setComunidadOpen(false);
+                            }}
+                            className="text-primary"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            <span>Crear nueva comunidad{comunidadSearch ? `: "${comunidadSearch}"` : ''}</span>
+                          </CommandItem>
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                {showNewComunidadForm && (
+                  <div className="border border-border rounded-lg p-3 space-y-2 bg-background/50">
+                    <p className="text-xs text-muted-foreground font-medium">Nueva Comunidad</p>
+                    <Input placeholder="Nombre" value={newComunidad.nombre_comunidad} onChange={e => setNewComunidad({ ...newComunidad, nombre_comunidad: e.target.value })} className="h-8 text-sm" />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Input placeholder="Estado" value={newComunidad.estado} onChange={e => setNewComunidad({ ...newComunidad, estado: e.target.value })} className="h-8 text-sm" />
+                      <Input placeholder="Municipio" value={newComunidad.municipio} onChange={e => setNewComunidad({ ...newComunidad, municipio: e.target.value })} className="h-8 text-sm" />
+                      <Input placeholder="Parroquia" value={newComunidad.parroquia} onChange={e => setNewComunidad({ ...newComunidad, parroquia: e.target.value })} className="h-8 text-sm" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={async () => {
+                          if (!newComunidad.nombre_comunidad.trim() || !newComunidad.estado.trim()) {
+                            toast.error('Nombre y estado son obligatorios');
+                            return;
+                          }
+                          try {
+                            const res = await createComunidad.mutateAsync(newComunidad);
+                            const newId = res?.pk_num_comunidad || res?.id;
+                            if (newId) {
+                              setSelectedComunidadId(Number(newId));
+                              setNewPatient({ ...newPatient, comunidad: newComunidad.nombre_comunidad, estadoUbic: newComunidad.estado, municipio: newComunidad.municipio, parroquia: newComunidad.parroquia });
+                            }
+                            setShowNewComunidadForm(false);
+                            setComunidadOpen(false);
+                            setComunidadSearch('');
+                            toast.success('Comunidad creada');
+                          } catch (err: any) {
+                            toast.error(err?.response?.data?.message || 'Error al crear comunidad');
+                          }
+                        }}
+                      >
+                        Guardar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowNewComunidadForm(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Estado</Label>

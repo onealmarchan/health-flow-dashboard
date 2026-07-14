@@ -28,7 +28,7 @@ import { TablePagination } from '@/components/shared/TablePagination';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
-import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma, useCreateDiagnosticoSintoma } from '@/services/useDiagnosticos';
+import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma, useCreateDiagnosticoSintoma, useDiagnosticoSintomas } from '@/services/useDiagnosticos';
 import { useCitas } from '@/services/useCitas';
 import { usePacientes } from '@/services/usePacientes';
 import { api } from '@/services/apiClient';
@@ -72,6 +72,7 @@ const emptyForm = () => ({
   enfermedad: { nombre: '', descripcion: '', cronico: false },
   enfermedadId: 0,
   citaId: 0,
+  etapa: '' as '' | 'leve' | 'inicial' | 'avanzada',
 });
 
 // ---------- HealthMeter ----------
@@ -109,6 +110,7 @@ export function DiagnosticosPage() {
   const { data: apiSintomas = [] } = useSintomas();
   const { data: apiCitas = [] } = useCitas();
   const { data: apiPacientes = [] } = usePacientes();
+  const { data: apiDiagnosticoSintomas = [] } = useDiagnosticoSintomas();
   
   const createDiagnostico = useCreateDiagnostico();
   const deleteDiagnostico = useDeleteDiagnostico();
@@ -130,7 +132,7 @@ export function DiagnosticosPage() {
       );
       
       return {
-        id: d.id || d.pk_num_diagnostico_enfermedad || idx + 1,
+        id: d.id || d.pk_num_diagnostico || idx + 1,
         numCitaOrigen: `CITA-${cita?.pk_num_cita_medica || cita?.pk_num_cita || cita?.id || idx + 1}`,
         paciente: paciente ? `${paciente.nombres || ''} ${paciente.apellidos || ''}`.trim() : 'Sin paciente',
         pacienteId: Number(d.fk_ps_b001_num_paciente) || 0,
@@ -142,7 +144,13 @@ export function DiagnosticosPage() {
         motivo: '', // Se puede obtener del motivo de consulta relacionado
         tratamientoPrevio: d.tratamiento || '',
         urgencia: d.critico || false,
-        sintomas: [], // Se pueden obtener de la relación diagnóstico-síntoma
+        sintomas: apiDiagnosticoSintomas
+          .filter((ds: any) => String(ds.fk_cm_b003_num_diagnostico) === String(d.pk_num_diagnostico || d.id))
+          .map((ds: any) => ({
+            nombre: ds.sintoma?.nombre || '',
+            descripcion: ds.sintoma?.descripcion || '',
+            gravedad: Number(ds.sintoma?.gravedad) || 3,
+          })),
         enfermedad: {
           nombre: enfermedad?.nombre || 'Sin especificar',
           descripcion: enfermedad?.descripcion || '',
@@ -150,11 +158,11 @@ export function DiagnosticosPage() {
         },
         enfermedadId: d.fk_cm_a002_num_enfermedad || 0,
         critico: d.critico || false,
-        etapa: d.etapa || 'Inicial',
+        etapa: d.etapa || 'inicial',
         estado: 'Activo',
       };
     });
-  }, [apiDiagnosticos, apiPacientes, apiEnfermedades, apiCitas]);
+  }, [apiDiagnosticos, apiPacientes, apiEnfermedades, apiCitas, apiDiagnosticoSintomas]);
 
   const [registerOpen, setRegisterOpen] = useState(false);
   const [viewing, setViewing] = useState<Diagnostico | null>(null);
@@ -236,6 +244,8 @@ export function DiagnosticosPage() {
         ? form.sintomas.reduce((acc, s) => acc + (Number(s.gravedad) || 0), 0) / form.sintomas.length
         : 3;
 
+    const etapaCalculada = form.etapa || (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada';
+
     const crearDiagnostico = async (enfermedadId: number) => {
       try {
         const res = await createDiagnostico.mutateAsync({
@@ -244,11 +254,11 @@ export function DiagnosticosPage() {
           fk_cm_b002_num_cita_medica: form.citaId,
           critico: avg >= 4 || form.urgencia,
           tratamiento: form.tratamientoPrevio,
-          etapa: (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada',
+          etapa: etapaCalculada,
           fecha_diagnostico: new Date().toISOString().slice(0, 10),
         });
 
-        const diagnosticoId = res?.id || res?.pk_num_diagnostico_enfermedad;
+        const diagnosticoId = res?.pk_num_diagnostico || res?.id;
         if (diagnosticoId && form.sintomas.length > 0) {
           for (const s of form.sintomas) {
             if (!s.nombre.trim()) continue;
@@ -261,7 +271,7 @@ export function DiagnosticosPage() {
               const sintomaId = sintomaRes.data?.id || sintomaRes.data?.pk_num_sintoma;
               if (sintomaId) {
                 await api.DiagnosticoSintomaController_create({
-                  fk_num_diagnostico_enfermedad: diagnosticoId,
+                  fk_cm_b003_num_diagnostico: diagnosticoId,
                   fk_cm_a003_num_sintoma: sintomaId,
                 });
               }
@@ -299,6 +309,11 @@ export function DiagnosticosPage() {
       });
     }
   };
+
+  const symptomAvg = useMemo(() => {
+    if (form.sintomas.length === 0) return 3;
+    return form.sintomas.reduce((acc, s) => acc + (Number(s.gravedad) || 0), 0) / form.sintomas.length;
+  }, [form.sintomas]);
 
   const viewMeterValue = useMemo(() => {
     if (!viewing) return 3;
@@ -366,8 +381,8 @@ export function DiagnosticosPage() {
   const diagReports = useReportableTable({ module: diagModule, visibleRows: filteredDiagnosticos });
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Stethoscope className="w-5 h-5 text-primary" />
@@ -375,11 +390,11 @@ export function DiagnosticosPage() {
           </h1>
           <p className="text-sm text-muted-foreground">Registro y seguimiento de diagnósticos médicos</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-center gap-2">
           {diagReports.SplitButton}
           <Button
             size="sm"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+            className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             onClick={() => { setForm(emptyForm()); setRegisterOpen(true); }}
           >
             <Plus className="w-3.5 h-3.5 mr-1.5" />
@@ -388,7 +403,7 @@ export function DiagnosticosPage() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <SearchBar value={search} onChange={(v) => { setSearch(v); setCurrentPage(1); }} placeholder="Buscar por paciente, enfermedad o cita..." />
         <FiltersButton onClear={() => { setFilterEtapa('todas'); setFilterCriticidad('todas'); }}>
           <div className="space-y-2">
@@ -427,7 +442,7 @@ export function DiagnosticosPage() {
               <span className="ml-2 text-sm text-muted-foreground">Cargando diagnósticos...</span>
             </div>
           ) : (
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/50">
               <tr>
                 <th className="w-10 px-3 py-2.5">{diagReports.HeaderCheckbox}</th>
@@ -468,8 +483,8 @@ export function DiagnosticosPage() {
                     <td className="px-3 py-2.5">
                       <span className={cn(
                         'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                        d.etapa === 'avanzada' ? 'bg-destructive/15 text-destructive' :
-                        d.etapa === 'inicial' ? 'bg-warning/15 text-warning' :
+                        d.etapa.toLowerCase() === 'avanzada' ? 'bg-destructive/15 text-destructive' :
+                        d.etapa.toLowerCase() === 'inicial' ? 'bg-warning/15 text-warning' :
                         'bg-success/15 text-success'
                       )}>
                         {d.etapa}
@@ -616,9 +631,28 @@ export function DiagnosticosPage() {
               ))}
             </div>
 
-            {/* Diagnóstico Final */}
+            {/* Etapa del diagnóstico */}
+            <div className="space-y-2 pt-2 border-t border-border">
+              <Label className="text-foreground">Etapa del Diagnóstico</Label>
+              <p className="text-xs text-muted-foreground">Seleccione la etapa o deje vacío para calcular automáticamente desde los síntomas</p>
+              <Select value={form.etapa} onValueChange={v => setForm({ ...form, etapa: v as '' | 'leve' | 'inicial' | 'avanzada' })}>
+                <SelectTrigger><SelectValue placeholder="Auto-calculada" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="leve">Leve</SelectItem>
+                  <SelectItem value="inicial">Inicial</SelectItem>
+                  <SelectItem value="avanzada">Avanzada</SelectItem>
+                </SelectContent>
+              </Select>
+              {!form.etapa && (
+                <p className="text-xs text-muted-foreground italic">
+                  Calculada: {symptomAvg >= 4 ? 'Avanzada' : symptomAvg >= 2 ? 'Inicial' : 'Leve'} (promedio gravedad: {form.sintomas.length > 0 ? (symptomAvg).toFixed(1) : '3.0'}/5)
+                </p>
+              )}
+            </div>
+
+            {/* Enfermedad Determinada */}
             <div className="space-y-3 pt-2 border-t border-border">
-              <h3 className="text-sm font-semibold text-foreground">Diagnóstico Final</h3>
+              <h3 className="text-sm font-semibold text-foreground">Enfermedad Determinada</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-foreground">Buscar enfermedad existente</Label>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
@@ -28,24 +28,37 @@ const pageComponents: Record<string, React.ComponentType<{ onPageChange?: (page:
   helpdesk: HelpDeskPage,
 };
 
-const ADMIN_ONLY_PAGES = new Set(['usuarios', 'auditorias', 'dashboard', 'jornadas']);
+const ADMIN_ONLY_PAGES = new Set(['usuarios', 'auditorias', 'dashboard']);
 
 const Index = () => {
   const user = useCurrentUser();
   const isAdmin = user?.rol === 'ADMIN';
   const defaultPage = isAdmin ? 'dashboard' : 'panel';
   const [currentPage, setCurrentPage] = useState(defaultPage);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const effectivePage = !isAdmin && ADMIN_ONLY_PAGES.has(currentPage) ? defaultPage : currentPage;
   const PageComponent = pageComponents[effectivePage] || DashboardContent;
 
+  const handlePageChange = useCallback((page: string) => {
+    setCurrentPage(page);
+    setMobileSidebarOpen(false);
+  }, []);
+
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <Sidebar currentPage={effectivePage} onPageChange={setCurrentPage} />
-      <div className="flex-1 flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-1 p-6 overflow-auto">
-          <PageComponent onPageChange={setCurrentPage} />
+      <Sidebar
+        currentPage={effectivePage}
+        onPageChange={handlePageChange}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+      <div className="flex-1 flex flex-col min-h-screen min-w-0">
+        <Header onMenuToggle={() => setMobileSidebarOpen(true)} />
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
+          <div key={effectivePage} className="animate-page-enter">
+            <PageComponent onPageChange={handlePageChange} />
+          </div>
         </main>
       </div>
     </div>

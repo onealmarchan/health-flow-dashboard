@@ -158,39 +158,41 @@ export function PatientTable() {
   return (
     <>
       <div className="chart-container animate-fade-in">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h3 className="text-base font-semibold text-foreground">Pacientes Registrados</h3>
             <p className="text-xs text-muted-foreground">{filtered.length} de {patients.length} pacientes</p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="relative">
+          <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-48" />
+              <Input placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-full sm:w-48" />
             </div>
-            <Select value={estadoFilter} onValueChange={setEstadoFilter}>
-              <SelectTrigger className="w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-50">
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="Activo">Activo</SelectItem>
-                <SelectItem value="Encamado">Encamado</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={comunidadFilter} onValueChange={setComunidadFilter}>
-              <SelectTrigger className="w-36"><SelectValue placeholder="Comunidad" /></SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-50">
-                <SelectItem value="all">Todas</SelectItem>
-                {communities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={estadoFilter} onValueChange={setEstadoFilter}>
+                <SelectTrigger className="flex-1 sm:flex-none sm:w-36"><SelectValue placeholder="Estado" /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-50">
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Activo">Activo</SelectItem>
+                  <SelectItem value="Encamado">Encamado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={comunidadFilter} onValueChange={setComunidadFilter}>
+                <SelectTrigger className="flex-1 sm:flex-none sm:w-36"><SelectValue placeholder="Comunidad" /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border z-50">
+                  <SelectItem value="all">Todas</SelectItem>
+                  {communities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             {reports.SplitButton}
           </div>
         </div>
 
         {reports.ContextBar}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+          <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{reports.HeaderCheckbox}</th>

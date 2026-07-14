@@ -1,15 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './apiClient';
+import { useCurrentUser } from './useCurrentUser';
 
-export const NOTIFICACIONES_KEY = ['notificaciones'] as const;
+function buildNotificacionesKey(userId: number | null) {
+  return ['notificaciones', userId ?? 'anonymous'] as const;
+}
 
 function extractId(n: any): number {
   return Number(n.id ?? n.pk_num_notificacion ?? n.pk_num_mensaje ?? 0);
 }
 
+export function useNotificacionesKey() {
+  const user = useCurrentUser();
+  return buildNotificacionesKey(user?.id ?? null);
+}
+
 export function useNotificaciones() {
+  const user = useCurrentUser();
+  const queryKey = buildNotificacionesKey(user?.id ?? null);
+
   return useQuery({
-    queryKey: NOTIFICACIONES_KEY,
+    queryKey,
     queryFn: async () => {
       try {
         const res = await api.NotificacionController_obtenerTodas();
@@ -19,84 +30,97 @@ export function useNotificaciones() {
       }
     },
     refetchInterval: 30_000,
+    enabled: !!user,
   });
 }
 
 export function useMarkNotificacionAsRead() {
   const qc = useQueryClient();
+  const user = useCurrentUser();
+  const queryKey = buildNotificacionesKey(user?.id ?? null);
+
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await api.NotificacionController_marcarLeida(id);
       return res.data;
     },
     onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: NOTIFICACIONES_KEY });
-      const previous = qc.getQueryData<any[]>(NOTIFICACIONES_KEY);
-      qc.setQueryData(NOTIFICACIONES_KEY, (old: any[] = []) =>
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<any[]>(queryKey);
+      qc.setQueryData(queryKey, (old: any[] = []) =>
         old.map(n => extractId(n) === id ? { ...n, leida: true, leido: true, read: true, visto: true } : n)
       );
       return { previous };
     },
     onError: (_err, _id, context) => {
-      if (context?.previous) qc.setQueryData(NOTIFICACIONES_KEY, context.previous);
+      if (context?.previous) qc.setQueryData(buildNotificacionesKey(user?.id ?? null), context.previous);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: NOTIFICACIONES_KEY });
+      qc.invalidateQueries({ queryKey: buildNotificacionesKey(user?.id ?? null) });
     },
   });
 }
 
 export function useMarkAllAsRead() {
   const qc = useQueryClient();
+  const user = useCurrentUser();
+  const queryKey = buildNotificacionesKey(user?.id ?? null);
+
   return useMutation({
     mutationFn: async () => {
       const res = await api.NotificacionController_marcarTodasLeidas();
       return res.data;
     },
     onMutate: async () => {
-      await qc.cancelQueries({ queryKey: NOTIFICACIONES_KEY });
-      const previous = qc.getQueryData<any[]>(NOTIFICACIONES_KEY);
-      qc.setQueryData(NOTIFICACIONES_KEY, (old: any[] = []) =>
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<any[]>(queryKey);
+      qc.setQueryData(queryKey, (old: any[] = []) =>
         old.map(n => ({ ...n, leida: true, leido: true, read: true, visto: true }))
       );
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) qc.setQueryData(NOTIFICACIONES_KEY, context.previous);
+      if (context?.previous) qc.setQueryData(buildNotificacionesKey(user?.id ?? null), context.previous);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: NOTIFICACIONES_KEY });
+      qc.invalidateQueries({ queryKey: buildNotificacionesKey(user?.id ?? null) });
     },
   });
 }
 
 export function useDeleteNotificacion() {
   const qc = useQueryClient();
+  const user = useCurrentUser();
+  const queryKey = buildNotificacionesKey(user?.id ?? null);
+
   return useMutation({
     mutationFn: async (id: number) => {
       const res = await api.NotificacionController_eliminar(id);
       return res.data;
     },
     onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: NOTIFICACIONES_KEY });
-      const previous = qc.getQueryData<any[]>(NOTIFICACIONES_KEY);
-      qc.setQueryData(NOTIFICACIONES_KEY, (old: any[] = []) =>
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<any[]>(queryKey);
+      qc.setQueryData(queryKey, (old: any[] = []) =>
         old.filter(n => extractId(n) !== id)
       );
       return { previous };
     },
     onError: (_err, _id, context) => {
-      if (context?.previous) qc.setQueryData(NOTIFICACIONES_KEY, context.previous);
+      if (context?.previous) qc.setQueryData(buildNotificacionesKey(user?.id ?? null), context.previous);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: NOTIFICACIONES_KEY });
+      qc.invalidateQueries({ queryKey: buildNotificacionesKey(user?.id ?? null) });
     },
   });
 }
 
 export function useDeleteAllNotificaciones() {
   const qc = useQueryClient();
+  const user = useCurrentUser();
+  const queryKey = buildNotificacionesKey(user?.id ?? null);
   let cachedNotifs: any[] = [];
+
   return useMutation({
     mutationFn: async () => {
       if (cachedNotifs.length === 0) return;
@@ -105,17 +129,17 @@ export function useDeleteAllNotificaciones() {
       );
     },
     onMutate: async () => {
-      await qc.cancelQueries({ queryKey: NOTIFICACIONES_KEY });
-      const previous = qc.getQueryData<any[]>(NOTIFICACIONES_KEY);
+      await qc.cancelQueries({ queryKey });
+      const previous = qc.getQueryData<any[]>(queryKey);
       cachedNotifs = previous || [];
-      qc.setQueryData(NOTIFICACIONES_KEY, []);
+      qc.setQueryData(queryKey, []);
       return { previous };
     },
     onError: (_err, _vars, context) => {
-      if (context?.previous) qc.setQueryData(NOTIFICACIONES_KEY, context.previous);
+      if (context?.previous) qc.setQueryData(buildNotificacionesKey(user?.id ?? null), context.previous);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: NOTIFICACIONES_KEY });
+      qc.invalidateQueries({ queryKey: buildNotificacionesKey(user?.id ?? null) });
     },
   });
 }

@@ -362,6 +362,10 @@ export interface updateSintomaDTO {
 }
 
 export interface CreateDiagnosticoSintomaDTO {
+  /** ID del diagnóstico de enfermedad */
+  fk_cm_b003_num_diagnostico: number;
+  /** ID del síntoma */
+  fk_cm_a003_num_sintoma: number;
 }
 
 export interface UpdateDiagnosticoSintomaDTO {

@@ -1,9 +1,9 @@
-import { useState, useMemo } from 'react';
-import { Edit, Search } from 'lucide-react';
-import { Link, Copy } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Edit, Search, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { TablePagination } from '@/components/shared/TablePagination';
 
 export type AvailabilityEvent =
   | {
@@ -15,6 +15,7 @@ export type AvailabilityEvent =
     }
   | {
       kind: 'block';
+      blockId: string;
       razon: string;
       fechaInicio: string;
       fechaFin: string;
@@ -34,6 +35,7 @@ interface Props {
   onEdit: (mpps: string) => void;
   filter?: 'all' | 'sessions' | 'blocks';
   onFilterChange?: (f: 'all' | 'sessions' | 'blocks') => void;
+  onDeleteBlock?: (id: string) => void;
 }
 
 type FilterMode = 'all' | 'sessions' | 'blocks';
@@ -56,7 +58,7 @@ function initials(nombre: string, apellido: string): string {
   return `${nombre.charAt(0)}${apellido.charAt(0)}`.toUpperCase();
 }
 
-export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterChange }: Props) {
+export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterChange, onDeleteBlock }: Props) {
   const [filterState, setFilterState] = useState<FilterMode>('all');
   const filter = (propFilter as FilterMode) ?? filterState;
   const setFilter = (f: FilterMode) => {
@@ -65,6 +67,8 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
   };
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -84,6 +88,14 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
         return fullName.includes(term) || doc.especialidad.toLowerCase().includes(term);
       });
   }, [data, filter, search]);
+
+  useEffect(() => { setCurrentPage(1); }, [search, filter]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / itemsPerPage));
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return rows.slice(start, start + itemsPerPage);
+  }, [rows, currentPage]);
 
   const filterChip = (val: FilterMode, label: string) => (
     <button
@@ -145,14 +157,14 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={3} className="p-8 text-center text-sm text-muted-foreground">
                   Sin resultados
                 </td>
               </tr>
             ) : (
-              rows.map(doc => {
+              paginatedRows.map(doc => {
                 const isExpanded = !!expanded[doc.mpps];
                 const visibleEvents = isExpanded ? doc.events : doc.events.slice(0, 2);
                 const hidden = doc.events.length - visibleEvents.length;
@@ -191,30 +203,15 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
                                 <span className="text-success/80">
                                   {ev.horaInicio}–{ev.horaFin}
                                 </span>
-                                <span className="text-success/70 truncate ml-auto">
-                                  {ev.days.join(', ')}
-                                </span>
-                                <button
-                                  type="button"
-                                  title="Copiar enlace de sesión"
-                                  onClick={() => {
-                                    try {
-                                      const id = typeof crypto !== 'undefined' && (crypto as any).randomUUID ? (crypto as any).randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2,8);
-                                      const url = `${window.location.origin}/shared/${id}`;
-                                      navigator.clipboard.writeText(url).then(() => {
-                                        // remember this shared id for this tab
-                                        try { localStorage.setItem('activeSharedId', id); } catch (e) {}
-                                        // notify user
-                                        alert('Enlace copiado al portapapeles');
-                                      });
-                                    } catch (e) {
-                                      console.error('copy link error', e);
-                                    }
-                                  }}
-                                  className="ml-2 p-1 rounded-md hover:bg-secondary/40"
-                                >
-                                  <Copy className="w-3.5 h-3.5" />
-                                </button>
+                                {(ev as any).dateRange ? (
+                                  <span className="text-success/70 truncate ml-auto" title={ev.days.join(', ')}>
+                                    {(ev as any).dateRange}
+                                  </span>
+                                ) : (
+                                  <span className="text-success/70 truncate ml-auto">
+                                    {ev.days.join(', ')}
+                                  </span>
+                                )}
                               </div>
                             ) : (
                               <div
@@ -226,6 +223,16 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
                                   {ev.fechaInicio} – {ev.fechaFin}
                                 </span>
                                 <span className="text-destructive/70 truncate ml-auto">{ev.turno}</span>
+                                {onDeleteBlock && (
+                                  <button
+                                    type="button"
+                                    title="Desbloquear"
+                                    onClick={() => onDeleteBlock(ev.blockId)}
+                                    className="ml-2 p-1 rounded-md hover:bg-destructive/20 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                  </button>
+                                )}
                               </div>
                             ),
                           )}
@@ -259,6 +266,12 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
           </tbody>
         </table>
       </div>
+      <TablePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={rows.length}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }
