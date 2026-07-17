@@ -19,6 +19,7 @@ export function useMedicos() {
       const res = await api.MedicoController_getAllMedicos();
       return res.data as any[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -75,6 +76,7 @@ export function useEspecialidades() {
       const res = await api.EspecialidadController_getAllEspecialidades();
       return res.data as any[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

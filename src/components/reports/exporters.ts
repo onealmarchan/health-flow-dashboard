@@ -1,11 +1,19 @@
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import {
-  Document, Packer, Paragraph, Table as DocxTable, TableRow as DocxRow, TableCell as DocxCell,
-  HeadingLevel, AlignmentType, WidthType, BorderStyle, ShadingType, TextRun,
-} from 'docx';
 import type { ReportableModule, ReportField, ExportFormat, AdditionalFormat } from './types';
+
+async function loadXLSX() {
+  const XLSX = await import('xlsx');
+  return XLSX.default || XLSX;
+}
+
+async function loadJsPDF() {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+  return { jsPDF, autoTable };
+}
+
+async function loadDocx() {
+  return await import('docx');
+}
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -35,7 +43,8 @@ function buildRows<T>(rows: T[], fields: ReportField<T>[]) {
   });
 }
 
-export function downloadXLSX<T>(name: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+export async function downloadXLSX<T>(name: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+  const XLSX = await loadXLSX();
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(buildRows(rows, fields));
   XLSX.utils.book_append_sheet(wb, ws, 'Datos');
@@ -48,7 +57,8 @@ export function downloadXLSX<T>(name: string, rows: T[], fields: ReportField<T>[
   XLSX.writeFile(wb, `${name}.xlsx`);
 }
 
-export function downloadPDF<T>(name: string, title: string, scopeText: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+export async function downloadPDF<T>(name: string, title: string, scopeText: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+  const { jsPDF, autoTable } = await loadJsPDF();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   doc.setFontSize(14);
   doc.text(title, 40, 40);
@@ -81,6 +91,7 @@ export function downloadPDF<T>(name: string, title: string, scopeText: string, r
 }
 
 export async function downloadDOCX<T>(name: string, title: string, scopeText: string, rows: T[], fields: ReportField<T>[], metrics?: Record<string, string | number>) {
+  const { Document, Packer, Paragraph, Table: DocxTable, TableRow: DocxRow, TableCell: DocxCell, HeadingLevel, WidthType, BorderStyle, ShadingType, TextRun } = await loadDocx();
   const border = { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC' };
   const borders = { top: border, bottom: border, left: border, right: border };
 
@@ -181,7 +192,7 @@ export async function exportMulti<T>(
 /**
  * Genera un reporte general completo en PDF con portada, tabla de datos y métricas.
  */
-export function generarReporteGeneral<T>(
+export async function generarReporteGeneral<T>(
   title: string,
   subtitle: string,
   rows: T[],
@@ -189,6 +200,7 @@ export function generarReporteGeneral<T>(
   metrics?: Record<string, string | number>,
   fileName?: string
 ) {
+  const { jsPDF, autoTable } = await loadJsPDF();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();

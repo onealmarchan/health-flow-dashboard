@@ -65,6 +65,7 @@ export function useEnfermedades() {
       const res = await api.EnfermedadController_getAllEnfermedades();
       return res.data as any[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -88,6 +89,7 @@ export function useSintomas() {
       const res = await api.SintomaController_getAllSintomas();
       return res.data as any[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

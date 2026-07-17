@@ -106,10 +106,7 @@ export function useCreateSesion() {
       const res = await api.SesionMedicaController_create(data);
       return res.data;
     },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: SESIONES_KEY });
-      await qc.refetchQueries({ queryKey: SESIONES_KEY, type: 'active' });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: SESIONES_KEY }),
   });
 }
 
@@ -165,10 +162,7 @@ export function useCreateBloqueo() {
       const res = await api.BloqueoAgendaController_create(data);
       return res.data;
     },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: BLOQUEOS_KEY });
-      await qc.refetchQueries({ queryKey: BLOQUEOS_KEY, type: 'active' });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: BLOQUEOS_KEY }),
   });
 }
 

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -94,6 +93,7 @@ export function SplitExportButton({ showAdvanced = false, onExport, onAdvancedAl
                   const f = e.target.files?.[0];
                   if (!f) return;
                   try {
+                    const XLSX = await import('xlsx');
                     const data = await f.arrayBuffer();
                     const wb = XLSX.read(data, { type: 'array' });
                     const first = wb.SheetNames[0];

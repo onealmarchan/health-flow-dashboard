@@ -4,15 +4,25 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import AccesoDenegado from "./pages/AccesoDenegado";
+import { lazy, Suspense } from 'react';
 import RequireAuth from '@/components/auth/RequireAuth';
 import SharedOpen from '@/components/auth/SharedOpen';
 import { useEffect } from 'react';
 import { clearAuthToken } from '@/services/apiClient';
 import { useNavigate } from 'react-router-dom';
+
+const Index = lazy(() => import("./pages/Index"));
+const Login = lazy(() => import("./pages/Login"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AccesoDenegado = lazy(() => import("./pages/AccesoDenegado"));
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+    </div>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,14 +43,16 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AppBroadcasts />
-            <Routes>
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="/dashboard" element={<RequireAuth><Index /></RequireAuth>} />
-              <Route path="/shared/:id" element={<SharedOpen />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/acceso-denegado" element={<AccesoDenegado />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/dashboard" element={<RequireAuth><Index /></RequireAuth>} />
+                <Route path="/shared/:id" element={<SharedOpen />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/acceso-denegado" element={<AccesoDenegado />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

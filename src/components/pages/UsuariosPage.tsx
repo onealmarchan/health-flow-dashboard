@@ -18,6 +18,7 @@ import { RowActions } from '@/components/shared/RowActions';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioEstado } from '@/services/useUsuarios';
 import { useRequestCode, useResetPassword } from '@/services/useAuth';
+import { usuarioSchema, validateWithZod } from '@/lib/validators';
 
 export type Usuario = {
   id: number | string;
@@ -147,8 +148,17 @@ export function UsuariosPage() {
   };
 
   const handleSave = () => {
-    if (!newUser.nombre.trim() || !newUser.email.trim() || !newUser.rol) {
-      toast.error('Nombre, correo y rol son obligatorios');
+    const emailsExistentes = new Set(usuarios.map((u: any) => (u.email || '').toLowerCase()));
+    if (editingUser) {
+      emailsExistentes.delete(editingUser.email?.toLowerCase() || '');
+    }
+    const error = validateWithZod(usuarioSchema(emailsExistentes), {
+      nombreCompleto: newUser.nombre,
+      email: newUser.email,
+      rol: newUser.rol || '',
+    });
+    if (error) {
+      toast.error(error);
       return;
     }
 

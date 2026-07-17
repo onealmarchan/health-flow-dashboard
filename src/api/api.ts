@@ -31,6 +31,23 @@ export class ApiClient {
       }
       return reqConfig;
     });
+
+    // Interceptor de respuesta: si el token expira (401), limpiar sesión y redirigir
+    this.client.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error?.response?.status === 401) {
+          try {
+            localStorage.removeItem('token');
+          } catch {}
+          // Solo redirigir si no estamos ya en login
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
   }
 
   // Método para actualizar el token

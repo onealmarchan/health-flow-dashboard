@@ -1,18 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Suspense, lazy } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { DashboardContent } from '@/components/dashboard/DashboardContent';
-import { CitasPage } from '@/components/pages/CitasPage';
-import { JornadasPage } from '@/components/pages/JornadasPage';
-import { EspecialistasPage } from '@/components/pages/EspecialistasPage';
-import { UsuariosPage } from '@/components/pages/UsuariosPage';
-import { AuditoriasPage } from '@/components/pages/AuditoriasPage';
-import { DiagnosticosPage } from '@/components/pages/DiagnosticosPage';
-import { AjustesPage } from '@/components/pages/AjustesPage';
-import { FAQPage } from '@/components/pages/FAQPage';
-import { HelpDeskPage } from '@/components/pages/HelpDeskPage';
 import { PanelControlPage } from '@/components/pages/PanelControlPage';
 import { useCurrentUser } from '@/services/useCurrentUser';
+
+const CitasPage = lazy(() => import('@/components/pages/CitasPage').then(m => ({ default: m.CitasPage })));
+const JornadasPage = lazy(() => import('@/components/pages/JornadasPage').then(m => ({ default: m.JornadasPage })));
+const EspecialistasPage = lazy(() => import('@/components/pages/EspecialistasPage').then(m => ({ default: m.EspecialistasPage })));
+const UsuariosPage = lazy(() => import('@/components/pages/UsuariosPage').then(m => ({ default: m.UsuariosPage })));
+const AuditoriasPage = lazy(() => import('@/components/pages/AuditoriasPage').then(m => ({ default: m.AuditoriasPage })));
+const DiagnosticosPage = lazy(() => import('@/components/pages/DiagnosticosPage').then(m => ({ default: m.DiagnosticosPage })));
+const AjustesPage = lazy(() => import('@/components/pages/AjustesPage').then(m => ({ default: m.AjustesPage })));
+const FAQPage = lazy(() => import('@/components/pages/FAQPage').then(m => ({ default: m.FAQPage })));
+const HelpDeskPage = lazy(() => import('@/components/pages/HelpDeskPage').then(m => ({ default: m.HelpDeskPage })));
 
 const pageComponents: Record<string, React.ComponentType<{ onPageChange?: (page: string) => void }>> = {
   dashboard: DashboardContent,
@@ -57,7 +58,13 @@ const Index = () => {
         <Header onMenuToggle={() => setMobileSidebarOpen(true)} />
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
           <div key={effectivePage} className="animate-page-enter">
-            <PageComponent onPageChange={handlePageChange} />
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[400px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              </div>
+            }>
+              <PageComponent onPageChange={handlePageChange} />
+            </Suspense>
           </div>
         </main>
       </div>

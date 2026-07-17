@@ -3,8 +3,9 @@ import { Treemap, ResponsiveContainer, Tooltip } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
 import { usePacientes } from '@/services/usePacientes';
 import { useCitas } from '@/services/useCitas';
-import { useMedicos } from '@/services/useMedicos';
+import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useSesionesMedicas } from '@/services/useJornadas';
+import { useConcentracionCondicionEdad } from '@/services/useIndicadores';
 
 interface AgeGroup {
   name: string;
@@ -83,6 +84,8 @@ export function AgeTreeMap() {
   const { data: citas = [] } = useCitas();
   const { data: medicos = [] } = useMedicos();
   const { data: sesiones = [] } = useSesionesMedicas();
+  const { data: especialidades = [] } = useEspecialidades();
+  const { data: condicionData } = useConcentracionCondicionEdad();
 
   const { ageData, specialtyAgeData, conditionAgeData } = useMemo(() => {
     // 1. Age distribution
@@ -98,7 +101,6 @@ export function AgeTreeMap() {
         else if (age <= 59) g19_59++;
         else g60++;
       } else {
-        // Fallback for missing dates
         g19_59++;
       }
     });
@@ -110,11 +112,16 @@ export function AgeTreeMap() {
       { name: '60+ años', size: Math.max(g60, 1), patients: g60, fill: 'hsl(var(--chart-4))' },
     ].filter(g => g.patients > 0);
 
-    // 2. Specialty distribution
-    const medMap = new Map();
+    // 2. Specialty distribution — build lookup from especialidades table
+    const espMap = new Map<string, string>();
+    especialidades.forEach((e: any) => {
+      const id = String(e.pk_num_especialidad ?? e.id ?? '');
+      if (id) espMap.set(id, e.nombre || e.name || 'General');
+    });
+    const medMap = new Map<string, any>();
     medicos.forEach((m: any) => medMap.set(String(m.pk_num_medico_ministerio_salud ?? m.id), m));
     
-    const sesMap = new Map();
+    const sesMap = new Map<string, string>();
     sesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
 
     const specCount: Record<string, Set<string>> = {};
@@ -123,8 +130,12 @@ export function AgeTreeMap() {
       const pId = String(c.fk_ps_b001_num_paciente ?? '');
       const sId = String(c.fk_cm_b005_num_sesion ?? '');
       const mId = sesMap.get(sId);
-      const m = medMap.get(mId);
-      const spec = m?.especialidad?.nombre || 'General';
+      const m = medMap.get(mId || '');
+      let spec = m?.especialidad?.nombre;
+      if (!spec && m?.fk_cm_a001_num_especialidad) {
+        spec = espMap.get(String(m.fk_cm_a001_num_especialidad)) || 'General';
+      }
+      spec = spec || 'General';
       
       if (!specCount[spec]) specCount[spec] = new Set();
       if (pId) specCount[spec].add(pId);
@@ -138,19 +149,36 @@ export function AgeTreeMap() {
       fill: colors[idx % colors.length]
     })).filter(g => g.patients > 0);
 
+    // 3. Condition by age — from backend indicator or empty
+    let calculatedConditionData: AgeGroup[] = [];
+    if (condicionData) {
+      const items = condicionData?.gruposEdad || condicionData?.items || condicionData?.distribucion || (Array.isArray(condicionData) ? condicionData : []);
+      if (Array.isArray(items) && items.length > 0) {
+        calculatedConditionData = items.map((d: any, idx: number) => ({
+          name: d.grupoEdad || d.grupo || d.rango || d.nombre || `Grupo ${idx + 1}`,
+          size: Math.max(d.casos || d.pacientes || d.total || d.valor || 1, 1),
+          patients: d.casos || d.pacientes || d.total || d.valor || 0,
+          fill: colors[idx % colors.length],
+        })).filter(g => g.patients > 0);
+      }
+    }
+
     if (calculatedSpecialtyData.length === 0) {
        calculatedSpecialtyData.push({ name: 'Sin registros', size: 1, patients: 0, fill: 'hsl(var(--muted))' });
     }
     if (calculatedAgeData.length === 0) {
        calculatedAgeData.push({ name: 'Sin registros', size: 1, patients: 0, fill: 'hsl(var(--muted))' });
     }
+    if (calculatedConditionData.length === 0) {
+       calculatedConditionData = [{ name: 'Sin datos de condiciones', size: 1, patients: 0, fill: 'hsl(var(--muted))' }];
+    }
 
     return {
       ageData: calculatedAgeData,
       specialtyAgeData: calculatedSpecialtyData,
-      conditionAgeData: [{ name: 'Datos no disponibles', size: 1, patients: 0, fill: 'hsl(var(--muted))' }] // Placeholder since backend lacks condition links
+      conditionAgeData: calculatedConditionData,
     };
-  }, [pacientes, citas, medicos, sesiones]);
+  }, [pacientes, citas, medicos, sesiones, especialidades, condicionData]);
 
   const totalPatients = ageData.reduce((acc, item) => acc + item.patients, 0);
   const totalSpec = specialtyAgeData.reduce((a, b) => a + b.patients, 0);

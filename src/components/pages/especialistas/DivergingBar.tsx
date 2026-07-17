@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import * as d3 from 'd3';
+import { select, scaleLinear, scaleBand, axisBottom, axisLeft, max } from 'd3';
 import { META, divergingColor, severityLabel } from './utils';
 
 export type Especialista = {
@@ -40,7 +40,7 @@ const LEGEND = [
 export function DivergingBar({ specialists }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [size, setSize] = useState({ w: 600, h: 420 });
+  const [size, setSize] = useState({ w: 600, h: 320 });
   const [tip, setTip] = useState<TipState | null>(null);
 
   useEffect(() => {
@@ -74,18 +74,18 @@ export function DivergingBar({ specialists }: Props) {
   }, [specialists]);
 
   useEffect(() => {
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
     svg.selectAll('*').remove();
     if (rows.length === 0) return;
 
     const { w, h } = size;
-    const margin = { top: 36, right: 80, bottom: 56, left: 130 };
+    const margin = { top: 36, right: 70, bottom: 40, left: 120 };
     const innerW = w - margin.left - margin.right;
     const innerH = h - margin.top - margin.bottom;
 
-    const maxAbs = Math.max(80, d3.max(rows, r => Math.abs(r.desviacion)) ?? 80);
-    const x = d3.scaleLinear().domain([-maxAbs * 1.1, maxAbs * 1.1]).range([0, innerW]);
-    const y = d3.scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.3);
+    const maxAbs = Math.max(80, max(rows, r => Math.abs(r.desviacion)) ?? 80);
+    const x = scaleLinear().domain([-maxAbs * 1.1, maxAbs * 1.1]).range([0, innerW]);
+    const y = scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.25);
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -98,12 +98,12 @@ export function DivergingBar({ specialists }: Props) {
 
     // x axis
     g.append('g').attr('transform', `translate(0,${innerH})`)
-      .call(d3.axisBottom(x).ticks(7).tickSize(0).tickFormat(d => (d as number > 0 ? `+${d}` : `${d}`)))
+      .call(axisBottom(x).ticks(7).tickSize(0).tickFormat(d => (d as number > 0 ? `+${d}` : `${d}`)))
       .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--muted-foreground))').attr('font-size', 10); });
 
     // y axis (specialty labels)
-    g.append('g').call(d3.axisLeft(y).tickSize(0))
-      .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--foreground))').attr('font-size', 12); });
+    g.append('g').call(axisLeft(y).tickSize(0))
+      .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--foreground))').attr('font-size', 10); });
 
     // bars
     g.selectAll('rect.bar').data(rows).enter().append('rect')
@@ -127,7 +127,7 @@ export function DivergingBar({ specialists }: Props) {
       .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 - 1)
       .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
       .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 11.5).attr('font-weight', 700)
+      .attr('font-size', 10).attr('font-weight', 700)
       .attr('fill', d => divergingColor(d.desviacion))
       .text(d => `${d.desviacion >= 0 ? '+' : ''}${d.desviacion.toFixed(1)}`);
 
@@ -136,7 +136,7 @@ export function DivergingBar({ specialists }: Props) {
       .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 11)
       .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
       .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 9.5)
+      .attr('font-size', 8.5)
       .attr('fill', 'hsl(var(--muted-foreground))')
       .text(d => `(${d.promedio_pacientes} pac.)`);
 
@@ -147,7 +147,7 @@ export function DivergingBar({ specialists }: Props) {
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={wrapRef} className="relative flex-1 min-h-[360px]">
+      <div ref={wrapRef} className="relative flex-1 min-h-[320px]">
         <svg ref={svgRef} width={size.w} height={size.h} />
         {tip && (
           <div
@@ -164,7 +164,7 @@ export function DivergingBar({ specialists }: Props) {
       </div>
       <div className="grid grid-cols-3 gap-x-4 gap-y-1 mt-3 px-2">
         {LEGEND.map(l => (
-          <div key={l.t} className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground">
+          <div key={l.t} className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
             <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: l.c }} />
             <span>{l.t}</span>
           </div>

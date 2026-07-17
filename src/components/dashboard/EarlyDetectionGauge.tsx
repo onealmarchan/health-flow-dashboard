@@ -1,14 +1,12 @@
 /**
  * Tasa de detección temprana — gauge 0–100%.
  * Semáforo: Verde >10% · Ámbar 5–9.9% · Rojo <5% (polaridad ascendente).
- * (Sin meta 85%; los umbrales anteriores estaban mal.)
  */
+import { useMemo } from 'react';
 import { getSemaforo } from '@/lib/kpi-semaforos';
+import { useTasaDeteccionTemprana } from '@/services/useIndicadores';
+import { useDiagnosticos } from '@/services/useDiagnosticos';
 import { useCitas } from '@/services/useCitas';
-
-function computeValue(totalConsultas: number): number {
-  return 0; // Datos reales: 0% hasta que haya diagnósticos tempranos en backend
-}
 
 function bandColor(v: number) {
   const sem = getSemaforo('porcentajeAlto', v);
@@ -18,9 +16,28 @@ function bandColor(v: number) {
 }
 
 export function EarlyDetectionGauge() {
+  const { data, isLoading } = useTasaDeteccionTemprana();
+  const { data: diagnosticos = [] } = useDiagnosticos();
   const { data: citas = [] } = useCitas();
-  const totalConsultas = citas.length;
-  const v = Math.max(0, Math.min(100, computeValue(totalConsultas)));
+
+  const v = useMemo(() => {
+    if (data) {
+      const raw = data?.porcentaje || data?.valorIndicador || data?.tasa || data?.value || 0;
+      const val = typeof raw === 'object' ? 0 : Number(raw) || 0;
+      if (val > 0) return Math.max(0, Math.min(100, val));
+    }
+    if (diagnosticos.length === 0 || citas.length === 0) return 0;
+    const earlyTerms = ['temprano', 'inicial', 'leve', 'estadio i', 'estadio 1', 'fase inicial', 'etapa temprana'];
+    const earlyDiags = diagnosticos.filter((d: any) => {
+      const desc = (d.descripcion || d.observacion || d.fase || d.etapa || d.estado || '').toLowerCase();
+      return earlyTerms.some(t => desc.includes(t));
+    });
+    const earlyCount = earlyDiags.length;
+    const total = diagnosticos.length;
+    if (total === 0) return 0;
+    return Math.round((earlyCount / total) * 1000) / 10;
+  }, [data, diagnosticos, citas]);
+
   const angle = -90 + (v / 100) * 180;
   const color = bandColor(v);
   const cx = 120, cy = 120, r = 90;
@@ -32,15 +49,27 @@ export function EarlyDetectionGauge() {
     const large = end - start > 180 ? 1 : 0;
     return <path d={`M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`} fill="none" stroke={stroke} strokeWidth={18} strokeLinecap="round" />;
   };
-  // 3 bands mapped along the 180° arc (0-5 → 0-9%, 5-15 → 9-27%, >15 → rest)
-  // Position color bands proportional to thresholds within 0–20% domain shown.
-  // Simpler: red 0..5%, amber 5..10%, green 10..100% (visualized on the semicircle).
   const pct = (p: number) => 180 + (Math.min(p, 100) / 100) * 180;
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-4 pr-8">
+          <h3 className="text-lg font-semibold text-foreground">Tasa de detección temprana</h3>
+          <p className="text-sm text-muted-foreground">Cargando...</p>
+        </div>
+        <div className="flex items-center justify-center h-[260px]">
+          <span className="text-muted-foreground animate-pulse">Cargando indicador...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-4 pr-8">
         <h3 className="text-lg font-semibold text-foreground">Tasa de detección temprana</h3>
-        <p className="text-sm text-muted-foreground">Casos detectados en etapa inicial / Total del periodo</p>
+        <p className="text-sm text-muted-foreground">Casos detectados en etapa inicial / Total del período</p>
       </div>
       <div className="flex items-center justify-center h-[260px]">
         <svg viewBox="0 0 240 160" className="w-full max-w-[320px]">
@@ -53,7 +82,7 @@ export function EarlyDetectionGauge() {
             <line x1={0} y1={0} x2={0} y2={-r + 6} stroke="hsl(var(--foreground))" strokeWidth={3} strokeLinecap="round" />
             <circle r={6} fill="hsl(var(--foreground))" />
           </g>
-          <text x={cx} y={cy - 4} textAnchor="middle" className="fill-foreground" style={{ fontSize: 26, fontWeight: 700 }}>{v}%</text>
+          <text x={cx} y={cy - 4} textAnchor="middle" className="fill-foreground" style={{ fontSize: 26, fontWeight: 700 }}>{v.toFixed(1)}%</text>
           <text x={cx} y={cy + 16} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: 10 }}>Polaridad ascendente ↑</text>
         </svg>
       </div>

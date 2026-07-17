@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, ChevronsUpDown } from 'lucide-react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +22,7 @@ import { CITAS_KEY, MOTIVOS_KEY, buildCreateCitaPayload, useCitas, useCreateCita
 import { useMedicos } from '@/services/useMedicos';
 import { useSesionesMedicas, useCreateSesion } from '@/services/useJornadas';
 import { useComunidades, useCreateComunidad } from '@/services/useComunidades';
+import { validateWithZod, pacienteRegistroRapidoSchema, nuevaComunidadSchema, motivoConsultaSchema } from '@/lib/validators';
 
 export type Patient = {
   num: number | string;
@@ -330,29 +330,60 @@ export function CitasPage() {
     p.ci.includes(patientSearch)
   );
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   const persistNewPatient = () => {
-    if (!newPatient.nombres.trim() || !newPatient.apellidos.trim()) return;
-    if (!selectedComunidadId) {
-      toast.error('Seleccione una comunidad');
+    const validationError = validateWithZod(pacienteRegistroRapidoSchema, {
+      ci: isMinor ? '' : newPatient.ci,
+      nombres: newPatient.nombres,
+      apellidos: newPatient.apellidos,
+      fechaNac: newPatient.fechaNac,
+      sexo: newPatient.sexo as 'M' | 'F' | '',
+      direccion: newPatient.direccion,
+      telefono: newPatient.telefono,
+      nacionalidad: newPatient.nacionalidad as 'Venezolano' | 'Extranjero' | '',
+      estado: newPatient.estado,
+      estadoCivil: newPatient.estadoCivil as any,
+      comunidadId: selectedComunidadId || 0,
+    });
+
+    if (validationError) {
+      toast.error(validationError);
       return;
     }
+
+    if (isMinor && !newPatient.ciRepresentante.trim()) {
+      toast.error('La cédula del representante es obligatoria para menores');
+      return;
+    }
+
+    setFormErrors({});
     const ciFinal = isMinor && newPatient.ciRepresentante
       ? `${newPatient.ciRepresentante}-R01`
       : newPatient.ci;
     createPaciente.mutate({
-      fk_ps_a001_num_comunidad: selectedComunidadId,
+      fk_ps_a001_num_comunidad: selectedComunidadId!,
       ci: ciFinal,
-      nombres: newPatient.nombres,
-      apellidos: newPatient.apellidos,
+      nombres: newPatient.nombres.trim(),
+      apellidos: newPatient.apellidos.trim(),
       fecha_nacimiento: newPatient.fechaNac || '2000-01-01',
       sexo: newPatient.sexo === 'M' ? 'masculino' : 'femenino',
       direccion: newPatient.direccion || 'Sin dirección',
       telefono: newPatient.telefono || '00000000000',
       nacionalidad: newPatient.nacionalidad?.toLowerCase() === 'extranjero' ? 'extranjero' : 'venezolano',
-      estado_civil: 'soltero',
+      estado_civil: mapEstadoCivil(newPatient.estadoCivil),
       estado_paciente: newPatient.estado === 'Activo' ? 'activo' : 'encamado'
+    }, {
+      onSuccess: () => toast.success('Paciente registrado exitosamente'),
+      onError: (e: any) => toast.error(e?.response?.data?.message || 'Error al registrar paciente'),
     });
-    toast.success('Paciente registrado exitosamente');
+  };
+
+  const mapEstadoCivil = (ec: string): 'soltero' | 'casado' | 'divorciado' | 'viudo' => {
+    if (ec.includes('Casado')) return 'casado';
+    if (ec.includes('Divorciado')) return 'divorciado';
+    if (ec.includes('Viudo')) return 'viudo';
+    return 'soltero';
   };
 
   const handleSavePatient = () => {
@@ -417,18 +448,26 @@ export function CitasPage() {
   const isMotivoValid = useMemo(() => {
     return (
       motivoData.numPaciente.trim() !== '' &&
-      motivoData.descripcion.trim() !== '' &&
+      motivoData.descripcion.trim().length >= 10 &&
       motivoData.urgencia.trim() !== '' &&
-      motivoData.fecha.trim() !== '' &&
-      motivoData.observacion.trim() !== ''
+      motivoData.fecha.trim() !== ''
     );
   }, [motivoData]);
 
   const handleSiguienteMotivo = () => {
+    const err = validateWithZod(motivoConsultaSchema, {
+      descripcion: motivoData.descripcion,
+      urgencia: (motivoData.urgencia as 'Bajo' | 'Medio' | 'Alto') || ('' as any),
+      fecha: motivoData.fecha,
+      observacion: motivoData.observacion,
+    });
+    if (err) {
+      toast.error(err);
+      return;
+    }
     const nuevoNumero = `CITA-${Date.now().toString().slice(-6)}`;
     setCitaNumber(nuevoNumero);
     setMotivoTexto(motivoData.descripcion);
-    // Set calendar to motivo's date if provided
     const d = new Date(motivoData.fecha);
     if (!isNaN(d.getTime())) {
       setCalMonth(d.getMonth());
@@ -907,8 +946,9 @@ export function CitasPage() {
                 <Label className="text-foreground">Cédula del Representante</Label>
                 <Input
                   value={newPatient.ciRepresentante}
-                  onChange={e => setNewPatient({ ...newPatient, ciRepresentante: e.target.value })}
+                  onChange={e => setNewPatient({ ...newPatient, ciRepresentante: e.target.value.replace(/\D/g, '').slice(0, 8) })}
                   placeholder="Ej: 4568987 → generará 4568987-R01"
+                  maxLength={8}
                 />
                 <p className="text-xs text-muted-foreground">
                   Se asignará un subíndice correlativo (ej: 4568987-R01)
@@ -929,9 +969,10 @@ export function CitasPage() {
                   value={isMinor ? '' : newPatient.ci}
                   disabled={isMinor}
                   onChange={e => {
-                    if (!isMinor) setNewPatient({ ...newPatient, ci: e.target.value });
+                    if (!isMinor) setNewPatient({ ...newPatient, ci: e.target.value.replace(/\D/g, '').slice(0, 8) });
                   }}
                   placeholder={isMinor ? 'Se usará la cédula del representante' : 'Ej: 12345678'}
+                  maxLength={8}
                 />
                 {isMinor && (
                   <p className="text-xs text-muted-foreground">
@@ -940,19 +981,19 @@ export function CitasPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Nombres</Label>
-                <Input value={newPatient.nombres} onChange={e => setNewPatient({ ...newPatient, nombres: e.target.value })} />
+                <Label className="text-foreground">Nombres <span className="text-destructive">*</span></Label>
+                <Input value={newPatient.nombres} onChange={e => setNewPatient({ ...newPatient, nombres: e.target.value })} placeholder="Nombres completos" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Apellidos</Label>
-                <Input value={newPatient.apellidos} onChange={e => setNewPatient({ ...newPatient, apellidos: e.target.value })} />
+                <Label className="text-foreground">Apellidos <span className="text-destructive">*</span></Label>
+                <Input value={newPatient.apellidos} onChange={e => setNewPatient({ ...newPatient, apellidos: e.target.value })} placeholder="Apellidos completos" />
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Fecha de Nacimiento</Label>
                 <Input type="date" value={newPatient.fechaNac} onChange={e => setNewPatient({ ...newPatient, fechaNac: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Sexo</Label>
+                <Label className="text-foreground">Sexo <span className="text-destructive">*</span></Label>
                 <Select value={newPatient.sexo} onValueChange={v => setNewPatient({ ...newPatient, sexo: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent className="bg-popover border border-border z-50">
@@ -963,14 +1004,17 @@ export function CitasPage() {
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Dirección</Label>
-                <Input value={newPatient.direccion} onChange={e => setNewPatient({ ...newPatient, direccion: e.target.value })} />
+                <Input value={newPatient.direccion} onChange={e => setNewPatient({ ...newPatient, direccion: e.target.value })} placeholder="Dirección de residencia" />
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Teléfono</Label>
-                <Input value={newPatient.telefono} onChange={e => setNewPatient({ ...newPatient, telefono: e.target.value })} />
+                <Input value={newPatient.telefono} onChange={e => setNewPatient({ ...newPatient, telefono: e.target.value.replace(/\D/g, '').slice(0, 11) })} placeholder="04141234567" maxLength={11} />
+                {newPatient.telefono && !/^\d{11}$/.test(newPatient.telefono) && (
+                  <p className="text-xs text-destructive">Debe ser exactamente 11 dígitos</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Nacionalidad</Label>
+                <Label className="text-foreground">Nacionalidad <span className="text-destructive">*</span></Label>
                 <Select value={newPatient.nacionalidad} onValueChange={v => setNewPatient({ ...newPatient, nacionalidad: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent className="bg-popover border border-border z-50">
@@ -990,7 +1034,7 @@ export function CitasPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Estado Civil</Label>
+                <Label className="text-foreground">Estado Civil <span className="text-destructive">*</span></Label>
                 <Select value={newPatient.estadoCivil} onValueChange={v => setNewPatient({ ...newPatient, estadoCivil: v })}>
                   <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                   <SelectContent className="bg-popover border border-border z-50">
@@ -1011,83 +1055,89 @@ export function CitasPage() {
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-foreground">Comunidad</Label>
-                <Popover open={comunidadOpen} onOpenChange={setComunidadOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={comunidadOpen}
-                      className="w-full justify-between text-foreground"
-                    >
-                      {selectedComunidadId
-                        ? apiComunidades.find((c: any) => String(c.pk_num_comunidad ?? c.id) === String(selectedComunidadId))?.nombre_comunidad || 'Seleccionar...'
-                        : 'Seleccionar comunidad...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command>
-                      <CommandInput placeholder="Buscar comunidad..." value={comunidadSearch} onValueChange={setComunidadSearch} />
-                      <CommandList>
-                        <CommandEmpty>
-                          <div className="px-2 py-1.5 text-sm text-muted-foreground">No encontrada</div>
-                        </CommandEmpty>
-                        <CommandGroup>
-                          {apiComunidades.map((c: any) => {
-                            const id = String(c.pk_num_comunidad ?? c.id);
-                            return (
-                              <CommandItem
-                                key={id}
-                                value={`${c.nombre_comunidad} ${c.estado} ${c.municipio} ${c.parroquia}`}
-                                onSelect={() => {
-                                  setSelectedComunidadId(Number(id));
-                                  setNewPatient({ ...newPatient, comunidad: c.nombre_comunidad, estadoUbic: c.estado, municipio: c.municipio, parroquia: c.parroquia });
-                                  setComunidadOpen(false);
-                                  setComunidadSearch('');
-                                }}
-                              >
-                                <Check className={cn('mr-2 h-4 w-4', selectedComunidadId === Number(id) ? 'opacity-100' : 'opacity-0')} />
-                                <div className="flex flex-col">
-                                  <span>{c.nombre_comunidad}</span>
-                                  <span className="text-xs text-muted-foreground">{c.estado} - {c.municipio} - {c.parroquia}</span>
-                                </div>
-                              </CommandItem>
-                            );
-                          })}
-                          <CommandItem
-                            value="__create_new__"
-                            onSelect={() => {
-                              setShowNewComunidadForm(true);
-                              setNewComunidad({ nombre_comunidad: comunidadSearch || '', estado: '', municipio: '', parroquia: '' });
-                              setComunidadOpen(false);
-                            }}
-                            className="text-primary"
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            <span>Crear nueva comunidad{comunidadSearch ? `: "${comunidadSearch}"` : ''}</span>
-                          </CommandItem>
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <Label className="text-foreground">Comunidad <span className="text-destructive">*</span></Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Popover open={comunidadOpen} onOpenChange={setComunidadOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={comunidadOpen}
+                          className="w-full justify-between text-foreground"
+                        >
+                          {selectedComunidadId
+                            ? apiComunidades.find((c: any) => String(c.pk_num_comunidad ?? c.id) === String(selectedComunidadId))?.nombre_comunidad || 'Seleccionar...'
+                            : 'Seleccionar comunidad...'}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 max-h-[400px] overflow-hidden" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar comunidad..." value={comunidadSearch} onValueChange={setComunidadSearch} />
+                          <CommandList>
+                            <CommandEmpty>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No encontrada</div>
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {apiComunidades.map((c: any) => {
+                                const id = String(c.pk_num_comunidad ?? c.id);
+                                return (
+                                  <CommandItem
+                                    key={id}
+                                    value={`${c.nombre_comunidad} ${c.estado} ${c.municipio} ${c.parroquia}`}
+                                    onSelect={() => {
+                                      setSelectedComunidadId(Number(id));
+                                      setNewPatient({ ...newPatient, comunidad: c.nombre_comunidad, estadoUbic: c.estado, municipio: c.municipio, parroquia: c.parroquia });
+                                      setComunidadOpen(false);
+                                      setComunidadSearch('');
+                                    }}
+                                  >
+                                    <Check className={cn('mr-2 h-4 w-4', selectedComunidadId === Number(id) ? 'opacity-100' : 'opacity-0')} />
+                                    <div className="flex flex-col">
+                                      <span>{c.nombre_comunidad}</span>
+                                      <span className="text-xs text-muted-foreground">{c.estado} - {c.municipio} - {c.parroquia}</span>
+                                    </div>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 px-2"
+                    title="Crear nueva comunidad"
+                    onClick={() => {
+                      setShowNewComunidadForm(!showNewComunidadForm);
+                      setNewComunidad({ nombre_comunidad: comunidadSearch || '', estado: '', municipio: '', parroquia: '' });
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
                 {showNewComunidadForm && (
                   <div className="border border-border rounded-lg p-3 space-y-2 bg-background/50">
                     <p className="text-xs text-muted-foreground font-medium">Nueva Comunidad</p>
-                    <Input placeholder="Nombre" value={newComunidad.nombre_comunidad} onChange={e => setNewComunidad({ ...newComunidad, nombre_comunidad: e.target.value })} className="h-8 text-sm" />
+                    <Input placeholder="Nombre de la comunidad" value={newComunidad.nombre_comunidad} onChange={e => setNewComunidad({ ...newComunidad, nombre_comunidad: e.target.value })} className="h-8 text-sm" />
                     <div className="grid grid-cols-3 gap-2">
-                      <Input placeholder="Estado" value={newComunidad.estado} onChange={e => setNewComunidad({ ...newComunidad, estado: e.target.value })} className="h-8 text-sm" />
-                      <Input placeholder="Municipio" value={newComunidad.municipio} onChange={e => setNewComunidad({ ...newComunidad, municipio: e.target.value })} className="h-8 text-sm" />
-                      <Input placeholder="Parroquia" value={newComunidad.parroquia} onChange={e => setNewComunidad({ ...newComunidad, parroquia: e.target.value })} className="h-8 text-sm" />
+                      <Input placeholder="Estado *" value={newComunidad.estado} onChange={e => setNewComunidad({ ...newComunidad, estado: e.target.value })} className="h-8 text-sm" />
+                      <Input placeholder="Municipio *" value={newComunidad.municipio} onChange={e => setNewComunidad({ ...newComunidad, municipio: e.target.value })} className="h-8 text-sm" />
+                      <Input placeholder="Parroquia *" value={newComunidad.parroquia} onChange={e => setNewComunidad({ ...newComunidad, parroquia: e.target.value })} className="h-8 text-sm" />
                     </div>
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         className="h-7 text-xs"
                         onClick={async () => {
-                          if (!newComunidad.nombre_comunidad.trim() || !newComunidad.estado.trim()) {
-                            toast.error('Nombre y estado son obligatorios');
+                          const err = validateWithZod(nuevaComunidadSchema, newComunidad);
+                          if (err) {
+                            toast.error(err);
                             return;
                           }
                           try {
@@ -1233,16 +1283,19 @@ export function CitasPage() {
               <Input value={motivoData.numPaciente} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Descripción</Label>
+              <Label className="text-foreground">Descripción <span className="text-destructive">*</span></Label>
               <Textarea
                 value={motivoData.descripcion}
                 onChange={e => setMotivoData({ ...motivoData, descripcion: e.target.value })}
-                placeholder="Describa el motivo de la consulta"
+                placeholder="Describa el motivo de la consulta (mínimo 10 caracteres)"
                 rows={3}
               />
+              {motivoData.descripcion && motivoData.descripcion.trim().length < 10 && (
+                <p className="text-xs text-destructive">Mínimo 10 caracteres ({motivoData.descripcion.trim().length}/10)</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Nivel de Urgencia</Label>
+              <Label className="text-foreground">Nivel de Urgencia <span className="text-destructive">*</span></Label>
               <Select value={motivoData.urgencia} onValueChange={v => setMotivoData({ ...motivoData, urgencia: v })}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">
@@ -1253,7 +1306,7 @@ export function CitasPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Fecha</Label>
+              <Label className="text-foreground">Fecha <span className="text-destructive">*</span></Label>
               <Input
                 type="date"
                 value={motivoData.fecha}
@@ -1265,7 +1318,7 @@ export function CitasPage() {
               <Textarea
                 value={motivoData.observacion}
                 onChange={e => setMotivoData({ ...motivoData, observacion: e.target.value })}
-                placeholder="Observaciones adicionales"
+                placeholder="Observaciones adicionales (opcional)"
                 rows={2}
               />
             </div>
@@ -1463,7 +1516,8 @@ export function CitasPage() {
 
                   {/* Resumen card */}
                   {isResumenReady && selectedPatient && selectedDoctor && (() => {
-                    const generarComprobantePDF = () => {
+                    const generarComprobantePDF = async () => {
+                      const { default: jsPDF } = await import('jspdf');
                       const doc = new jsPDF({ unit: 'pt', format: 'letter' });
                       const W = doc.internal.pageSize.getWidth();
                       let y = 40;

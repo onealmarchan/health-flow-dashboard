@@ -5,9 +5,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
-import { toPng } from 'html-to-image';
-import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from 'docx';
 import { summaryForKPI } from './kpiCatalog';
 
 type Fmt = 'png' | 'pdf' | 'docx';
@@ -45,6 +42,7 @@ export function KPIExportPopover({ kpiId, kpiLabel, targetRef }: Props) {
     if (!targetRef.current || picks.size === 0) return;
     setBusy(true);
     try {
+      const { toPng } = await import('html-to-image');
       const dataUrl = await toPng(targetRef.current, { cacheBust: true, backgroundColor: 'white', pixelRatio: 2 });
       const summary = includeSummary ? summaryForKPI(kpiId) : '';
       const safe = kpiLabel.replace(/\s+/g, '_').replace(/[^\w-]/g, '');
@@ -57,6 +55,7 @@ export function KPIExportPopover({ kpiId, kpiLabel, targetRef }: Props) {
       }
 
       if (picks.has('pdf')) {
+        const { default: jsPDF } = await import('jspdf');
         const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
         doc.setFontSize(14);
         doc.text(kpiLabel, 40, 40);
@@ -73,6 +72,7 @@ export function KPIExportPopover({ kpiId, kpiLabel, targetRef }: Props) {
       }
 
       if (picks.has('docx')) {
+        const { Document, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } = await import('docx');
         const b64 = dataUrl.split(',')[1];
         const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
         const doc = new Document({

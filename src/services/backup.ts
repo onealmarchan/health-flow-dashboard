@@ -2,7 +2,14 @@ import axios from 'axios';
 
 export type BackupFormat = 'json' | 'csv';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+function getBaseUrl(): string {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl !== 'http://localhost:3000') {
+    return envUrl;
+  }
+  return `http://${window.location.hostname}:3000`;
+}
+const BASE_URL = getBaseUrl();
 
 function getAuthHeaders() {
   const token = localStorage.getItem('token');

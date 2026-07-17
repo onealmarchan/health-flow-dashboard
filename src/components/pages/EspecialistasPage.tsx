@@ -15,6 +15,7 @@ import { FiltersButton } from '@/components/shared/FiltersButton';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Pencil, Trash2 } from 'lucide-react';
+import { especialistaSchema, especialidadSchema, validateWithZod } from '@/lib/validators';
 
 type ModalView = 'closed' | 'search' | 'new' | 'edit';
 
@@ -97,8 +98,16 @@ export function EspecialistasPage() {
   useEffect(() => { setCurrentPage(1); }, [cardSearch, filterEspecialidad, filterDisponible]);
 
   const handleSave = async () => {
-    if (!newSpec.nombre.trim() || !newSpec.apellido.trim() || !newSpec.mpps.trim() || !newSpec.especialidadId || !newSpec.telefono.trim()) {
-      toast.error('MPPS, nombre, apellido, teléfono y especialidad son obligatorios');
+    const mppsExistentes = new Set(specialists.map(s => s.mpps));
+    const error = validateWithZod(especialistaSchema(mppsExistentes), {
+      mpps: newSpec.mpps,
+      nombre: newSpec.nombre,
+      apellido: newSpec.apellido,
+      telefono: newSpec.telefono,
+      especialidadId: newSpec.especialidadId,
+    });
+    if (error) {
+      toast.error(error);
       return;
     }
     try {
@@ -157,10 +166,13 @@ export function EspecialistasPage() {
   };
 
   const handleSaveEspecialidad = async () => {
-    const nombre = newEspecialidad.nombre.trim();
-    if (!nombre) { toast.error('El nombre de la especialidad es obligatorio'); return; }
+    const error = validateWithZod(especialidadSchema, {
+      nombre: newEspecialidad.nombre,
+      descripcion: newEspecialidad.descripcion || 'Sin descripción',
+    });
+    if (error) { toast.error(error); return; }
     try {
-      await createEspecialidad.mutateAsync({ nombre } as any);
+      await createEspecialidad.mutateAsync({ nombre: newEspecialidad.nombre, descripcion: newEspecialidad.descripcion || 'Sin descripción' } as any);
       toast.success('Especialidad registrada');
       setNewEspecialidad({ nombre: '', descripcion: '' });
       setSpecModalOpen(false);

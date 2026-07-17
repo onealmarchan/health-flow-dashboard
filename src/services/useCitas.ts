@@ -90,10 +90,7 @@ export function useCreateCita() {
       const res = await api.CitaMedicaController_createCita(data);
       return res.data;
     },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: CITAS_KEY });
-      await qc.refetchQueries({ queryKey: CITAS_KEY, type: 'active' });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: CITAS_KEY }),
   });
 }
 
@@ -128,6 +125,7 @@ export function useMotivosConsulta() {
       const res = await api.MotivoConsultaController_findAll();
       return res.data as any[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 

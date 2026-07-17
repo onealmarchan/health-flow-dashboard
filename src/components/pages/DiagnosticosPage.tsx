@@ -31,7 +31,6 @@ import type { ReportableModule } from '@/components/reports/types';
 import { useDiagnosticos, useCreateDiagnostico, useDeleteDiagnostico, useEnfermedades, useCreateEnfermedad, useSintomas, useCreateSintoma, useCreateDiagnosticoSintoma, useDiagnosticoSintomas } from '@/services/useDiagnosticos';
 import { useCitas } from '@/services/useCitas';
 import { usePacientes } from '@/services/usePacientes';
-import { api } from '@/services/apiClient';
 
 type Sintoma = { nombre: string; descripcion: string; gravedad: number };
 
@@ -229,7 +228,7 @@ export function DiagnosticosPage() {
     setConfirmOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.citaId || !form.pacienteId) {
       toast.error('Debe seleccionar una cita válida');
       return;
@@ -246,67 +245,61 @@ export function DiagnosticosPage() {
 
     const etapaCalculada = form.etapa || (avg >= 4 ? 'avanzada' : avg >= 2 ? 'inicial' : 'leve') as 'leve' | 'inicial' | 'avanzada';
 
-    const crearDiagnostico = async (enfermedadId: number) => {
-      try {
-        const res = await createDiagnostico.mutateAsync({
-          fk_ps_b001_num_paciente: Number(form.pacienteId),
-          fk_cm_a002_num_enfermedad: enfermedadId,
-          fk_cm_b002_num_cita_medica: form.citaId,
-          critico: avg >= 4 || form.urgencia,
-          tratamiento: form.tratamientoPrevio,
-          etapa: etapaCalculada,
-          fecha_diagnostico: new Date().toISOString().slice(0, 10),
-        });
+    try {
+      let enfermedadId = form.enfermedadId;
 
-        const diagnosticoId = res?.pk_num_diagnostico || res?.id;
-        if (diagnosticoId && form.sintomas.length > 0) {
-          for (const s of form.sintomas) {
-            if (!s.nombre.trim()) continue;
-            try {
-              const sintomaRes = await api.SintomaController_createSintoma({
-                nombre: s.nombre,
-                descripcion: s.descripcion,
-                gravedad: String(Math.min(5, Math.max(1, Math.round(s.gravedad)))) as '1' | '2' | '3' | '4' | '5',
+      if (!enfermedadId || enfermedadId <= 0) {
+        const newEnfermedad: any = await createEnfermedad.mutateAsync({
+          nombre: form.enfermedad.nombre,
+          enfermedad_cronica: form.enfermedad.cronico,
+          descripcion: form.enfermedad.descripcion,
+        });
+        enfermedadId = newEnfermedad?.id || newEnfermedad?.pk_num_enfermedad;
+        if (!enfermedadId) {
+          toast.error('No se pudo crear la enfermedad');
+          return;
+        }
+      }
+
+      const res: any = await createDiagnostico.mutateAsync({
+        fk_ps_b001_num_paciente: Number(form.pacienteId),
+        fk_cm_a002_num_enfermedad: enfermedadId,
+        fk_cm_b002_num_cita_medica: form.citaId,
+        critico: avg >= 4 || form.urgencia,
+        tratamiento: form.tratamientoPrevio,
+        etapa: etapaCalculada,
+        fecha_diagnostico: new Date().toISOString().slice(0, 10),
+      });
+
+      const diagnosticoId = res?.pk_num_diagnostico || res?.id;
+      if (diagnosticoId && form.sintomas.length > 0) {
+        for (const s of form.sintomas) {
+          if (!s.nombre.trim()) continue;
+          try {
+            const sintomaRes: any = await createSintoma.mutateAsync({
+              nombre: s.nombre,
+              descripcion: s.descripcion,
+              gravedad: String(Math.min(5, Math.max(1, Math.round(s.gravedad)))) as '1' | '2' | '3' | '4' | '5',
+            });
+            const sintomaId = sintomaRes?.id || sintomaRes?.pk_num_sintoma;
+            if (sintomaId) {
+              await createDiagnosticoSintoma.mutateAsync({
+                fk_cm_b003_num_diagnostico: diagnosticoId,
+                fk_cm_a003_num_sintoma: sintomaId,
               });
-              const sintomaId = sintomaRes.data?.id || sintomaRes.data?.pk_num_sintoma;
-              if (sintomaId) {
-                await api.DiagnosticoSintomaController_create({
-                  fk_cm_b003_num_diagnostico: diagnosticoId,
-                  fk_cm_a003_num_sintoma: sintomaId,
-                });
-              }
-            } catch {
-              // Symptom creation is best-effort; don't block the diagnosis
             }
+          } catch {
+            // Symptom creation is best-effort; don't block the diagnosis
           }
         }
-
-        toast.success('Diagnóstico registrado exitosamente');
-        setForm(emptyForm());
-        setRegisterOpen(false);
-        setConfirmOpen(false);
-      } catch (error: any) {
-        toast.error(error?.response?.data?.message || 'Error al registrar diagnóstico');
       }
-    };
 
-    // Si ya se seleccionó una enfermedad existente, usarla directamente
-    if (form.enfermedadId && form.enfermedadId > 0) {
-      crearDiagnostico(form.enfermedadId);
-    } else {
-      // Crear la enfermedad primero
-      createEnfermedad.mutate({
-        nombre: form.enfermedad.nombre,
-        enfermedad_cronica: form.enfermedad.cronico,
-        descripcion: form.enfermedad.descripcion,
-      }, {
-        onSuccess: (newEnfermedad: any) => {
-          crearDiagnostico(newEnfermedad.id || newEnfermedad.pk_num_enfermedad);
-        },
-        onError: (error: any) => {
-          toast.error(error?.response?.data?.message || 'Error al crear enfermedad');
-        }
-      });
+      toast.success('Diagnóstico registrado exitosamente');
+      setForm(emptyForm());
+      setRegisterOpen(false);
+      setConfirmOpen(false);
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Error al registrar diagnóstico');
     }
   };
 

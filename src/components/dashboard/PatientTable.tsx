@@ -179,7 +179,7 @@ export function PatientTable() {
               </Select>
               <Select value={comunidadFilter} onValueChange={setComunidadFilter}>
                 <SelectTrigger className="flex-1 sm:flex-none sm:w-36"><SelectValue placeholder="Comunidad" /></SelectTrigger>
-                <SelectContent className="bg-popover border border-border z-50">
+                <SelectContent className="bg-popover border border-border z-50 max-h-[300px] overflow-y-auto">
                   <SelectItem value="all">Todas</SelectItem>
                   {communities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                 </SelectContent>
