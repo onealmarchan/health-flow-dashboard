@@ -1,14 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 
 export type ThemeType =
-  | 'light-blue'
-  | 'light-green'
-  | 'light-violet'
-  | 'light-brown'
-  | 'dark-purple'
-  | 'dark-scarlet'
-  | 'dark-black-green'
-  | 'dark-white-gray';
+  | 'light-blue' | 'light-green' | 'light-violet' | 'light-brown'
+  | 'light-teal' | 'light-coral' | 'light-indigo'
+  | 'dark-purple' | 'dark-scarlet' | 'dark-black-green' | 'dark-white-gray'
+  | 'dark-navy' | 'dark-emerald' | 'dark-slate';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -23,7 +19,6 @@ interface ThemeContextType {
   setLightPreference: (theme: ThemeType) => void;
   setDarkPreference: (theme: ThemeType) => void;
   isDark: boolean;
-  /** Increments each time the mode is toggled; useful for animation triggers. */
   transitionTick: number;
 }
 
@@ -34,10 +29,16 @@ const themeClasses: Record<ThemeType, string> = {
   'light-green': 'theme-light-green',
   'light-violet': 'theme-light-violet',
   'light-brown': 'theme-light-brown',
+  'light-teal': 'theme-light-teal',
+  'light-coral': 'theme-light-coral',
+  'light-indigo': 'theme-light-indigo',
   'dark-purple': 'theme-dark-purple',
   'dark-scarlet': 'theme-dark-scarlet',
   'dark-black-green': 'theme-dark-black-green',
   'dark-white-gray': 'theme-dark-white-gray',
+  'dark-navy': 'theme-dark-navy',
+  'dark-emerald': 'theme-dark-emerald',
+  'dark-slate': 'theme-dark-slate',
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

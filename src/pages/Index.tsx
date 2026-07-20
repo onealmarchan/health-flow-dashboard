@@ -55,7 +55,7 @@ const Index = () => {
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
       <div className="flex-1 flex flex-col min-h-screen min-w-0">
-        <Header onMenuToggle={() => setMobileSidebarOpen(true)} />
+        <Header onMenuToggle={() => setMobileSidebarOpen(true)} onPageChange={handlePageChange} />
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto">
           <div key={effectivePage} className="animate-page-enter">
             <Suspense fallback={

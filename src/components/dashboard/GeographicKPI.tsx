@@ -292,13 +292,13 @@ function VulnerabilityView() {
   );
 }
 
-export function GeographicKPI() {
+export function GeographicKPI({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   return (
-    <KPIWrapper views={[
-      { label: 'Densidad', component: <DensityView /> },
-      { label: 'Concentración', component: <ConcentrationView /> },
-      { label: 'Crecimiento', component: <GrowthView /> },
-      { label: 'Vulnerabilidad', component: <VulnerabilityView /> },
+    <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
+      { id: 'densidad-comunidad', label: 'Densidad', component: <DensityView /> },
+      { id: 'concentracion-geo', label: 'Concentración', component: <ConcentrationView /> },
+      { id: 'crecimiento-zona', label: 'Crecimiento', component: <GrowthView /> },
+      { id: 'vulnerabilidad-com', label: 'Vulnerabilidad', component: <VulnerabilityView /> },
     ]} />
   );
 }

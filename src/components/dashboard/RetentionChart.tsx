@@ -133,9 +133,9 @@ function RetentionView() {
   );
 }
 
-export function RetentionChartKPI() {
+export function RetentionChartKPI({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   return (
-    <KPIWrapper views={[
+    <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
       { id: 'retencion-especialidad', label: 'Tasa de retención por especialidad', component: <RetentionView /> },
       { id: 'deteccion-temprana',     label: 'Tasa de detección temprana',         component: <EarlyDetectionGauge /> },
       { id: 'tendencia-etaria',       label: 'Tendencia de consultas por grupo etario', component: <AgeGroupTrendChart /> },

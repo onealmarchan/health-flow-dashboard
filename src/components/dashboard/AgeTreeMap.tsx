@@ -41,7 +41,7 @@ const CustomContent = ({ x, y, width, height, patients, fill, total }: CustomCon
 function TreeMapView({ data, title, subtitle, total }: { data: AgeGroup[]; title: string; subtitle: string; total: number }) {
   return (
     <div>
-      <div className="mb-4 pr-8">
+      <div className="mb-4">
         <h3 className="text-lg font-semibold text-foreground">{title}</h3>
         <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
@@ -79,7 +79,7 @@ function TreeMapView({ data, title, subtitle, total }: { data: AgeGroup[]; title
   );
 }
 
-export function AgeTreeMap() {
+export function AgeTreeMap({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   const { data: pacientes = [] } = usePacientes();
   const { data: citas = [] } = useCitas();
   const { data: medicos = [] } = useMedicos();
@@ -152,12 +152,13 @@ export function AgeTreeMap() {
     // 3. Condition by age — from backend indicator or empty
     let calculatedConditionData: AgeGroup[] = [];
     if (condicionData) {
-      const items = condicionData?.gruposEdad || condicionData?.items || condicionData?.distribucion || (Array.isArray(condicionData) ? condicionData : []);
+      const raw = condicionData;
+      const items = Array.isArray(raw) ? raw : raw?.gruposEdad || raw?.items || raw?.distribucion || raw?.data || raw?.result || raw?.results || [];
       if (Array.isArray(items) && items.length > 0) {
         calculatedConditionData = items.map((d: any, idx: number) => ({
-          name: d.grupoEdad || d.grupo || d.rango || d.nombre || `Grupo ${idx + 1}`,
-          size: Math.max(d.casos || d.pacientes || d.total || d.valor || 1, 1),
-          patients: d.casos || d.pacientes || d.total || d.valor || 0,
+          name: d.rango || d.grupoEdad || d.grupo || d.nombre || d.name || d.label || d.edad || `Grupo ${idx + 1}`,
+          size: Math.max(d.casosEnfermedad || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 1, 1),
+          patients: d.casosEnfermedad || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 0,
           fill: colors[idx % colors.length],
         })).filter(g => g.patients > 0);
       }
@@ -185,18 +186,21 @@ export function AgeTreeMap() {
   const totalCond = conditionAgeData.reduce((a, b) => a + b.patients, 0);
 
   return (
-    <KPIWrapper views={[
+    <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
       {
+        id: 'treemap-etario',
         label: 'Distribución Etaria',
         component: <TreeMapView data={ageData} title="Distribución por Edad" subtitle="Rangos etarios de pacientes" total={totalPatients} />,
       },
       {
+        id: 'treemap-especialidad',
         label: 'Por Especialidad',
         component: <TreeMapView data={specialtyAgeData} title="Distribución Etaria por Especialidad" subtitle="Pacientes únicos por especialidad" total={totalSpec} />,
       },
       {
+        id: 'treemap-condiciones',
         label: 'Condiciones por Edad',
-        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle="Datos no disponibles en base de datos" total={totalCond} />,
+        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle={totalCond > 0 ? `Análisis por grupos etarios — ${totalCond} casos registrados` : 'Sin datos disponibles para el período actual'} total={totalCond} />,
       },
     ]} />
   );

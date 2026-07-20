@@ -175,7 +175,7 @@ export default {
         "counter-spin": "counter-spin 2s linear infinite",
       },
       fontFamily: {
-        sans: ["Figtree", "Noto Sans", "system-ui", "sans-serif"],
+        sans: ["var(--font-family-base)", "Figtree", "Noto Sans", "system-ui", "sans-serif"],
       },
     },
   },

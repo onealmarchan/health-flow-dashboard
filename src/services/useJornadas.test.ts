@@ -28,8 +28,8 @@ describe('jornadas payload helpers', () => {
       fk_cm_b001_num_medico_ministerio_salud: 10,
       turno: 'mañana',
       dias_semana: 'Jueves',
-      hora_inicio: '08:00',
-      hora_fin: '12:00',
+      hora_inicio: '08:00:00',
+      hora_fin: '12:00:00',
     });
   });
 });

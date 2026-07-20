@@ -235,12 +235,12 @@ function TrimestralTrend() {
   );
 }
 
-export function StackedBarChartComponent() {
+export function StackedBarChartComponent({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   return (
-    <KPIWrapper views={[
-      { label: 'Distribución Enfermedades', component: <DiseaseDistribution /> },
-      { label: 'Reconsultas', component: <ReconsultaFrequency /> },
-      { label: 'Tendencia Trimestral', component: <TrimestralTrend /> },
+    <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
+      { id: 'distribucion-enfermedades', label: 'Distribución Enfermedades', component: <DiseaseDistribution /> },
+      { id: 'reconsultas-criticos', label: 'Reconsultas', component: <ReconsultaFrequency /> },
+      { id: 'tendencia-trimestral', label: 'Tendencia Trimestral', component: <TrimestralTrend /> },
     ]} />
   );
 }

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from './apiClient';
 import type {
   CreateDiagnosticoEnfermedadDTO,
@@ -6,6 +7,8 @@ import type {
   createEnfermedadDTO,
   createSintomaDTO,
 } from '@/api';
+
+export const PLACEHOLDER_NAME = 'Pendiente por determinar';
 
 export const DIAGNOSTICOS_KEY = ['diagnosticos'] as const;
 export const ENFERMEDADES_KEY = ['enfermedades'] as const;
@@ -130,4 +133,43 @@ export function useDiagnosticoSintomas() {
       return res.data as any[];
     },
   });
+}
+
+// ===== PLACEHOLDER ENFERMEDAD (diagnóstico inicial sin enfermedad definitiva) =====
+
+export function usePlaceholderEnfermedad() {
+  const { data: enfermedades = [], isLoading } = useEnfermedades();
+  const createEnfermedadMut = useCreateEnfermedad();
+  const [creationAttempted, setCreationAttempted] = useState(false);
+
+  const placeholder = useMemo(() => {
+    return enfermedades.find(
+      (e: any) => e.nombre === PLACEHOLDER_NAME
+    );
+  }, [enfermedades]);
+
+  const placeholderId = placeholder
+    ? Number(placeholder.pk_num_enfermedad || placeholder.id)
+    : undefined;
+
+  useEffect(() => {
+    if (!isLoading && !placeholder && !creationAttempted && !createEnfermedadMut.isPending) {
+      setCreationAttempted(true);
+      createEnfermedadMut.mutate(
+        {
+          nombre: PLACEHOLDER_NAME,
+          enfermedad_cronica: false,
+          descripcion: 'Diagnóstico inicial pendiente de determinación por especialista',
+        },
+        {
+          onError: () => {
+            // 409 = already exists → query refetch will find it
+            setCreationAttempted(false);
+          },
+        },
+      );
+    }
+  }, [isLoading, placeholder, creationAttempted, createEnfermedadMut]);
+
+  return { placeholderId, isLoading: isLoading || createEnfermedadMut.isPending };
 }

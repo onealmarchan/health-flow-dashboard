@@ -295,9 +295,9 @@ function InterconsultaMatrix() {
 }
 
 
-export function DecisionMatrix() {
+export function DecisionMatrix({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   return (
-    <KPIWrapper views={[
+    <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
       { id: 'matriz-prioridades', label: 'Matriz de prioridades', component: <PriorityMatrix /> },
       { id: 'interconsulta',      label: 'Interconsulta entre especialidades', component: <InterconsultaMatrix /> },
       { id: 'ratio-vs-meta',      label: 'Diverging Bar — Ratio vs Meta', component: <DivergingBarView /> },

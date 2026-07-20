@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLogout } from '@/services/useAuth';
 import { clearAuthToken } from '@/services/apiClient';
 import { useNotificaciones, useMarkNotificacionAsRead, useMarkAllAsRead, useDeleteNotificacion, useDeleteAllNotificaciones } from '@/services/useNotificaciones';
+import { useCurrentUser } from '@/services/useCurrentUser';
 import { User, Sun, Moon, Bell, MessageSquare, Calendar, AlertTriangle, Shield, Trash2, CheckCheck, X, Clock } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -32,15 +33,18 @@ const typeConfig: Record<NotificationItem['type'], { icon: typeof Bell; color: s
 
 interface HeaderProps {
   onMenuToggle?: () => void;
+  onPageChange?: (page: string) => void;
 }
 
-export function Header({ onMenuToggle }: HeaderProps) {
+export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
   const { mode, toggleMode, transitionTick } = useTheme();
   const navigate = useNavigate();
   const logout = useLogout();
   const isMobile = useIsMobile();
+  const user = useCurrentUser();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedNotif, setSelectedNotif] = useState<NotificationItem | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [newNotifIds, setNewNotifIds] = useState<Set<number>>(new Set());
   const prevNotifCountRef = useRef(0);
   const { data: apiNotifications = [], isLoading } = useNotificaciones();
@@ -267,15 +271,17 @@ export function Header({ onMenuToggle }: HeaderProps) {
                   <User className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
                 {!isMobile && (
-                  <span className="text-sm font-medium text-foreground hidden sm:block">Cuenta</span>
+                  <span className="text-sm font-medium text-foreground hidden sm:block">
+                    {user?.email ? user.email.split('@')[0] : 'Usuario'}
+                  </span>
                 )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">Perfil</DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">Configuración</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => setProfileOpen(true)}>Perfil</DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => onPageChange?.('ajustes')}>Ajustes</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="cursor-pointer text-destructive"
@@ -359,6 +365,45 @@ export function Header({ onMenuToggle }: HeaderProps) {
               </>
             );
           })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Modal */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="bg-card border border-border max-w-sm sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Mi Perfil</DialogTitle>
+            <DialogDescription className="text-muted-foreground">Información de tu cuenta</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center shrink-0">
+                <User className="w-7 h-7 text-primary-foreground" />
+              </div>
+              <div>
+                <p className="text-base font-semibold text-foreground">
+                  {user?.email ? user.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Usuario'}
+                </p>
+                <p className="text-sm text-muted-foreground">{user?.email || 'Sin email'}</p>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border p-4 space-y-3 bg-secondary/30">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Rol</span>
+                <span className="text-sm font-medium text-foreground px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {user?.rol || 'Sin rol'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">ID de usuario</span>
+                <span className="text-sm font-mono text-foreground">{user?.id || '—'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Estado</span>
+                <span className="text-sm font-medium text-green-600">Activo</span>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

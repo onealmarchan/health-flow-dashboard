@@ -21,6 +21,13 @@ const SLOT_COMPONENTS = [
   GeographicKPI,
 ];
 
+const PRESET_KPI_IDS: Record<string, string[]> = {
+  epidemiologicos: ['treemap-etario', 'distribucion-enfermedades', 'densidad-comunidad'],
+  'carga-trabajo': ['treemap-especialidad', 'retencion-especialidad', 'matriz-prioridades'],
+  seguimiento: ['deteccion-temprana', 'reconsultas-criticos', 'vulnerabilidad-com'],
+  geografia: ['interconsulta', 'densidad-comunidad', 'concentracion-geo'],
+};
+
 export function DashboardContent() {
   const [config, setConfig] = useState<KPIConfigValue>({ types: 'random', count: 5 });
   const [showConfig, setShowConfig] = useState(false);
@@ -31,8 +38,13 @@ export function DashboardContent() {
     const citas = dashData?.citasHoy || { total: 0, change: 0 };
     const consultas = dashData?.consultasMensuales || { total: 0, change: 0 };
     const pacientes = dashData?.totalPacientes || { total: 0, change: 0 };
-    const carga = dashData?.cargaMedia || { total: 0, change: 0, meta: 250 };
-    const urg = dashData?.urgencias || { percentage: 0, change: 0 };
+    const carga = dashData?.cargaMedia || { total: 0, totalPacientes: 0, totalEspecialistas: 0, meta: 250 };
+    const urg = dashData?.urgencias || { percentage: 0, change: 0, totalConsultas: 0, totalUrgencias: 0 };
+    const cargaEsp = dashData?.desviacionCargaEspecialidad || [];
+
+    const topEspecialidad = cargaEsp.length > 0
+      ? [...cargaEsp].sort((a, b) => Math.abs(b.desviacion) - Math.abs(a.desviacion))[0]
+      : null;
 
     return {
       totalCitasHoy: citas.total || 0,
@@ -43,17 +55,33 @@ export function DashboardContent() {
       pacientesDelta: pacientes.change || 0,
       cargaMedia: carga.total || 0,
       cargaMeta: carga.meta || 250,
-      desviacionCarga: carga.change || 0,
+      desviacionCarga: cargaEsp.length > 0
+        ? cargaEsp.reduce((sum, e) => sum + e.desviacion, 0) / cargaEsp.length
+        : 0,
+      topEspecialidad,
       urgenciasPct: urg.percentage || 0,
       urgenciasDelta: urg.change || 0,
+      totalUrgencias: urg.totalUrgencias || 0,
+      totalConsultasUrg: urg.totalConsultas || 0,
     };
   }, [dashData]);
 
   const eligibleSlots = (() => {
     if (config.types === 'random') return [1, 2, 3, 4, 5];
+    if (config.types === 'epidemiologicos') {
+      const epiPreset = PRESET_KPI_IDS['epidemiologicos'];
+      const slots = new Set(KPI_CATALOG.filter(k => epiPreset.includes(k.id)).map(k => k.slot));
+      return Array.from(slots).sort();
+    }
     const selected = config.types;
     const slots = new Set(KPI_CATALOG.filter(k => selected.includes(k.type)).map(k => k.slot));
     return Array.from(slots).sort();
+  })();
+
+  const selectedKpiIds = (() => {
+    if (config.types === 'random') return undefined;
+    if (config.types === 'epidemiologicos') return PRESET_KPI_IDS['epidemiologicos'];
+    return undefined;
   })();
   const visibleSlots = eligibleSlots.slice(0, config.count);
   const cols = visibleSlots.length === 1 ? 'lg:grid-cols-1' :
@@ -104,14 +132,18 @@ export function DashboardContent() {
         <MetricCard
           title="Carga / Esp."
           value={metrics.cargaMedia}
-          subtitle={`Meta ${metrics.cargaMeta} · ${metrics.desviacionCarga >= 0 ? '+' : ''}${metrics.desviacionCarga.toFixed(1)}%`}
+          subtitle={
+            metrics.topEspecialidad
+              ? `${metrics.topEspecialidad.especialidad}: ${metrics.topEspecialidad.desviacion >= 0 ? '+' : ''}${metrics.topEspecialidad.desviacion.toFixed(1)}%`
+              : `Meta ${metrics.cargaMeta}`
+          }
           icon={Stethoscope}
           semaforo={getSemaforo('cargaEspecialista', metrics.desviacionCarga)}
         />
         <MetricCard
           title="% Urgencias"
           value={`${metrics.urgenciasPct.toFixed(0)}%`}
-          subtitle="Sobre total"
+          subtitle={metrics.totalUrgencias > 0 ? `${metrics.totalUrgencias} de ${metrics.totalConsultasUrg} consultas` : 'Sobre total'}
           icon={AlertTriangle}
           trend={{ value: metrics.urgenciasDelta }}
           semaforo={getSemaforo('urgencias', metrics.urgenciasPct)}
@@ -120,7 +152,7 @@ export function DashboardContent() {
 
       <div className="flex items-center justify-between">
         <h2 className="section-header">Indicadores Clave</h2>
-        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="text-xs hidden sm:flex">
+        <Button variant="outline" size="sm" onClick={() => setShowConfig(true)} className="text-xs">
           <Settings className="w-3.5 h-3.5 mr-1" />
           Configurar KPIs
         </Button>
@@ -129,7 +161,7 @@ export function DashboardContent() {
       <div className={`grid grid-cols-1 ${cols} gap-6`}>
         {visibleSlots.map(slotIdx => {
           const Comp = SLOT_COMPONENTS[slotIdx - 1];
-          return <Comp key={slotIdx} />;
+          return <Comp key={slotIdx} selectedKpiIds={selectedKpiIds} />;
         })}
       </div>
 

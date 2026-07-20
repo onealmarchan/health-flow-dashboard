@@ -66,14 +66,40 @@ export function buildCreateSesionPayload(params: {
   diaSemana: string;
   horaInicio: string;
   horaFin: string;
-}) {
+}): CreateSesionMedicaDTO {
+  const normalizeTime = (t: string) => {
+    if (!t) return t;
+    const parts = t.split(':');
+    if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
+    return t;
+  };
+
+  const turno = normalizeTurno(params.turno);
+  const dias_semana = normalizeDiaSemana(params.diaSemana);
+  const hora_inicio = normalizeTime(params.horaInicio);
+  const hora_fin = normalizeTime(params.horaFin);
+
+  // Validación de campos requeridos
+  if (!Number.isFinite(params.medicoId) || params.medicoId <= 0) {
+    throw new Error(`ID de médico inválido: ${params.medicoId}`);
+  }
+  if (!turno || !['mañana', 'tarde', 'noche'].includes(turno)) {
+    throw new Error(`Turno inválido: ${turno}`);
+  }
+  if (!dias_semana || !['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo'].includes(dias_semana)) {
+    throw new Error(`Día de la semana inválido: ${dias_semana}`);
+  }
+  if (!hora_inicio || !hora_fin) {
+    throw new Error('Horas de inicio y fin son requeridas');
+  }
+
   return {
     fk_cm_b001_num_medico_ministerio_salud: params.medicoId,
-    turno: normalizeTurno(params.turno),
-    dias_semana: normalizeDiaSemana(params.diaSemana),
-    hora_inicio: params.horaInicio,
-    hora_fin: params.horaFin,
-  } satisfies CreateSesionMedicaDTO;
+    turno,
+    dias_semana,
+    hora_inicio,
+    hora_fin,
+  };
 }
 
 // ===== SESIONES MÉDICAS =====

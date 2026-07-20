@@ -1361,7 +1361,7 @@ export function CitasPage() {
           {/* Body: 70/30 grid */}
           <div className="flex-1 grid grid-cols-1 lg:grid-cols-10 overflow-hidden">
             {/* Left column 70% */}
-            <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-border">
+            <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-border min-h-0">
               <div className="mb-4">
                 <h2 className="text-2xl font-bold text-foreground">Cita Médica</h2>
                 <p className="text-sm text-muted-foreground">
@@ -1458,7 +1458,7 @@ export function CitasPage() {
             </div>
 
             {/* Right column 30% */}
-            <div className="lg:col-span-3 p-6 overflow-y-auto bg-background/30">
+            <div className="lg:col-span-3 p-6 overflow-y-auto bg-background/30 min-h-0">
               {!selectedDate ? (
                 <div className="h-full flex items-center justify-center text-center">
                   <p className="text-muted-foreground text-sm">

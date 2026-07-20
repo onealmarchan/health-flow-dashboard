@@ -65,7 +65,7 @@ const pad = (n: number) => n.toString().padStart(2, '0');
 const toISO = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
 function extractId(obj: any): string | null {
-  const raw = obj?.id ?? obj?.pk_num_bloqueo ?? obj?.ID ?? obj?._id;
+  const raw = obj?.id ?? obj?.pk_num_sesion_medica ?? obj?.pk_num_bloqueo_agenda ?? obj?.pk_num_bloqueo ?? obj?.ID ?? obj?._id;
   if (raw == null) return null;
   const n = Number(raw);
   return Number.isFinite(n) && n > 0 ? String(n) : null;
@@ -269,6 +269,51 @@ export function JornadasPage() {
     if (blocked) openBlockFromCalendar(iso, blocked);
   };
 
+  // Reload sessions when doctor selection changes in modal or week view changes
+  useEffect(() => {
+    if (!showModal || !selectedMpps) return;
+    
+    const medicoSesiones = apiSesiones
+      .filter((s: any) => String(s.fk_cm_b001_num_medico_ministerio_salud) === selectedMpps)
+      .map((s: any) => {
+        const turno = s.turno === 'mañana' ? 'Mañana' : s.turno === 'tarde' ? 'Tarde' : 'Noche';
+        const dayMap: Record<string, string> = {
+          Lunes: 'Lun', Martes: 'Mar', Miercoles: 'Mié', Jueves: 'Jue', Viernes: 'Vie', Sabado: 'Sáb', Domingo: 'Dom',
+        };
+        const dayLabel = dayMap[s.dias_semana] || s.dias_semana;
+        // Map session to the matching day in the CURRENT week view (not the first day of the month)
+        const matchingDay = weekRange.days.find(d => d.dayName === dayLabel);
+        const representativeDate = matchingDay ? matchingDay.iso : weekRange.days[0].iso;
+        const sesionId = extractId(s);
+        return {
+          id: sesionId ? `api-${sesionId}` : `api-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          iso: representativeDate,
+          turnoTipo: turno as TurnoTipo,
+          horaInicio: s.hora_inicio,
+          horaFin: s.hora_fin,
+          saved: true,
+        };
+      });
+    setRows(medicoSesiones);
+    
+    const medicoBloqueos = apiBloqueos
+      .filter((b: any) => String(b.fk_cm_b001_num_medico_ministerio_salud) === selectedMpps)
+      .map((b: any) => {
+        const id = extractId(b);
+        const turnoRaw = b.turno || b.sesionMedica?.turno || '';
+        return id ? {
+          id,
+          fechaInicio: b.fecha_inicio,
+          fechaFin: b.fecha_fin,
+          razon: b.razon_bloqueo,
+          observaciones: b.motivo_bloqueo || '',
+          turno: (turnoRaw === 'mañana' ? 'Mañana' : turnoRaw === 'tarde' ? 'Tarde' : turnoRaw === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
+        } : null;
+      })
+      .filter((b): b is Bloqueo => b !== null);
+    setBloqueos(medicoBloqueos);
+  }, [showModal, selectedMpps, apiSesiones, apiBloqueos, weekRange]);
+
   // ---- Row operations ----
   const addRow = (iso: string) => {
     const dayRows = rowsByDay[iso] || [];
@@ -329,8 +374,9 @@ export function JornadasPage() {
       return;
     }
     
-    // Guardar sesión médica en el API
-    const dayName = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][new Date(row.iso).getDay()];
+    // Guardar sesión médica en el API — use numeric day index to avoid locale issues
+    const dayIndex = new Date(row.iso + 'T12:00:00').getDay(); // 0=Dom,1=Lun,...6=Sab
+    const dayName = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'][dayIndex];
     const payload = buildCreateSesionPayload({
       medicoId: Number(selectedMpps),
       turno: row.turnoTipo,
@@ -339,15 +385,21 @@ export function JornadasPage() {
       horaFin: row.horaFin,
     });
 
-    createSesion.mutate(payload, {
-      onSuccess: () => {
-        setRows(prev => prev.map(r => (r.id === id ? { ...r, saved: true } : r)));
-        toast.success('Sesión guardada en el sistema');
-      },
-      onError: (error: any) => {
-        toast.error(error?.response?.data?.message || 'Error al guardar sesión');
-      }
-    });
+    try {
+      createSesion.mutate(payload, {
+        onSuccess: (res: any) => {
+          const newId = res?.pk_num_sesion_medica || res?.id;
+          setRows(prev => prev.map(r => (r.id === id ? { ...r, id: newId ? `api-${newId}` : r.id, saved: true } : r)));
+          toast.success('Sesión guardada en el sistema');
+        },
+        onError: (error: any) => {
+          const errorMsg = error?.response?.data?.message || error?.response?.data?.error || error?.message || 'Error al guardar sesión';
+          toast.error(errorMsg);
+        }
+      });
+    } catch (validationError: any) {
+      toast.error(validationError.message || 'Error de validación en los datos');
+    }
   };
 
   const removeRow = (id: string) => {
@@ -364,20 +416,26 @@ export function JornadasPage() {
 
   const reloadBloqueosFromApi = () => {
     if (!selectedMpps) return;
+    
     const medicoBloqueos = apiBloqueos
-      .filter((b: any) => String(b.fk_cm_b001_num_medico_ministerio_salud) === selectedMpps)
+      .filter((b: any) => {
+        const medicoId = String(b.fk_cm_b001_num_medico_ministerio_salud);
+        return medicoId === selectedMpps;
+      })
       .map((b: any) => {
         const id = extractId(b);
+        const turnoRaw = b.turno || b.sesionMedica?.turno || '';
         return id ? {
           id,
           fechaInicio: b.fecha_inicio,
           fechaFin: b.fecha_fin,
           razon: b.razon_bloqueo,
           observaciones: b.motivo_bloqueo || '',
-          turno: (b.turno === 'mañana' ? 'Mañana' : b.turno === 'tarde' ? 'Tarde' : b.turno === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
+          turno: (turnoRaw === 'mañana' ? 'Mañana' : turnoRaw === 'tarde' ? 'Tarde' : turnoRaw === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
         } : null;
       })
       .filter((b): b is Bloqueo => b !== null);
+    
     setBloqueos(medicoBloqueos);
   };
 
@@ -387,14 +445,16 @@ export function JornadasPage() {
     const razonApi = RAZONES_API[blockModal.razon] || 'bloqueo_manual';
     
     if (blockModal.editingId) {
+      const updatePayload = {
+        fecha_inicio: blockModal.fechaInicio,
+        fecha_fin: blockModal.fechaFin,
+        razon_bloqueo: razonApi,
+        motivo_bloqueo: blockModal.observaciones || 'Sin observaciones',
+      };
+      
       updateBloqueo.mutate({
         id: Number(blockModal.editingId),
-        data: {
-          fecha_inicio: blockModal.fechaInicio,
-          fecha_fin: blockModal.fechaFin,
-          razon_bloqueo: razonApi,
-          motivo_bloqueo: blockModal.observaciones || 'Sin observaciones',
-        },
+        data: updatePayload,
       }, {
         onSuccess: () => {
           toast.success('Bloqueo actualizado');
@@ -402,24 +462,26 @@ export function JornadasPage() {
           setTimeout(reloadBloqueosFromApi, 300);
         },
         onError: (error: any) => {
-          toast.error(error?.response?.data?.message || 'Error al actualizar bloqueo');
+          toast.error(error?.response?.data?.message || error?.response?.data?.error || 'Error al actualizar bloqueo');
         }
       });
     } else {
-      createBloqueo.mutate({
+      const createPayload = {
         fk_cm_b001_num_medico_ministerio_salud: Number(selectedMpps),
         fecha_inicio: blockModal.fechaInicio,
         fecha_fin: blockModal.fechaFin,
         razon_bloqueo: razonApi,
         motivo_bloqueo: blockModal.observaciones || 'Sin observaciones',
-      }, {
+      };
+      
+      createBloqueo.mutate(createPayload, {
         onSuccess: () => {
           toast.success('Bloqueo registrado en el sistema');
           setBlockModal(s => ({ ...s, open: false }));
           setTimeout(reloadBloqueosFromApi, 300);
         },
         onError: (error: any) => {
-          toast.error(error?.response?.data?.message || 'Error al crear bloqueo');
+          toast.error(error?.response?.data?.message || error?.response?.data?.error || 'Error al crear bloqueo');
         }
       });
     }
@@ -501,58 +563,7 @@ export function JornadasPage() {
   };
 
   const openModalForEdit = (mpps: string) => {
-    const data = store[mpps];
     setSelectedMpps(mpps);
-
-    // Load sessions from API
-    const medicoSesiones = apiSesiones
-      .filter((s: any) => String(s.fk_cm_b001_num_medico_ministerio_salud) === mpps)
-      .map((s: any) => {
-        const turno = s.turno === 'mañana' ? 'Mañana' : s.turno === 'tarde' ? 'Tarde' : 'Noche';
-        const dayMap: Record<string, string> = {
-          Lunes: 'Lun', Martes: 'Mar', Miercoles: 'Mié', Jueves: 'Jue', Viernes: 'Vie', Sabado: 'Sáb', Domingo: 'Dom',
-        };
-        const dayLabel = dayMap[s.dias_semana] || s.dias_semana;
-        // Find a representative date for this day of week in the current month
-        const now = new Date();
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        let representativeDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`;
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dt = new Date(now.getFullYear(), now.getMonth(), d);
-          const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-          if (dayNames[dt.getDay()] === dayLabel) {
-            representativeDate = toISO(dt.getFullYear(), dt.getMonth(), dt.getDate());
-            break;
-          }
-        }
-        return {
-          id: `api-${s.id || Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          iso: representativeDate,
-          turnoTipo: turno as TurnoTipo,
-          horaInicio: s.hora_inicio,
-          horaFin: s.hora_fin,
-          saved: true,
-        };
-      });
-    setRows(data?.rows?.length ? data.rows : medicoSesiones);
-
-    // Load blocks from API
-    const medicoBloqueos = apiBloqueos
-      .filter((b: any) => String(b.fk_cm_b001_num_medico_ministerio_salud) === mpps)
-      .map((b: any) => {
-        const id = extractId(b);
-        return id ? {
-          id,
-          fechaInicio: b.fecha_inicio,
-          fechaFin: b.fecha_fin,
-          razon: b.razon_bloqueo,
-          observaciones: b.motivo_bloqueo || '',
-          turno: (b.turno === 'mañana' ? 'Mañana' : b.turno === 'tarde' ? 'Tarde' : b.turno === 'noche' ? 'Noche' : 'Todos los Turnos') as TurnoOrAll,
-        } : null;
-      })
-      .filter((b): b is Bloqueo => b !== null);
-    setBloqueos(medicoBloqueos);
-
     setCalMonth(today.getMonth());
     setCalYear(today.getFullYear());
     setWeekOffset(0);
@@ -623,9 +634,10 @@ export function JornadasPage() {
       for (const b of medicoBloqueos) {
         const blockId = extractId(b);
         if (!blockId) continue;
-        const turnoDisplay = b.turno === 'mañana' ? 'Mañana' 
-          : b.turno === 'tarde' ? 'Tarde' 
-          : b.turno === 'noche' ? 'Noche' 
+        const turnoRaw = b.turno || b.sesionMedica?.turno || '';
+        const turnoDisplay = turnoRaw === 'mañana' ? 'Mañana' 
+          : turnoRaw === 'tarde' ? 'Tarde' 
+          : turnoRaw === 'noche' ? 'Noche' 
           : 'Todos los Turnos';
         events.push({
           kind: 'block',
@@ -748,10 +760,10 @@ export function JornadasPage() {
           </DialogHeader>
 
           <TooltipProvider delayDuration={150}>
-            <div className="flex-1 overflow-auto px-6 py-4">
-              <div className="grid grid-cols-2 grid-rows-2 gap-4 h-full min-h-[600px]">
+            <div className="flex-1 overflow-hidden px-6 py-4">
+              <div className="grid grid-cols-2 grid-rows-2 gap-4 h-full">
                 {/* Q1: Calendar */}
-                <div className="bg-card border border-border rounded-lg p-4 overflow-auto">
+                <div className="bg-card border border-border rounded-lg p-4 overflow-auto min-h-0">
                   <h4 className="text-sm font-semibold text-foreground mb-3">
                     Calendario · {MONTHS[calMonth]} {calYear}
                   </h4>
@@ -806,7 +818,7 @@ export function JornadasPage() {
                 </div>
 
                 {/* Q2: Sesiones Médicas */}
-                <div className="bg-card border border-border rounded-lg p-4 overflow-auto">
+                <div className="bg-card border border-border rounded-lg p-4 overflow-y-auto min-h-0">
                   <div className="flex items-center justify-between mb-3 gap-2">
                     <h4 className="text-sm font-semibold text-foreground">Sesiones Médicas</h4>
                     <div className="flex flex-col items-end">
@@ -826,7 +838,7 @@ export function JornadasPage() {
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead>
+                      <thead className="sticky top-0 bg-card z-10">
                         <tr className="border-b border-border">
                           <th className="text-left p-2 text-xs font-medium text-muted-foreground w-8"></th>
                           {['Día', 'Turno', 'Hora Inicio', 'Hora Fin', 'Acciones'].map(h => (
@@ -992,7 +1004,7 @@ export function JornadasPage() {
                 </div>
 
                 {/* Q3: Stats */}
-                <div className="bg-card border border-border rounded-lg p-4 overflow-auto">
+                <div className="bg-card border border-border rounded-lg p-4 overflow-auto min-h-0">
                   <h4 className="text-sm font-semibold text-foreground mb-3">Resumen estadístico</h4>
                   <ul className="space-y-2">
                     {[
@@ -1010,7 +1022,7 @@ export function JornadasPage() {
                 </div>
 
                 {/* Q4: Blocked list */}
-                <div className="bg-card border border-border rounded-lg p-4 overflow-auto">
+                <div className="bg-card border border-border rounded-lg p-4 overflow-y-auto min-h-0">
                   <div className="flex items-center justify-between mb-3 gap-2">
                     <h4 className="text-sm font-semibold text-foreground">Bloqueos programados</h4>
                     <Select value={blockTurnoFilter} onValueChange={v => setBlockTurnoFilter(v as 'Todos' | TurnoOrAll)}>
@@ -1029,7 +1041,7 @@ export function JornadasPage() {
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
-                        <thead>
+                        <thead className="sticky top-0 bg-card z-10">
                           <tr className="border-b border-border">
                             {['N°', 'Fecha Inicio', 'Fecha Fin', 'Turno', 'Razón', 'Observaciones', 'Acciones'].map(h => (
                               <th key={h} className="text-left p-2 text-xs font-medium text-muted-foreground">{h}</th>
