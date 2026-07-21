@@ -6,6 +6,8 @@ import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useSesionesMedicas } from '@/services/useJornadas';
 import { useDiagnosticos, useEnfermedades } from '@/services/useDiagnosticos';
 import { useDistribucionEnfermedades, useReconsultasCriticos, useTasaDemandaEspecialidad } from '@/services/useIndicadores';
+import type { KpiKind } from '@/lib/kpi-semaforos';
+import { semaforoFill } from '@/lib/kpi-semaforos';
 
 const chartStyle = {
   grid: { strokeDasharray: "3 3", stroke: 'hsl(var(--border))', vertical: false as const },
@@ -99,17 +101,17 @@ function DiseaseDistribution() {
             <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} unit="%" />
             <Tooltip contentStyle={chartStyle.tooltip} formatter={(value: number) => [`${value}%`, 'Porcentaje']} />
             <Bar dataKey="porcentaje" name="Porcentaje" radius={[4, 4, 0, 0]} maxBarSize={40}>
-              {chartData.map((_: any, idx: number) => (
-                <Cell key={idx} fill={colors[idx % colors.length]} />
+              {chartData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', entry.porcentaje)} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="flex flex-wrap gap-3 mt-2 max-h-[80px] overflow-y-auto">
-        {chartData.map((item: any, idx: number) => (
+        {chartData.map((item: any) => (
           <div key={item.nombre} className="flex items-center gap-2 text-xs">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors[idx % colors.length] }} />
+            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: semaforoFill('porcentajeBajo', item.porcentaje) }} />
             <span className="text-muted-foreground">{item.nombre}</span>
             <span className="font-medium text-foreground">{item.porcentaje}%</span>
           </div>
@@ -136,8 +138,6 @@ function ReconsultaFrequency() {
     }
     return [];
   }, [backendData]);
-
-  const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
   if (reconsultaData.length === 0) {
     return (
@@ -167,8 +167,18 @@ function ReconsultaFrequency() {
             <YAxis tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={chartStyle.tooltip} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="totalCriticos" fill={colors[0]} name="Total Críticos" maxBarSize={35} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="reconsultas" fill={colors[1]} name="Reconsultas" maxBarSize={35} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="totalCriticos" name="Total Críticos" maxBarSize={35} radius={[4, 4, 0, 0]}>
+              {reconsultaData.map((entry: any, idx: number) => {
+                const rate = entry.totalCriticos > 0 ? (entry.reconsultas / entry.totalCriticos) * 100 : 0;
+                return <Cell key={idx} fill={semaforoFill('porcentajeBajo', rate)} />;
+              })}
+            </Bar>
+            <Bar dataKey="reconsultas" name="Reconsultas" maxBarSize={35} radius={[4, 4, 0, 0]}>
+              {reconsultaData.map((entry: any, idx: number) => {
+                const rate = entry.totalCriticos > 0 ? (entry.reconsultas / entry.totalCriticos) * 100 : 0;
+                return <Cell key={idx} fill={semaforoFill('porcentajeBajo', rate)} opacity={0.6} />;
+              })}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -193,8 +203,6 @@ function TrimestralTrend() {
     }
     return [];
   }, [backendData]);
-
-  const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
   if (trimestralData.length === 0) {
     return (
@@ -225,7 +233,7 @@ function TrimestralTrend() {
             <Tooltip contentStyle={chartStyle.tooltip} formatter={(value: any) => [`${Number(value) || 0}%`, 'Tasa']} />
             <Bar dataKey="tasaCambio" name="Tasa de Cambio %" radius={[4, 4, 0, 0]} maxBarSize={40}>
               {trimestralData.map((entry: any, idx: number) => (
-                <Cell key={idx} fill={entry.tasaCambio >= 0 ? colors[idx % colors.length] : 'hsl(var(--destructive))'} />
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Math.abs(entry.tasaCambio))} />
               ))}
             </Bar>
           </BarChart>
@@ -236,11 +244,67 @@ function TrimestralTrend() {
 }
 
 export function StackedBarChartComponent({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
+  const { data: distBackend } = useDistribucionEnfermedades();
+  const { data: diagnosticos = [] } = useDiagnosticos();
+  const { data: enfermedades = [] } = useEnfermedades();
+  const { data: reconBackend } = useReconsultasCriticos();
+  const { data: tendBackend } = useTasaDemandaEspecialidad();
+
+  const semBajo: KpiKind = 'porcentajeBajo';
+
+  const distribucionValue = useMemo(() => {
+    if (distBackend) {
+      const items = distBackend?.distribucion || distBackend?.enfermedades || distBackend?.items || distBackend;
+      if (Array.isArray(items) && items.length > 0) {
+        const pcts = items.map((d: any) => Number(d.porcentaje || d.pct || d.value) || 0).filter(v => v > 0);
+        if (pcts.length > 0) return Math.max(...pcts);
+      }
+    }
+    if (diagnosticos.length === 0) return 0;
+    const enfMap = new Map<string, string>();
+    enfermedades.forEach((e: any) => {
+      const id = String(e.pk_num_enfermedad ?? e.id ?? '');
+      if (id) enfMap.set(id, e.nombre || e.name || 'Enfermedad');
+    });
+    const counts: Record<string, number> = {};
+    diagnosticos.forEach((d: any) => {
+      const enfId = String(d.fk_cm_a001_num_enfermedad ?? '');
+      const name = enfMap.get(enfId) || d.enfermedadNombre || d.nombre || 'Otra';
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (total === 0) return 0;
+    return Math.max(...Object.values(counts).map(c => Math.round((c / total) * 1000) / 10));
+  }, [distBackend, diagnosticos, enfermedades]);
+
+  const reconsultasValue = useMemo(() => {
+    if (reconBackend) {
+      const items = Array.isArray(reconBackend) ? reconBackend : (reconBackend?.items || reconBackend?.rangos || []);
+      if (Array.isArray(items) && items.length > 0) {
+        const totalRecon = items.reduce((s: number, d: any) => s + (Number(d.reconsultas) || 0), 0);
+        const totalCrit = items.reduce((s: number, d: any) => s + (Number(d.totalCriticos) || 0), 0);
+        return totalCrit > 0 ? Math.round((totalRecon / totalCrit) * 1000) / 10 : 0;
+      }
+    }
+    return 0;
+  }, [reconBackend]);
+
+  const tendenciaValue = useMemo(() => {
+    if (tendBackend) {
+      const items = Array.isArray(tendBackend) ? tendBackend : (tendBackend?.especialidades || tendBackend?.items || []);
+      if (Array.isArray(items) && items.length > 0) {
+        const tasas = items.map((d: any) => Math.abs(Number(d.tasaCambio) || 0)).filter(v => v > 0);
+        if (tasas.length > 0) return Math.round((tasas.reduce((a, b) => a + b, 0) / tasas.length) * 10) / 10;
+      }
+    }
+    return 0;
+  }, [tendBackend]);
+
   return (
     <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
-      { id: 'distribucion-enfermedades', label: 'Distribución Enfermedades', component: <DiseaseDistribution /> },
-      { id: 'reconsultas-criticos', label: 'Reconsultas', component: <ReconsultaFrequency /> },
-      { id: 'tendencia-trimestral', label: 'Tendencia Trimestral', component: <TrimestralTrend /> },
+      { id: 'distribucion-enfermedades', label: 'Distribución Enfermedades', semaforoKind: semBajo, semaforoValue: distribucionValue, component: <DiseaseDistribution /> },
+      { id: 'reconsultas-criticos',      label: 'Reconsultas',              semaforoKind: semBajo, semaforoValue: reconsultasValue, component: <ReconsultaFrequency /> },
+      { id: 'tendencia-trimestral',      label: 'Tendencia Trimestral',     semaforoKind: semBajo, semaforoValue: tendenciaValue, component: <TrimestralTrend /> },
     ]} />
   );
 }

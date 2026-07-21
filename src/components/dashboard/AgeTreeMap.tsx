@@ -6,6 +6,8 @@ import { useCitas } from '@/services/useCitas';
 import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useSesionesMedicas } from '@/services/useJornadas';
 import { useConcentracionCondicionEdad } from '@/services/useIndicadores';
+import type { KpiKind } from '@/lib/kpi-semaforos';
+import { semaforoFill } from '@/lib/kpi-semaforos';
 
 interface AgeGroup {
   name: string;
@@ -18,13 +20,16 @@ interface CustomContentProps {
   x: number; y: number; width: number; height: number;
   name: string; patients: number; fill: string;
   total: number;
+  semaforoKind?: KpiKind;
 }
 
-const CustomContent = ({ x, y, width, height, patients, fill, total }: CustomContentProps) => {
+const CustomContent = ({ x, y, width, height, patients, total, semaforoKind }: CustomContentProps) => {
   const percentage = ((patients / total) * 100).toFixed(1);
+  const cellPct = total > 0 ? (patients / total) * 100 : 0;
+  const color = semaforoKind ? semaforoFill(semaforoKind, cellPct) : 'hsl(var(--chart-1))';
   return (
     <g>
-      <rect x={x} y={y} width={width} height={height} fill={fill}
+      <rect x={x} y={y} width={width} height={height} fill={color}
         stroke="hsl(var(--background))" strokeWidth={3} rx={8}
         className="transition-all duration-200 hover:opacity-80 cursor-pointer"
       />
@@ -38,7 +43,13 @@ const CustomContent = ({ x, y, width, height, patients, fill, total }: CustomCon
   );
 };
 
-function TreeMapView({ data, title, subtitle, total }: { data: AgeGroup[]; title: string; subtitle: string; total: number }) {
+function TreeMapView({ data, title, subtitle, total, semaforoKind }: { data: AgeGroup[]; title: string; subtitle: string; total: number; semaforoKind?: KpiKind }) {
+  const legend = semaforoKind
+    ? data.map(item => {
+        const pct = total > 0 ? (item.patients / total) * 100 : 0;
+        return { ...item, color: semaforoFill(semaforoKind, pct) };
+      })
+    : data;
   return (
     <div>
       <div className="mb-4">
@@ -48,7 +59,7 @@ function TreeMapView({ data, title, subtitle, total }: { data: AgeGroup[]; title
       <div className="h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <Treemap data={data} dataKey="size" stroke="hsl(var(--background))"
-            content={<CustomContent x={0} y={0} width={0} height={0} name="" patients={0} fill="" total={total} />}
+            content={<CustomContent x={0} y={0} width={0} height={0} name="" patients={0} fill="" total={total} semaforoKind={semaforoKind} />}
           >
             <Tooltip content={({ payload }) => {
               if (payload && payload.length) {
@@ -68,9 +79,9 @@ function TreeMapView({ data, title, subtitle, total }: { data: AgeGroup[]; title
         </ResponsiveContainer>
       </div>
       <div className="flex flex-wrap gap-3 mt-4">
-        {data.map((item) => (
+        {legend.map((item) => (
           <div key={item.name} className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.fill }} />
+            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
             <span className="text-sm text-muted-foreground">{item.name}</span>
           </div>
         ))}
@@ -185,22 +196,35 @@ export function AgeTreeMap({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
   const totalSpec = specialtyAgeData.reduce((a, b) => a + b.patients, 0);
   const totalCond = conditionAgeData.reduce((a, b) => a + b.patients, 0);
 
+  const specConcentration = totalSpec > 0
+    ? Math.max(...specialtyAgeData.map(d => (d.patients / totalSpec) * 100))
+    : 0;
+  const condConcentration = totalCond > 0
+    ? Math.max(...conditionAgeData.map(d => (d.patients / totalCond) * 100))
+    : 0;
+
+  const semBajo: KpiKind = 'porcentajeBajo';
+
   return (
     <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
       {
         id: 'treemap-etario',
         label: 'Distribución Etaria',
-        component: <TreeMapView data={ageData} title="Distribución por Edad" subtitle="Rangos etarios de pacientes" total={totalPatients} />,
+        component: <TreeMapView data={ageData} title="Distribución por Edad" subtitle="Rangos etarios de pacientes" total={totalPatients} semaforoKind={semBajo} />,
       },
       {
         id: 'treemap-especialidad',
         label: 'Por Especialidad',
-        component: <TreeMapView data={specialtyAgeData} title="Distribución Etaria por Especialidad" subtitle="Pacientes únicos por especialidad" total={totalSpec} />,
+        semaforoKind: semBajo,
+        semaforoValue: specConcentration,
+        component: <TreeMapView data={specialtyAgeData} title="Distribución Etaria por Especialidad" subtitle="Pacientes únicos por especialidad" total={totalSpec} semaforoKind={semBajo} />,
       },
       {
         id: 'treemap-condiciones',
         label: 'Condiciones por Edad',
-        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle={totalCond > 0 ? `Análisis por grupos etarios — ${totalCond} casos registrados` : 'Sin datos disponibles para el período actual'} total={totalCond} />,
+        semaforoKind: semBajo,
+        semaforoValue: condConcentration,
+        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle={totalCond > 0 ? `Análisis por grupos etarios — ${totalCond} casos registrados` : 'Sin datos disponibles para el período actual'} total={totalCond} semaforoKind={semBajo} />,
       },
     ]} />
   );

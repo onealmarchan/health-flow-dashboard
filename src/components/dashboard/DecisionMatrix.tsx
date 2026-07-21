@@ -6,6 +6,8 @@ import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useCitas } from '@/services/useCitas';
 import { useSesionesMedicas } from '@/services/useJornadas';
 import { useInterconsultaEspecialidades, useDesviacionCargaEspecialidad } from '@/services/useIndicadores';
+import type { KpiKind } from '@/lib/kpi-semaforos';
+import { semaforoFill } from '@/lib/kpi-semaforos';
 
 const chartStyle = {
   grid: { strokeDasharray: "3 3", stroke: 'hsl(var(--border))', vertical: false as const },
@@ -183,7 +185,7 @@ function PriorityMatrix() {
             <Tooltip contentStyle={chartStyle.tooltip} formatter={(value: any) => [`${Number(value) || 0}%`, 'Desviación']} />
             <Bar dataKey="desviacion" name="Desviación %" radius={[0, 4, 4, 0]} barSize={20}>
               {chartData.map((entry: any, idx: number) => (
-                <Cell key={idx} fill={entry.desviacion > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--success))'} />
+                <Cell key={idx} fill={semaforoFill('deviacionCentral', entry.desviacion)} />
               ))}
             </Bar>
           </BarChart>
@@ -286,7 +288,13 @@ function InterconsultaMatrix() {
             <XAxis type="number" tick={chartStyle.xAxis} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="especialidad" tick={{ ...chartStyle.xAxis, fontSize: 9 }} axisLine={false} tickLine={false} width={100} />
             <Tooltip contentStyle={chartStyle.tooltip} formatter={(value: any) => [Number(value) || 0, 'Remisiones']} />
-            <Bar dataKey="totalActual" name="Actual" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} barSize={20} />
+            <Bar dataKey="totalActual" name="Actual" radius={[0, 4, 4, 0]} barSize={20}>
+              {chartData.map((entry: any, idx: number) => {
+                const combined = entry.totalActual + entry.totalAnterior;
+                const ratio = combined > 0 ? (entry.totalActual / combined) * 100 : 0;
+                return <Cell key={idx} fill={semaforoFill('retencion', ratio)} />;
+              })}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -296,11 +304,79 @@ function InterconsultaMatrix() {
 
 
 export function DecisionMatrix({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
+  const { data: desviacionData } = useDesviacionCargaEspecialidad();
+  const { data: interData } = useInterconsultaEspecialidades();
+  const { data: apiCitas = [] } = useCitas();
+  const { data: apiMedicos = [] } = useMedicos();
+  const { data: apiSesiones = [] } = useSesionesMedicas();
+  const { data: apiEspecialidades = [] } = useEspecialidades();
+
+  const semDev: KpiKind = 'deviacionCentral';
+  const semRet: KpiKind = 'retencion';
+
+  const matrizValue = useMemo(() => {
+    if (desviacionData) {
+      const items = desviacionData?.especialidades || desviacionData?.items || (Array.isArray(desviacionData) ? desviacionData : []);
+      if (Array.isArray(items) && items.length > 0) {
+        const devs = items.map((d: any) => Math.abs(d.porcentajeDesviacionCarga != null ? Number(d.porcentajeDesviacionCarga) || 0 : (d.brote ? 999 : Number(d.desviacion || d.porcentaje) || 0)));
+        if (devs.length > 0) return Math.max(...devs);
+      }
+    }
+    const espMap = new Map<string, string>();
+    apiEspecialidades.forEach((e: any) => {
+      const id = String(e.pk_num_especialidad ?? e.id ?? '');
+      if (id) espMap.set(id, e.nombre || e.name || 'General');
+    });
+    const sesMap = new Map<string, string>();
+    apiSesiones.forEach((s: any) => sesMap.set(String(s.pk_num_sesion_medica ?? s.id), String(s.fk_cm_b001_num_medico_ministerio_salud ?? '')));
+    const medMap = new Map<string, any>();
+    apiMedicos.forEach((m: any) => medMap.set(String(m.pk_num_medico_ministerio_salud ?? m.id), m));
+    const specCounts: Record<string, number> = {};
+    apiCitas.forEach((c: any) => {
+      const sId = String(c.fk_cm_b005_num_sesion ?? '');
+      const mId = sesMap.get(sId);
+      const m = medMap.get(mId || '');
+      let spec = m?.especialidad?.nombre;
+      if (!spec && m?.fk_cm_a001_num_especialidad) spec = espMap.get(String(m.fk_cm_a001_num_especialidad)) || 'General';
+      spec = spec || 'General';
+      specCounts[spec] = (specCounts[spec] || 0) + 1;
+    });
+    const total = Object.values(specCounts).reduce((a, b) => a + b, 0) || 1;
+    const nSpecs = Object.keys(specCounts).length || 1;
+    const expectedPct = 100 / nSpecs;
+    const devs = Object.values(specCounts).map(c => Math.abs((c / total * 100) - expectedPct));
+    return devs.length > 0 ? Math.max(...devs) : 0;
+  }, [desviacionData, apiCitas, apiMedicos, apiSesiones, apiEspecialidades]);
+
+  const interValue = useMemo(() => {
+    if (interData) {
+      const items = interData?.especialidades || interData?.items || interData?.interconsultas || (Array.isArray(interData) ? interData : []);
+      if (Array.isArray(items) && items.length > 0) {
+        const totalActual = items.reduce((s: number, d: any) => s + (Number(d.totalActual || d.cantidad || d.total) || 0), 0);
+        const totalAnterior = items.reduce((s: number, d: any) => s + (Number(d.totalAnterior || d.cantidadAnterior) || 0), 0);
+        const combined = totalActual + totalAnterior;
+        return combined > 0 ? Math.round((totalActual / combined) * 1000) / 10 : 0;
+      }
+    }
+    return 0;
+  }, [interData]);
+
+  const ratioValue = useMemo(() => {
+    if (desviacionData) {
+      const items = desviacionData?.especialidades || desviacionData?.items || (Array.isArray(desviacionData) ? desviacionData : []);
+      if (Array.isArray(items) && items.length > 0) {
+        const devs = items.map((d: any) => Math.abs(Number(d.desviacion || d.porcentaje || d.porcentajeDesviacionCarga) || 0));
+        if (devs.length > 0) return Math.max(...devs);
+      }
+    }
+    return 0;
+  }, [desviacionData]);
+
   return (
     <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
-      { id: 'matriz-prioridades', label: 'Matriz de prioridades', component: <PriorityMatrix /> },
-      { id: 'interconsulta',      label: 'Interconsulta entre especialidades', component: <InterconsultaMatrix /> },
-      { id: 'ratio-vs-meta',      label: 'Diverging Bar — Ratio vs Meta', component: <DivergingBarView /> },
+      { id: 'matriz-prioridades', label: 'Matriz de prioridades',                    semaforoKind: semDev, semaforoValue: matrizValue, component: <PriorityMatrix /> },
+      { id: 'interconsulta',      label: 'Interconsulta entre especialidades',       semaforoKind: semRet, semaforoValue: interValue, component: <InterconsultaMatrix /> },
+      { id: 'ratio-vs-meta',      label: 'Diverging Bar — Ratio vs Meta',            semaforoKind: semDev, semaforoValue: ratioValue, component: <DivergingBarView /> },
     ]} />
   );
 }

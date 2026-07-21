@@ -9,8 +9,8 @@ export type KpiKind =
   | 'citasHoy'          // V ≥80 · Á 50–79 · R <50
   | 'totalConsultas'    // V >10 · Á 5–9.9 · R <5  (growth %)
   | 'totalPacientes'    // V >10 · Á 5–9.9 · R <5  (growth %)
-  | 'cargaEspecialista' // V ≤20% desv · Á 21–40 · R >40  (absolute deviation)
-  | 'urgencias'         // V 0–20 · Á 21–35 · R >35
+  | 'cargaEspecialista' // V ≤80% · Á 81–100% · R >100%  (BSC: Razón/Promedio)
+  | 'urgencias'         // V ≤20 · Á 21–30 · R >30  (BSC: Eficacia)
   | 'ocupacionAgenda'   // V >80 · Á 50–79 · R <50
   | 'bloqueosAgenda'    // V 0–5 · Á 6–15 · R >15
   | 'porcentajeBajo'    // V 0–5 · Á 6–15 · R >15    (generic descendente)
@@ -35,12 +35,14 @@ export function getSemaforo(kind: KpiKind, value: number): SemaforoColor {
       if (v >= 5) return 'ambar';
       return 'rojo';
     case 'cargaEspecialista':
-      if (abs <= 20) return 'verde';
-      if (abs <= 40) return 'ambar';
+      // BSC Razón/Promedio: C >100%, T >80%–≤100%, A ≤80%
+      if (v <= 80) return 'verde';
+      if (v <= 100) return 'ambar';
       return 'rojo';
     case 'urgencias':
+      // BSC Eficacia: C >30%, T >20%–≤30%, A ≤20%
       if (v <= 20) return 'verde';
-      if (v <= 35) return 'ambar';
+      if (v <= 30) return 'ambar';
       return 'rojo';
     case 'bloqueosAgenda':
     case 'porcentajeBajo':
@@ -59,3 +61,15 @@ export const semaforoClasses: Record<SemaforoColor, { text: string; bg: string; 
   ambar: { text: 'text-warning', bg: 'bg-warning/10', border: 'border-warning/30', ring: 'ring-warning/40' },
   rojo:  { text: 'text-destructive', bg: 'bg-destructive/10', border: 'border-destructive/30', ring: 'ring-destructive/40' },
 };
+
+/** HSL fill strings for SVG / Recharts — references CSS custom props so dark mode adapts automatically. */
+export const semaforoChartFills: Record<SemaforoColor, string> = {
+  verde: 'hsl(var(--success))',
+  ambar: 'hsl(var(--warning))',
+  rojo:  'hsl(var(--destructive))',
+};
+
+/** Convenience: returns the SVG fill color for a given kind + value. */
+export function semaforoFill(kind: KpiKind, value: number): string {
+  return semaforoChartFills[getSemaforo(kind, value)];
+}

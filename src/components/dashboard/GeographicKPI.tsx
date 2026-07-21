@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { KPIWrapper } from './KPIWrapper';
 import { usePacientes } from '@/services/usePacientes';
 import { useComunidades } from '@/services/useComunidades';
 import { useDensidadEpidemiologica, useIndiceConcentracionComunitaria, useTasaCrecimientoEpidemiologico, useVulnerabilidadComunitaria } from '@/services/useIndicadores';
+import type { KpiKind } from '@/lib/kpi-semaforos';
+import { semaforoFill } from '@/lib/kpi-semaforos';
 
 function usePatientsWithComunidad() {
   const { data: pacientes = [] } = usePacientes();
@@ -92,7 +94,11 @@ function DensityView() {
             <XAxis dataKey="comunidad" tick={ts.xTick} axisLine={{ stroke: 'hsl(var(--border))' }} tickLine={false} />
             <YAxis tick={ts.xTick} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={ts.tooltip} formatter={(value: any) => [safeValue(value), undefined]} />
-            <Bar dataKey="densidad" fill="hsl(var(--chart-1))" name="Densidad %" radius={[4, 4, 0, 0]} maxBarSize={50} />
+            <Bar dataKey="densidad" name="Densidad %" radius={[4, 4, 0, 0]} maxBarSize={50}>
+              {densityData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.densidad) || 0)} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -151,8 +157,16 @@ function ConcentrationView() {
             <YAxis tick={ts.xTick} axisLine={false} tickLine={false} />
             <Tooltip contentStyle={ts.tooltip} formatter={(value: any) => [safeValue(value), undefined]} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="actual" fill="hsl(var(--chart-1))" name="Actual" maxBarSize={40} />
-            <Bar dataKey="anterior" fill="hsl(var(--chart-3))" name="Anterior" maxBarSize={40} />
+            <Bar dataKey="actual" name="Actual" maxBarSize={40}>
+              {concentrationData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.actual) || 0)} />
+              ))}
+            </Bar>
+            <Bar dataKey="anterior" name="Anterior" maxBarSize={40}>
+              {concentrationData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.anterior) || 0)} opacity={0.5} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -217,8 +231,16 @@ function GrowthView() {
             <YAxis type="category" dataKey="comunidad" tick={ts.xTick} axisLine={false} tickLine={false} width={80} />
             <Tooltip contentStyle={ts.tooltip} formatter={(value: any) => [`${safeValue(value)}%`, 'Crecimiento']} />
             <Legend wrapperStyle={{ paddingTop: '10px' }} />
-            <Bar dataKey="actual" fill="hsl(var(--chart-1))" name="Actual" maxBarSize={30} />
-            <Bar dataKey="anterior" fill="hsl(var(--chart-3))" name="Anterior" maxBarSize={30} />
+            <Bar dataKey="actual" name="Actual" maxBarSize={30}>
+              {chartData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.tasa) || 0)} />
+              ))}
+            </Bar>
+            <Bar dataKey="anterior" name="Anterior" maxBarSize={30}>
+              {chartData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.tasa) || 0)} opacity={0.5} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -284,7 +306,11 @@ function VulnerabilityView() {
             <XAxis type="number" tick={ts.xTick} axisLine={false} tickLine={false} unit="%" />
             <YAxis type="category" dataKey="comunidad" tick={ts.xTick} axisLine={false} tickLine={false} width={80} />
             <Tooltip contentStyle={ts.tooltip} formatter={(value: any) => [safeValue(value), undefined]} />
-            <Bar dataKey="tasa" fill="hsl(var(--chart-5))" name="Tasa %" radius={[0, 4, 4, 0]} barSize={20} />
+            <Bar dataKey="tasa" name="Tasa %" radius={[0, 4, 4, 0]} barSize={20}>
+              {vulnerabilityData.map((entry: any, idx: number) => (
+                <Cell key={idx} fill={semaforoFill('porcentajeBajo', Number(entry.tasa) || 0)} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -292,13 +318,58 @@ function VulnerabilityView() {
   );
 }
 
+function extractMax(arr: any[], key: string): number {
+  if (!Array.isArray(arr) || arr.length === 0) return 0;
+  const vals = arr.map(d => Math.abs(Number(d[key]) || 0)).filter(v => v > 0);
+  return vals.length > 0 ? Math.max(...vals) : 0;
+}
+
 export function GeographicKPI({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
+  const { data: densidadBackend } = useDensidadEpidemiologica();
+  const { data: concentracionBackend } = useIndiceConcentracionComunitaria();
+  const { data: crecimientoBackend } = useTasaCrecimientoEpidemiologico();
+  const { data: vulnerabilidadBackend } = useVulnerabilidadComunitaria();
+
+  const semBajo: KpiKind = 'porcentajeBajo';
+
+  const densidadValue = useMemo(() => {
+    if (densidadBackend) {
+      const items = densidadBackend?.comunidades || densidadBackend?.items || (Array.isArray(densidadBackend) ? densidadBackend : []);
+      return extractMax(items, 'indicador') || extractMax(items, 'porcentaje') || extractMax(items, 'casosDetectados');
+    }
+    return 0;
+  }, [densidadBackend]);
+
+  const concentracionValue = useMemo(() => {
+    if (concentracionBackend) {
+      const items = concentracionBackend?.comunidades || concentracionBackend?.items || (Array.isArray(concentracionBackend) ? concentracionBackend : []);
+      return extractMax(items, 'casosPeriodoActual') || extractMax(items, 'periodoActual') || extractMax(items, 'actual');
+    }
+    return 0;
+  }, [concentracionBackend]);
+
+  const crecimientoValue = useMemo(() => {
+    if (crecimientoBackend) {
+      const items = crecimientoBackend?.comunidades || crecimientoBackend?.items || (Array.isArray(crecimientoBackend) ? crecimientoBackend : []);
+      return extractMax(items, 'indicador') || extractMax(items, 'tasaCrecimiento') || extractMax(items, 'porcentaje');
+    }
+    return 0;
+  }, [crecimientoBackend]);
+
+  const vulnerabilidadValue = useMemo(() => {
+    if (vulnerabilidadBackend) {
+      const items = vulnerabilidadBackend?.comunidades || vulnerabilidadBackend?.items || (Array.isArray(vulnerabilidadBackend) ? vulnerabilidadBackend : []);
+      return extractMax(items, 'indicador') || extractMax(items, 'porcentaje') || extractMax(items, 'tasa');
+    }
+    return 0;
+  }, [vulnerabilidadBackend]);
+
   return (
     <KPIWrapper selectedKpiIds={selectedKpiIds} views={[
-      { id: 'densidad-comunidad', label: 'Densidad', component: <DensityView /> },
-      { id: 'concentracion-geo', label: 'Concentración', component: <ConcentrationView /> },
-      { id: 'crecimiento-zona', label: 'Crecimiento', component: <GrowthView /> },
-      { id: 'vulnerabilidad-com', label: 'Vulnerabilidad', component: <VulnerabilityView /> },
+      { id: 'densidad-comunidad', label: 'Densidad', semaforoKind: semBajo, semaforoValue: densidadValue, component: <DensityView /> },
+      { id: 'concentracion-geo', label: 'Concentración', semaforoKind: semBajo, semaforoValue: concentracionValue, component: <ConcentrationView /> },
+      { id: 'crecimiento-zona', label: 'Crecimiento', semaforoKind: semBajo, semaforoValue: crecimientoValue, component: <GrowthView /> },
+      { id: 'vulnerabilidad-com', label: 'Vulnerabilidad', semaforoKind: semBajo, semaforoValue: vulnerabilidadValue, component: <VulnerabilityView /> },
     ]} />
   );
 }

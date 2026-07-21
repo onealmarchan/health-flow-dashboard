@@ -47,7 +47,7 @@ export function DivergingBar({ specialists }: Props) {
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       const cr = entries[0].contentRect;
-      setSize({ w: Math.max(400, cr.width), h: Math.max(360, cr.height) });
+      setSize({ w: Math.max(400, cr.width), h: Math.max(440, cr.height) });
     });
     ro.observe(wrapRef.current);
     return () => ro.disconnect();
@@ -79,31 +79,59 @@ export function DivergingBar({ specialists }: Props) {
     if (rows.length === 0) return;
 
     const { w, h } = size;
-    const margin = { top: 36, right: 70, bottom: 40, left: 120 };
+    const margin = { top: 42, right: 80, bottom: 44, left: 160 };
     const innerW = w - margin.left - margin.right;
     const innerH = h - margin.top - margin.bottom;
 
     const maxAbs = Math.max(80, max(rows, r => Math.abs(r.desviacion)) ?? 80);
-    const x = scaleLinear().domain([-maxAbs * 1.1, maxAbs * 1.1]).range([0, innerW]);
-    const y = scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.25);
+    const x = scaleLinear().domain([-maxAbs * 1.15, maxAbs * 1.15]).range([0, innerW]);
+    const y = scaleBand<string>().domain(rows.map(r => r.especialidad)).range([0, innerH]).padding(0.3);
 
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // zone labels
-    g.append('text').attr('x', 0).attr('y', -18).attr('font-size', 9).attr('font-weight', 600).attr('fill', '#0f9e7b').text('← Capacidad disponible');
-    g.append('text').attr('x', innerW).attr('y', -18).attr('text-anchor', 'end').attr('font-size', 9).attr('font-weight', 600).attr('fill', '#e05252').text('Sobrecarga →');
-
-    // meta label
-    g.append('text').attr('x', x(0)).attr('y', -4).attr('text-anchor', 'middle').attr('font-size', 9.5).attr('fill', '#888').text('Meta 250 pac./médico');
-
     // x axis
     g.append('g').attr('transform', `translate(0,${innerH})`)
-      .call(axisBottom(x).ticks(7).tickSize(0).tickFormat(d => (d as number > 0 ? `+${d}` : `${d}`)))
-      .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--muted-foreground))').attr('font-size', 10); });
+      .call(axisBottom(x).ticks(8).tickSize(0).tickFormat(d => (d as number > 0 ? `+${d}` : `${d}`)))
+      .call(s => {
+        s.select('.domain').remove();
+        s.selectAll('text').attr('fill', 'hsl(var(--muted-foreground))').attr('font-size', 9);
+      });
 
-    // y axis (specialty labels)
+    // y axis (specialty labels) with smart truncation
+    const maxLabelLen = Math.floor((margin.left - 20) / 6);
     g.append('g').call(axisLeft(y).tickSize(0))
-      .call(s => { s.select('.domain').remove(); s.selectAll('text').attr('fill', 'hsl(var(--foreground))').attr('font-size', 10); });
+      .call(s => {
+        s.select('.domain').remove();
+        s.selectAll('text')
+          .attr('fill', 'hsl(var(--foreground))')
+          .attr('font-size', 11)
+          .attr('font-weight', 500)
+          .each(function() {
+            const text = select(this);
+            const fullName = text.text();
+            const truncated = fullName.length > maxLabelLen ? fullName.slice(0, maxLabelLen) + '…' : fullName;
+            text.text(truncated);
+            if (fullName !== truncated) text.append('title').text(fullName);
+          });
+      });
+
+    // horizontal guide lines per bar
+    rows.forEach(d => {
+      const barY = y(d.especialidad) ?? 0;
+      g.append('line')
+        .attr('x1', 0).attr('x2', innerW)
+        .attr('y1', barY + y.bandwidth() / 2)
+        .attr('y2', barY + y.bandwidth() / 2)
+        .attr('stroke', 'hsl(var(--border))')
+        .attr('stroke-width', 0.5)
+        .attr('stroke-dasharray', '2,4');
+    });
+
+    // center meta line (BEHIND bars)
+    g.append('line')
+      .attr('x1', x(0)).attr('x2', x(0))
+      .attr('y1', 0).attr('y2', innerH)
+      .attr('stroke', '#aaa').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,3');
 
     // bars
     g.selectAll('rect.bar').data(rows).enter().append('rect')
@@ -111,7 +139,7 @@ export function DivergingBar({ specialists }: Props) {
       .attr('y', d => y(d.especialidad) ?? 0)
       .attr('height', y.bandwidth())
       .attr('x', d => d.desviacion >= 0 ? x(0) : x(d.desviacion))
-      .attr('width', d => Math.abs(x(d.desviacion) - x(0)))
+      .attr('width', d => Math.max(2, Math.abs(x(d.desviacion) - x(0))))
       .attr('fill', d => divergingColor(d.desviacion))
       .attr('rx', 3)
       .style('cursor', 'pointer')
@@ -121,33 +149,147 @@ export function DivergingBar({ specialists }: Props) {
       })
       .on('mouseleave', () => setTip(null));
 
-    // value labels
-    g.selectAll('text.val').data(rows).enter().append('text')
-      .attr('class', 'val')
-      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 - 1)
-      .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
-      .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 10).attr('font-weight', 700)
-      .attr('fill', d => divergingColor(d.desviacion))
+    // --- TEXT LABELS GROUP (always on top of everything) ---
+    const labels = g.append('g').attr('class', 'labels');
+
+    // zone labels
+    labels.append('text')
+      .attr('x', x(0) / 2)
+      .attr('y', -22)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', 9)
+      .attr('font-weight', 600)
+      .attr('fill', '#0f9e7b')
+      .text('← Capacidad disponible');
+
+    labels.append('text')
+      .attr('x', x(0) + (innerW - x(0)) / 2)
+      .attr('y', -22)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', 9)
+      .attr('font-weight', 600)
+      .attr('fill', '#e05252')
+      .text('Sobrecarga →');
+
+    // meta label
+    labels.append('text')
+      .attr('x', x(0))
+      .attr('y', -10)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', 9)
+      .attr('fill', '#999')
+      .text('Meta 250');
+
+    // value labels — INSIDE bar when wide, OUTSIDE otherwise, with halo
+    const LABEL_PAD = 8;
+    const labelData = labels.selectAll('text.val').data(rows).enter();
+
+    // halo (white/colored stroke behind text for readability)
+    labelData.append('text')
+      .attr('class', 'val-halo')
+      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 1)
+      .attr('x', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? x(d.desviacion) + LABEL_PAD : x(d.desviacion) - LABEL_PAD;
+        return outside ? x(d.desviacion) - LABEL_PAD : x(d.desviacion) + LABEL_PAD;
+      })
+      .attr('text-anchor', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? 'start' : 'end';
+        return outside ? 'end' : 'start';
+      })
+      .attr('font-size', 10)
+      .attr('font-weight', 700)
+      .attr('fill', 'none')
+      .attr('stroke', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        return barW >= 60 ? divergingColor(d.desviacion) : 'hsl(var(--background))';
+      })
+      .attr('stroke-width', 3)
+      .attr('stroke-linejoin', 'round')
       .text(d => `${d.desviacion >= 0 ? '+' : ''}${d.desviacion.toFixed(1)}`);
 
-    g.selectAll('text.avg').data(rows).enter().append('text')
-      .attr('class', 'avg')
-      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 11)
-      .attr('x', d => d.desviacion >= 0 ? x(d.desviacion) + 6 : x(d.desviacion) - 6)
-      .attr('text-anchor', d => d.desviacion >= 0 ? 'start' : 'end')
-      .attr('font-size', 8.5)
-      .attr('fill', 'hsl(var(--muted-foreground))')
-      .text(d => `(${d.promedio_pacientes} pac.)`);
+    // foreground value text
+    labelData.append('text')
+      .attr('class', 'val')
+      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 1)
+      .attr('x', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? x(d.desviacion) + LABEL_PAD : x(d.desviacion) - LABEL_PAD;
+        return outside ? x(d.desviacion) - LABEL_PAD : x(d.desviacion) + LABEL_PAD;
+      })
+      .attr('text-anchor', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? 'start' : 'end';
+        return outside ? 'end' : 'start';
+      })
+      .attr('font-size', 10)
+      .attr('font-weight', 700)
+      .attr('fill', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        if (barW >= 60) return '#fff';
+        return divergingColor(d.desviacion);
+      })
+      .text(d => `${d.desviacion >= 0 ? '+' : ''}${d.desviacion.toFixed(1)}`);
 
-    // center line
-    g.append('line').attr('x1', x(0)).attr('x2', x(0)).attr('y1', 0).attr('y2', innerH)
-      .attr('stroke', '#bbb').attr('stroke-width', 1.5);
+    // secondary label halo
+    labelData.append('text')
+      .attr('class', 'avg-halo')
+      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 13)
+      .attr('x', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? x(d.desviacion) + LABEL_PAD : x(d.desviacion) - LABEL_PAD;
+        return outside ? x(d.desviacion) - LABEL_PAD : x(d.desviacion) + LABEL_PAD;
+      })
+      .attr('text-anchor', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? 'start' : 'end';
+        return outside ? 'end' : 'start';
+      })
+      .attr('font-size', 8)
+      .attr('fill', 'none')
+      .attr('stroke', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        return barW >= 60 ? divergingColor(d.desviacion) : 'hsl(var(--background))';
+      })
+      .attr('stroke-width', 2.5)
+      .attr('stroke-linejoin', 'round')
+      .text(d => `${d.promedio_pacientes} pac. · ${d.cantidad_medicos} méd.`);
+
+    // secondary label foreground
+    labelData.append('text')
+      .attr('class', 'avg')
+      .attr('y', d => (y(d.especialidad) ?? 0) + y.bandwidth() / 2 + 13)
+      .attr('x', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? x(d.desviacion) + LABEL_PAD : x(d.desviacion) - LABEL_PAD;
+        return outside ? x(d.desviacion) - LABEL_PAD : x(d.desviacion) + LABEL_PAD;
+      })
+      .attr('text-anchor', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        const outside = barW < 60;
+        if (d.desviacion >= 0) return outside ? 'start' : 'end';
+        return outside ? 'end' : 'start';
+      })
+      .attr('font-size', 8)
+      .attr('fill', d => {
+        const barW = Math.abs(x(d.desviacion) - x(0));
+        if (barW >= 60) return 'rgba(255,255,255,0.85)';
+        return 'hsl(var(--muted-foreground))';
+      })
+      .text(d => `${d.promedio_pacientes} pac. · ${d.cantidad_medicos} méd.`);
   }, [rows, size]);
 
   return (
     <div className="flex flex-col h-full">
-      <div ref={wrapRef} className="relative flex-1 min-h-[320px]">
+      <div ref={wrapRef} className="relative flex-1 min-h-[440px]">
         <svg ref={svgRef} width={size.w} height={size.h} />
         {tip && (
           <div

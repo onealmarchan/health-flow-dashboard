@@ -319,8 +319,8 @@ export function DiagnosticosPage() {
             const sintomaId = sintomaRes?.pk_num_sintoma || sintomaRes?.id;
             if (sintomaId) {
               await createDiagnosticoSintoma.mutateAsync({
-                fk_cm_b003_num_diagnostico: diagnosticoId,
-                fk_cm_a003_num_sintoma: sintomaId,
+                fk_cm_b003_num_diagnostico: Number(diagnosticoId),
+                fk_cm_a003_num_sintoma: Number(sintomaId),
               });
             }
           } catch (sintomaErr: any) {
@@ -344,7 +344,7 @@ export function DiagnosticosPage() {
   // ----- SAVE FINAL (specialist) -----
   const handleSaveFinal = async () => {
     if (!completeForm.diagnosticoId) return;
-    if (!completeForm.enfermedadId || completeForm.enfermedadId <= 0) {
+    if (!completeForm.enfermedadId || completeForm.enfermedadId === 0) {
       toast.error('Seleccione una enfermedad');
       return;
     }
@@ -357,13 +357,17 @@ export function DiagnosticosPage() {
       let enfermedadId = completeForm.enfermedadId;
 
       // Create enfermedad if it's a new one
-      if (enfermedadId === -1 && completeForm.enfermedad.nombre.trim()) {
+      if (enfermedadId === -1) {
+        if (!completeForm.enfermedad.nombre.trim()) {
+          toast.error('Ingrese el nombre de la nueva enfermedad');
+          return;
+        }
         const newEnf: any = await createEnfermedad.mutateAsync({
           nombre: completeForm.enfermedad.nombre.trim(),
           enfermedad_cronica: completeForm.enfermedad.cronico,
-          descripcion: completeForm.enfermedad.descripcion || undefined,
+          descripcion: completeForm.enfermedad.descripcion.trim() || 'Sin descripción',
         });
-        enfermedadId = newEnf?.pk_num_enfermedad || newEnf?.id;
+        enfermedadId = Number(newEnf?.pk_num_enfermedad || newEnf?.id || newEnf?.data?.pk_num_enfermedad || newEnf?.data?.id);
         if (!enfermedadId) {
           toast.error('No se pudo crear la enfermedad');
           return;

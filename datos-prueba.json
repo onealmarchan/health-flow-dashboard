@@ -1,0 +1,4782 @@
+{
+  "createdAt": "2026-07-21T18:53:51.872Z",
+  "version": "1",
+  "entities": {
+    "ps_a001_comunidad": [
+      {
+        "pk_num_comunidad": 1,
+        "nombre_comunidad": "San Cristóbal",
+        "estado": "Táchira",
+        "municipio": "San Cristóbal",
+        "parroquia": "San Cristóbal"
+      },
+      {
+        "pk_num_comunidad": 2,
+        "nombre_comunidad": "Mérida",
+        "estado": "Mérida",
+        "municipio": "Libertador",
+        "parroquia": "Mérida"
+      },
+      {
+        "pk_num_comunidad": 3,
+        "nombre_comunidad": "Barquisimeto",
+        "estado": "Lara",
+        "municipio": "Iribarren",
+        "parroquia": "Barquisimeto"
+      },
+      {
+        "pk_num_comunidad": 4,
+        "nombre_comunidad": "Valencia",
+        "estado": "Carabobo",
+        "municipio": "Valencia",
+        "parroquia": "Valencia"
+      },
+      {
+        "pk_num_comunidad": 5,
+        "nombre_comunidad": "Maracaibo",
+        "estado": "Zulia",
+        "municipio": "Maracaibo",
+        "parroquia": "Cacique Mara"
+      },
+      {
+        "pk_num_comunidad": 6,
+        "nombre_comunidad": "Caracas",
+        "estado": "Distrito Capital",
+        "municipio": "Libertador",
+        "parroquia": "El Recreo"
+      },
+      {
+        "pk_num_comunidad": 7,
+        "nombre_comunidad": "Ciudad Guayana",
+        "estado": "Bolívar",
+        "municipio": "Caroní",
+        "parroquia": "Vista Hermosa"
+      },
+      {
+        "pk_num_comunidad": 8,
+        "nombre_comunidad": "Maturín",
+        "estado": "Monagas",
+        "municipio": "Maturín",
+        "parroquia": "Maturín"
+      },
+      {
+        "pk_num_comunidad": 9,
+        "nombre_comunidad": "Barcelona",
+        "estado": "Anzoátegui",
+        "municipio": "Simón Rodríguez",
+        "parroquia": "Barcelona"
+      },
+      {
+        "pk_num_comunidad": 10,
+        "nombre_comunidad": "Maracay",
+        "estado": "Aragua",
+        "municipio": "Girardot",
+        "parroquia": "Maracay"
+      }
+    ],
+    "cm_a001_especialidad": [
+      {
+        "pk_num_especialidad": 1,
+        "nombre": "Medicina General",
+        "descripcion": "Atención médica primaria"
+      },
+      {
+        "pk_num_especialidad": 2,
+        "nombre": "Pediatría",
+        "descripcion": "Atención infantil"
+      },
+      {
+        "pk_num_especialidad": 3,
+        "nombre": "Cardiología",
+        "descripcion": "Enfermedades del corazón"
+      },
+      {
+        "pk_num_especialidad": 4,
+        "nombre": "Ginecología",
+        "descripcion": "Salud femenina"
+      },
+      {
+        "pk_num_especialidad": 5,
+        "nombre": "Neurología",
+        "descripcion": "Sistema nervioso"
+      },
+      {
+        "pk_num_especialidad": 6,
+        "nombre": "Ortopedia",
+        "descripcion": "Sistema musculoesquelético"
+      },
+      {
+        "pk_num_especialidad": 7,
+        "nombre": "Dermatología",
+        "descripcion": "Enfermedades de la piel"
+      },
+      {
+        "pk_num_especialidad": 8,
+        "nombre": "Urología",
+        "descripcion": "Sistema urinario"
+      },
+      {
+        "pk_num_especialidad": 9,
+        "nombre": "Neumología",
+        "descripcion": "Sistema respiratorio"
+      },
+      {
+        "pk_num_especialidad": 10,
+        "nombre": "Gastroenterología",
+        "descripcion": "Sistema digestivo"
+      }
+    ],
+    "cm_b001_medico": [
+      {
+        "pk_num_medico_ministerio_salud": 10001,
+        "fk_cm_a001_num_especialidad": 1,
+        "nombre": "María",
+        "apellido": "González López",
+        "telefono": "0424-1234567",
+        "carga_paciente": 22
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10002,
+        "fk_cm_a001_num_especialidad": 1,
+        "nombre": "Pedro",
+        "apellido": "Martínez Ruiz",
+        "telefono": "0414-2345678",
+        "carga_paciente": 18
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10003,
+        "fk_cm_a001_num_especialidad": 2,
+        "nombre": "Ana",
+        "apellido": "Rodríguez García",
+        "telefono": "0416-3456789",
+        "carga_paciente": 20
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10004,
+        "fk_cm_a001_num_especialidad": 3,
+        "nombre": "Carlos",
+        "apellido": "Hernández Díaz",
+        "telefono": "0412-4567890",
+        "carga_paciente": 12
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10005,
+        "fk_cm_a001_num_especialidad": 4,
+        "nombre": "Laura",
+        "apellido": "López Martín",
+        "telefono": "0426-5678901",
+        "carga_paciente": 25
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10006,
+        "fk_cm_a001_num_especialidad": 5,
+        "nombre": "Javier",
+        "apellido": "Sánchez Pérez",
+        "telefono": "0414-6789012",
+        "carga_paciente": 8
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10007,
+        "fk_cm_a001_num_especialidad": 6,
+        "nombre": "Isabel",
+        "apellido": "Ramírez Torres",
+        "telefono": "0412-7890123",
+        "carga_paciente": 15
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10008,
+        "fk_cm_a001_num_especialidad": 7,
+        "nombre": "Miguel",
+        "apellido": "Flores Castillo",
+        "telefono": "0424-8901234",
+        "carga_paciente": 10
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10009,
+        "fk_cm_a001_num_especialidad": 8,
+        "nombre": "Carmen",
+        "apellido": "Morales Vega",
+        "telefono": "0416-9012345",
+        "carga_paciente": 6
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10010,
+        "fk_cm_a001_num_especialidad": 9,
+        "nombre": "Roberto",
+        "apellido": "Jiménez Rivas",
+        "telefono": "0426-0123456",
+        "carga_paciente": 14
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10011,
+        "fk_cm_a001_num_especialidad": 10,
+        "nombre": "Patricia",
+        "apellido": "Herrera Cruz",
+        "telefono": "0414-1112233",
+        "carga_paciente": 9
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10012,
+        "fk_cm_a001_num_especialidad": 1,
+        "nombre": "Fernando",
+        "apellido": "Castro Mendoza",
+        "telefono": "0412-2223344",
+        "carga_paciente": 3
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10013,
+        "fk_cm_a001_num_especialidad": 2,
+        "nombre": "Rocío",
+        "apellido": "Vargas Salas",
+        "telefono": "0424-3334455",
+        "carga_paciente": 21
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10014,
+        "fk_cm_a001_num_especialidad": 3,
+        "nombre": "Diego",
+        "apellido": "Medina Romero",
+        "telefono": "0416-4445566",
+        "carga_paciente": 7
+      },
+      {
+        "pk_num_medico_ministerio_salud": 10015,
+        "fk_cm_a001_num_especialidad": 4,
+        "nombre": "Valeria",
+        "apellido": "Torres Guzmán",
+        "telefono": "0412-5556677",
+        "carga_paciente": 16
+      }
+    ],
+    "ps_b001_paciente": [
+      {
+        "pk_num_paciente": 1,
+        "fk_ps_a001_num_comunidad": 2,
+        "ci": "15123456",
+        "nombres": "María",
+        "apellidos": "López Hernández",
+        "fecha_nacimiento": "1989-02-14",
+        "sexo": "masculino",
+        "direccion": "Calle 1 #6-3",
+        "telefono": "0424-1011111",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 2,
+        "fk_ps_a001_num_comunidad": 3,
+        "ci": "15246912",
+        "nombres": "Carlos",
+        "apellidos": "Martínez González",
+        "fecha_nacimiento": "2014-04-09",
+        "sexo": "masculino",
+        "direccion": "Calle 2 #7-4",
+        "telefono": "0424-1022222",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 3,
+        "fk_ps_a001_num_comunidad": 4,
+        "ci": "15370368",
+        "nombres": "Ana",
+        "apellidos": "Rodríguez Pérez",
+        "fecha_nacimiento": "1952-01-14",
+        "sexo": "femenino",
+        "direccion": "Calle 3 #8-5",
+        "telefono": "0424-1033333",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 4,
+        "fk_ps_a001_num_comunidad": 5,
+        "ci": "15493824",
+        "nombres": "Pedro",
+        "apellidos": "Hernández Sánchez",
+        "fecha_nacimiento": "2002-04-10",
+        "sexo": "masculino",
+        "direccion": "Calle 4 #9-6",
+        "telefono": "0424-1044444",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 5,
+        "fk_ps_a001_num_comunidad": 6,
+        "ci": "15617280",
+        "nombres": "Laura",
+        "apellidos": "González Ramírez",
+        "fecha_nacimiento": "1963-09-03",
+        "sexo": "masculino",
+        "direccion": "Calle 5 #10-7",
+        "telefono": "0424-1055555",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 6,
+        "fk_ps_a001_num_comunidad": 7,
+        "ci": "15740736",
+        "nombres": "Miguel",
+        "apellidos": "Pérez Torres",
+        "fecha_nacimiento": "1982-01-15",
+        "sexo": "femenino",
+        "direccion": "Calle 6 #11-8",
+        "telefono": "0424-1066666",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 7,
+        "fk_ps_a001_num_comunidad": 8,
+        "ci": "15864192",
+        "nombres": "Isabel",
+        "apellidos": "Sánchez García",
+        "fecha_nacimiento": "2011-07-21",
+        "sexo": "masculino",
+        "direccion": "Calle 7 #12-9",
+        "telefono": "0424-1077777",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 8,
+        "fk_ps_a001_num_comunidad": 9,
+        "ci": "15987648",
+        "nombres": "Roberto",
+        "apellidos": "Ramírez López",
+        "fecha_nacimiento": "1995-08-13",
+        "sexo": "masculino",
+        "direccion": "Calle 8 #13-10",
+        "telefono": "0424-1088888",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 9,
+        "fk_ps_a001_num_comunidad": 10,
+        "ci": "16111104",
+        "nombres": "Carmen",
+        "apellidos": "Torres Martínez",
+        "fecha_nacimiento": "1985-10-20",
+        "sexo": "femenino",
+        "direccion": "Calle 9 #14-11",
+        "telefono": "0424-1099999",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 10,
+        "fk_ps_a001_num_comunidad": 1,
+        "ci": "16234560",
+        "nombres": "Javier",
+        "apellidos": "García Rodríguez",
+        "fecha_nacimiento": "2006-04-09",
+        "sexo": "masculino",
+        "direccion": "Calle 10 #15-12",
+        "telefono": "0424-1111110",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 11,
+        "fk_ps_a001_num_comunidad": 2,
+        "ci": "16358016",
+        "nombres": "Patricia",
+        "apellidos": "López Hernández",
+        "fecha_nacimiento": "2003-10-18",
+        "sexo": "masculino",
+        "direccion": "Calle 11 #16-13",
+        "telefono": "0424-1122221",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 12,
+        "fk_ps_a001_num_comunidad": 3,
+        "ci": "16481472",
+        "nombres": "Fernando",
+        "apellidos": "Martínez González",
+        "fecha_nacimiento": "1977-10-17",
+        "sexo": "femenino",
+        "direccion": "Calle 12 #17-14",
+        "telefono": "0424-1133332",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 13,
+        "fk_ps_a001_num_comunidad": 4,
+        "ci": "16604928",
+        "nombres": "Rocío",
+        "apellidos": "Rodríguez Pérez",
+        "fecha_nacimiento": "1984-04-20",
+        "sexo": "masculino",
+        "direccion": "Calle 13 #18-15",
+        "telefono": "0424-1144443",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 14,
+        "fk_ps_a001_num_comunidad": 5,
+        "ci": "16728384",
+        "nombres": "Diego",
+        "apellidos": "Hernández Sánchez",
+        "fecha_nacimiento": "2012-05-25",
+        "sexo": "masculino",
+        "direccion": "Calle 14 #19-16",
+        "telefono": "0424-1155554",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 15,
+        "fk_ps_a001_num_comunidad": 6,
+        "ci": "16851840",
+        "nombres": "Valeria",
+        "apellidos": "González Ramírez",
+        "fecha_nacimiento": "1946-05-09",
+        "sexo": "femenino",
+        "direccion": "Calle 15 #20-17",
+        "telefono": "0424-1166665",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 16,
+        "fk_ps_a001_num_comunidad": 7,
+        "ci": "16975296",
+        "nombres": "José",
+        "apellidos": "Pérez Torres",
+        "fecha_nacimiento": "2003-10-20",
+        "sexo": "masculino",
+        "direccion": "Calle 16 #21-18",
+        "telefono": "0424-1177776",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 17,
+        "fk_ps_a001_num_comunidad": 8,
+        "ci": "17098752",
+        "nombres": "Luis",
+        "apellidos": "Sánchez García",
+        "fecha_nacimiento": "1963-08-01",
+        "sexo": "masculino",
+        "direccion": "Calle 17 #22-19",
+        "telefono": "0424-1188887",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 18,
+        "fk_ps_a001_num_comunidad": 9,
+        "ci": "17222208",
+        "nombres": "Marta",
+        "apellidos": "Ramírez López",
+        "fecha_nacimiento": "1963-07-03",
+        "sexo": "femenino",
+        "direccion": "Calle 18 #23-20",
+        "telefono": "0424-1199998",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 19,
+        "fk_ps_a001_num_comunidad": 10,
+        "ci": "17345664",
+        "nombres": "Félix",
+        "apellidos": "Torres Martínez",
+        "fecha_nacimiento": "1991-04-12",
+        "sexo": "masculino",
+        "direccion": "Calle 19 #24-21",
+        "telefono": "0424-1211109",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 20,
+        "fk_ps_a001_num_comunidad": 1,
+        "ci": "17469120",
+        "nombres": "Juan",
+        "apellidos": "García Rodríguez",
+        "fecha_nacimiento": "1971-11-05",
+        "sexo": "masculino",
+        "direccion": "Calle 20 #25-22",
+        "telefono": "0424-1222220",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 21,
+        "fk_ps_a001_num_comunidad": 2,
+        "ci": "17592576",
+        "nombres": "María",
+        "apellidos": "López Hernández",
+        "fecha_nacimiento": "2011-10-13",
+        "sexo": "femenino",
+        "direccion": "Calle 21 #26-23",
+        "telefono": "0424-1233331",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 22,
+        "fk_ps_a001_num_comunidad": 3,
+        "ci": "17716032",
+        "nombres": "Carlos",
+        "apellidos": "Martínez González",
+        "fecha_nacimiento": "1986-11-10",
+        "sexo": "masculino",
+        "direccion": "Calle 22 #27-24",
+        "telefono": "0424-1244442",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 23,
+        "fk_ps_a001_num_comunidad": 4,
+        "ci": "17839488",
+        "nombres": "Ana",
+        "apellidos": "Rodríguez Pérez",
+        "fecha_nacimiento": "1998-06-24",
+        "sexo": "masculino",
+        "direccion": "Calle 23 #28-25",
+        "telefono": "0424-1255553",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 24,
+        "fk_ps_a001_num_comunidad": 5,
+        "ci": "17962944",
+        "nombres": "Pedro",
+        "apellidos": "Hernández Sánchez",
+        "fecha_nacimiento": "1994-08-18",
+        "sexo": "femenino",
+        "direccion": "Calle 24 #29-26",
+        "telefono": "0424-1266664",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 25,
+        "fk_ps_a001_num_comunidad": 6,
+        "ci": "18086400",
+        "nombres": "Laura",
+        "apellidos": "González Ramírez",
+        "fecha_nacimiento": "2010-12-07",
+        "sexo": "masculino",
+        "direccion": "Calle 25 #30-27",
+        "telefono": "0424-1277775",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 26,
+        "fk_ps_a001_num_comunidad": 7,
+        "ci": "18209856",
+        "nombres": "Miguel",
+        "apellidos": "Pérez Torres",
+        "fecha_nacimiento": "2012-12-14",
+        "sexo": "masculino",
+        "direccion": "Calle 26 #31-28",
+        "telefono": "0424-1288886",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 27,
+        "fk_ps_a001_num_comunidad": 8,
+        "ci": "18333312",
+        "nombres": "Isabel",
+        "apellidos": "Sánchez García",
+        "fecha_nacimiento": "1970-09-06",
+        "sexo": "femenino",
+        "direccion": "Calle 27 #32-29",
+        "telefono": "0424-1299997",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 28,
+        "fk_ps_a001_num_comunidad": 9,
+        "ci": "18456768",
+        "nombres": "Roberto",
+        "apellidos": "Ramírez López",
+        "fecha_nacimiento": "1946-10-23",
+        "sexo": "masculino",
+        "direccion": "Calle 28 #33-30",
+        "telefono": "0424-1311108",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 29,
+        "fk_ps_a001_num_comunidad": 10,
+        "ci": "18580224",
+        "nombres": "Carmen",
+        "apellidos": "Torres Martínez",
+        "fecha_nacimiento": "1971-04-06",
+        "sexo": "masculino",
+        "direccion": "Calle 29 #34-31",
+        "telefono": "0424-1322219",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 30,
+        "fk_ps_a001_num_comunidad": 1,
+        "ci": "18703680",
+        "nombres": "Javier",
+        "apellidos": "García Rodríguez",
+        "fecha_nacimiento": "1997-09-17",
+        "sexo": "femenino",
+        "direccion": "Calle 30 #35-32",
+        "telefono": "0424-1333330",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 31,
+        "fk_ps_a001_num_comunidad": 2,
+        "ci": "18827136",
+        "nombres": "Patricia",
+        "apellidos": "López Hernández",
+        "fecha_nacimiento": "2003-12-26",
+        "sexo": "masculino",
+        "direccion": "Calle 31 #36-33",
+        "telefono": "0424-1344441",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 32,
+        "fk_ps_a001_num_comunidad": 3,
+        "ci": "18950592",
+        "nombres": "Fernando",
+        "apellidos": "Martínez González",
+        "fecha_nacimiento": "1982-05-22",
+        "sexo": "masculino",
+        "direccion": "Calle 32 #37-34",
+        "telefono": "0424-1355552",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 33,
+        "fk_ps_a001_num_comunidad": 4,
+        "ci": "19074048",
+        "nombres": "Rocío",
+        "apellidos": "Rodríguez Pérez",
+        "fecha_nacimiento": "1984-02-13",
+        "sexo": "femenino",
+        "direccion": "Calle 33 #38-35",
+        "telefono": "0424-1366663",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 34,
+        "fk_ps_a001_num_comunidad": 5,
+        "ci": "19197504",
+        "nombres": "Diego",
+        "apellidos": "Hernández Sánchez",
+        "fecha_nacimiento": "1994-12-02",
+        "sexo": "masculino",
+        "direccion": "Calle 34 #39-36",
+        "telefono": "0424-1377774",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 35,
+        "fk_ps_a001_num_comunidad": 6,
+        "ci": "19320960",
+        "nombres": "Valeria",
+        "apellidos": "González Ramírez",
+        "fecha_nacimiento": "1995-08-16",
+        "sexo": "masculino",
+        "direccion": "Calle 35 #40-37",
+        "telefono": "0424-1388885",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 36,
+        "fk_ps_a001_num_comunidad": 7,
+        "ci": "19444416",
+        "nombres": "José",
+        "apellidos": "Pérez Torres",
+        "fecha_nacimiento": "1974-03-18",
+        "sexo": "femenino",
+        "direccion": "Calle 36 #41-38",
+        "telefono": "0424-1399996",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 37,
+        "fk_ps_a001_num_comunidad": 8,
+        "ci": "19567872",
+        "nombres": "Luis",
+        "apellidos": "Sánchez García",
+        "fecha_nacimiento": "1993-03-15",
+        "sexo": "masculino",
+        "direccion": "Calle 37 #42-39",
+        "telefono": "0424-1411107",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 38,
+        "fk_ps_a001_num_comunidad": 9,
+        "ci": "19691328",
+        "nombres": "Marta",
+        "apellidos": "Ramírez López",
+        "fecha_nacimiento": "1950-02-24",
+        "sexo": "masculino",
+        "direccion": "Calle 38 #43-40",
+        "telefono": "0424-1422218",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 39,
+        "fk_ps_a001_num_comunidad": 10,
+        "ci": "19814784",
+        "nombres": "Félix",
+        "apellidos": "Torres Martínez",
+        "fecha_nacimiento": "1967-06-02",
+        "sexo": "femenino",
+        "direccion": "Calle 39 #44-41",
+        "telefono": "0424-1433329",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 40,
+        "fk_ps_a001_num_comunidad": 1,
+        "ci": "19938240",
+        "nombres": "Juan",
+        "apellidos": "García Rodríguez",
+        "fecha_nacimiento": "1967-08-10",
+        "sexo": "masculino",
+        "direccion": "Calle 40 #45-42",
+        "telefono": "0424-1444440",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 41,
+        "fk_ps_a001_num_comunidad": 2,
+        "ci": "20061696",
+        "nombres": "María",
+        "apellidos": "López Hernández",
+        "fecha_nacimiento": "1976-02-11",
+        "sexo": "masculino",
+        "direccion": "Calle 41 #46-43",
+        "telefono": "0424-1455551",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 42,
+        "fk_ps_a001_num_comunidad": 3,
+        "ci": "20185152",
+        "nombres": "Carlos",
+        "apellidos": "Martínez González",
+        "fecha_nacimiento": "1977-04-13",
+        "sexo": "femenino",
+        "direccion": "Calle 42 #47-44",
+        "telefono": "0424-1466662",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 43,
+        "fk_ps_a001_num_comunidad": 4,
+        "ci": "20308608",
+        "nombres": "Ana",
+        "apellidos": "Rodríguez Pérez",
+        "fecha_nacimiento": "1988-07-26",
+        "sexo": "masculino",
+        "direccion": "Calle 43 #48-45",
+        "telefono": "0424-1477773",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 44,
+        "fk_ps_a001_num_comunidad": 5,
+        "ci": "20432064",
+        "nombres": "Pedro",
+        "apellidos": "Hernández Sánchez",
+        "fecha_nacimiento": "1986-04-14",
+        "sexo": "masculino",
+        "direccion": "Calle 44 #49-46",
+        "telefono": "0424-1488884",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 45,
+        "fk_ps_a001_num_comunidad": 6,
+        "ci": "20555520",
+        "nombres": "Laura",
+        "apellidos": "González Ramírez",
+        "fecha_nacimiento": "1963-06-17",
+        "sexo": "femenino",
+        "direccion": "Calle 45 #50-47",
+        "telefono": "0424-1499995",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 46,
+        "fk_ps_a001_num_comunidad": 7,
+        "ci": "20678976",
+        "nombres": "Miguel",
+        "apellidos": "Pérez Torres",
+        "fecha_nacimiento": "1997-10-03",
+        "sexo": "masculino",
+        "direccion": "Calle 46 #51-48",
+        "telefono": "0424-1511106",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      },
+      {
+        "pk_num_paciente": 47,
+        "fk_ps_a001_num_comunidad": 8,
+        "ci": "20802432",
+        "nombres": "Isabel",
+        "apellidos": "Sánchez García",
+        "fecha_nacimiento": "1954-08-02",
+        "sexo": "masculino",
+        "direccion": "Calle 47 #52-49",
+        "telefono": "0424-1522217",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "viudo"
+      },
+      {
+        "pk_num_paciente": 48,
+        "fk_ps_a001_num_comunidad": 9,
+        "ci": "20925888",
+        "nombres": "Roberto",
+        "apellidos": "Ramírez López",
+        "fecha_nacimiento": "1958-09-15",
+        "sexo": "femenino",
+        "direccion": "Calle 48 #53-50",
+        "telefono": "0424-1533328",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "soltero"
+      },
+      {
+        "pk_num_paciente": 49,
+        "fk_ps_a001_num_comunidad": 10,
+        "ci": "21049344",
+        "nombres": "Carmen",
+        "apellidos": "Torres Martínez",
+        "fecha_nacimiento": "1988-08-16",
+        "sexo": "masculino",
+        "direccion": "Calle 49 #54-51",
+        "telefono": "0424-1544439",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "encamado",
+        "estado_civil": "casado"
+      },
+      {
+        "pk_num_paciente": 50,
+        "fk_ps_a001_num_comunidad": 1,
+        "ci": "21172800",
+        "nombres": "Javier",
+        "apellidos": "García Rodríguez",
+        "fecha_nacimiento": "1969-12-07",
+        "sexo": "masculino",
+        "direccion": "Calle 50 #55-52",
+        "telefono": "0424-1555550",
+        "nacionalidad": "venezolano",
+        "estado_paciente": "activo",
+        "estado_civil": "divorciado"
+      }
+    ],
+    "cm_a002_enfermedad": [
+      {
+        "pk_num_enfermedad": 1,
+        "nombre": "Hipertensión",
+        "enfermedad_cronica": true,
+        "descripcion": "Presión arterial elevada"
+      },
+      {
+        "pk_num_enfermedad": 2,
+        "nombre": "Diabetes",
+        "enfermedad_cronica": true,
+        "descripcion": "Metabolismo de glucosa"
+      },
+      {
+        "pk_num_enfermedad": 3,
+        "nombre": "Asma",
+        "enfermedad_cronica": true,
+        "descripcion": "Vías respiratorias"
+      },
+      {
+        "pk_num_enfermedad": 4,
+        "nombre": "Gastroenteritis",
+        "enfermedad_cronica": false,
+        "descripcion": "Tracto digestivo"
+      },
+      {
+        "pk_num_enfermedad": 5,
+        "nombre": "Bronquitis",
+        "enfermedad_cronica": false,
+        "descripcion": "Bronquios"
+      },
+      {
+        "pk_num_enfermedad": 6,
+        "nombre": "Artritis",
+        "enfermedad_cronica": true,
+        "descripcion": "Articulaciones"
+      },
+      {
+        "pk_num_enfermedad": 7,
+        "nombre": "Migraña",
+        "enfermedad_cronica": true,
+        "descripcion": "Dolor de cabeza"
+      },
+      {
+        "pk_num_enfermedad": 8,
+        "nombre": "Anemia",
+        "enfermedad_cronica": false,
+        "descripcion": "Déficit de hierro"
+      },
+      {
+        "pk_num_enfermedad": 9,
+        "nombre": "Infección Urinaria",
+        "enfermedad_cronica": false,
+        "descripcion": "Tracto urinario"
+      },
+      {
+        "pk_num_enfermedad": 10,
+        "nombre": "Dermatitis",
+        "enfermedad_cronica": false,
+        "descripcion": "Piel"
+      },
+      {
+        "pk_num_enfermedad": 11,
+        "nombre": "Neumonía",
+        "enfermedad_cronica": false,
+        "descripcion": "Pulmón"
+      },
+      {
+        "pk_num_enfermedad": 12,
+        "nombre": "Obesidad",
+        "enfermedad_cronica": true,
+        "descripcion": "Peso"
+      },
+      {
+        "pk_num_enfermedad": 13,
+        "nombre": "Depresión",
+        "enfermedad_cronica": true,
+        "descripcion": "Ánimo"
+      },
+      {
+        "pk_num_enfermedad": 14,
+        "nombre": "Colesterol Alto",
+        "enfermedad_cronica": true,
+        "descripcion": "Lípidos"
+      },
+      {
+        "pk_num_enfermedad": 15,
+        "nombre": "Gripe",
+        "enfermedad_cronica": false,
+        "descripcion": "Viral"
+      }
+    ],
+    "cm_a003_sintoma": [
+      {
+        "pk_num_sintoma": 1,
+        "nombre": "Dolor de cabeza",
+        "descripcion": "Cefalea",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 2,
+        "nombre": "Fiebre",
+        "descripcion": "Temperatura",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 3,
+        "nombre": "Tos",
+        "descripcion": "Respiratoria",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 4,
+        "nombre": "Dolor abdominal",
+        "descripcion": "Abdominal",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 5,
+        "nombre": "Fatiga",
+        "descripcion": "Cansancio",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 6,
+        "nombre": "Náuseas",
+        "descripcion": "Estomacal",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 7,
+        "nombre": "Dolor articular",
+        "descripcion": "Articulaciones",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 8,
+        "nombre": "Disnea",
+        "descripcion": "Respiración",
+        "gravedad": "3"
+      },
+      {
+        "pk_num_sintoma": 9,
+        "nombre": "Vómitos",
+        "descripcion": "Gástrico",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 10,
+        "nombre": "Mareos",
+        "descripcion": "Inestabilidad",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 11,
+        "nombre": "Dolor torácico",
+        "descripcion": "Pecho",
+        "gravedad": "4"
+      },
+      {
+        "pk_num_sintoma": 12,
+        "nombre": "Hinchazón",
+        "descripcion": "Edema",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 13,
+        "nombre": "Picazón",
+        "descripcion": "Prurito",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 14,
+        "nombre": "Insomnio",
+        "descripcion": "Dormir",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 15,
+        "nombre": "Pérdida apetito",
+        "descripcion": "Anorexia",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 16,
+        "nombre": "Sudoración",
+        "descripcion": "Hiperhidrosis",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 17,
+        "nombre": "Palpitaciones",
+        "descripcion": "Latidos",
+        "gravedad": "3"
+      },
+      {
+        "pk_num_sintoma": 18,
+        "nombre": "Dolor lumbar",
+        "descripcion": "Lumbar",
+        "gravedad": "2"
+      },
+      {
+        "pk_num_sintoma": 19,
+        "nombre": "Congestión nasal",
+        "descripcion": "Rinitis",
+        "gravedad": "1"
+      },
+      {
+        "pk_num_sintoma": 20,
+        "nombre": "Diarrea",
+        "descripcion": "Evacuaciones",
+        "gravedad": "2"
+      }
+    ],
+    "cm_b005_sesion_medica": [
+      {
+        "pk_num_sesion_medica": 1,
+        "fk_cm_b001_num_medico_ministerio_salud": 10001,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 2,
+        "fk_cm_b001_num_medico_ministerio_salud": 10001,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 3,
+        "fk_cm_b001_num_medico_ministerio_salud": 10002,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 4,
+        "fk_cm_b001_num_medico_ministerio_salud": 10002,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 5,
+        "fk_cm_b001_num_medico_ministerio_salud": 10003,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 6,
+        "fk_cm_b001_num_medico_ministerio_salud": 10003,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 7,
+        "fk_cm_b001_num_medico_ministerio_salud": 10004,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 8,
+        "fk_cm_b001_num_medico_ministerio_salud": 10004,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 9,
+        "fk_cm_b001_num_medico_ministerio_salud": 10005,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 10,
+        "fk_cm_b001_num_medico_ministerio_salud": 10005,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 11,
+        "fk_cm_b001_num_medico_ministerio_salud": 10006,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 12,
+        "fk_cm_b001_num_medico_ministerio_salud": 10006,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 13,
+        "fk_cm_b001_num_medico_ministerio_salud": 10007,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 14,
+        "fk_cm_b001_num_medico_ministerio_salud": 10007,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 15,
+        "fk_cm_b001_num_medico_ministerio_salud": 10008,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 16,
+        "fk_cm_b001_num_medico_ministerio_salud": 10008,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 17,
+        "fk_cm_b001_num_medico_ministerio_salud": 10009,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 18,
+        "fk_cm_b001_num_medico_ministerio_salud": 10009,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 19,
+        "fk_cm_b001_num_medico_ministerio_salud": 10010,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 20,
+        "fk_cm_b001_num_medico_ministerio_salud": 10010,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 21,
+        "fk_cm_b001_num_medico_ministerio_salud": 10011,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 22,
+        "fk_cm_b001_num_medico_ministerio_salud": 10011,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 23,
+        "fk_cm_b001_num_medico_ministerio_salud": 10012,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 24,
+        "fk_cm_b001_num_medico_ministerio_salud": 10012,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 25,
+        "fk_cm_b001_num_medico_ministerio_salud": 10013,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 26,
+        "fk_cm_b001_num_medico_ministerio_salud": 10013,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 27,
+        "fk_cm_b001_num_medico_ministerio_salud": 10014,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 28,
+        "fk_cm_b001_num_medico_ministerio_salud": 10014,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 29,
+        "fk_cm_b001_num_medico_ministerio_salud": 10015,
+        "turno": "mañana",
+        "dias_semana": "Lunes",
+        "hora_inicio": "08:00:00",
+        "hora_fin": "12:00:00"
+      },
+      {
+        "pk_num_sesion_medica": 30,
+        "fk_cm_b001_num_medico_ministerio_salud": 10015,
+        "turno": "tarde",
+        "dias_semana": "Miercoles",
+        "hora_inicio": "14:00:00",
+        "hora_fin": "18:00:00"
+      }
+    ],
+    "cm_b004_motivo_consulta": [
+      {
+        "pk_num_motivo_consulta": 1,
+        "fk_ps_b001_num_paciente": 1,
+        "descripcion_motivo": "Motivo de consulta número 1 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-01-01",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 2,
+        "fk_ps_b001_num_paciente": 2,
+        "descripcion_motivo": "Motivo de consulta número 2 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-02-02",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 3,
+        "fk_ps_b001_num_paciente": 3,
+        "descripcion_motivo": "Motivo de consulta número 3 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-03-03",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 4,
+        "fk_ps_b001_num_paciente": 4,
+        "descripcion_motivo": "Motivo de consulta número 4 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-04-04",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 5,
+        "fk_ps_b001_num_paciente": 5,
+        "descripcion_motivo": "Motivo de consulta número 5 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-05-05",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 6,
+        "fk_ps_b001_num_paciente": 6,
+        "descripcion_motivo": "Motivo de consulta número 6 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-06-06",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 7,
+        "fk_ps_b001_num_paciente": 7,
+        "descripcion_motivo": "Motivo de consulta número 7 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-07-07",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 8,
+        "fk_ps_b001_num_paciente": 8,
+        "descripcion_motivo": "Motivo de consulta número 8 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-01-08",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 9,
+        "fk_ps_b001_num_paciente": 9,
+        "descripcion_motivo": "Motivo de consulta número 9 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-02-09",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 10,
+        "fk_ps_b001_num_paciente": 10,
+        "descripcion_motivo": "Motivo de consulta número 10 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-03-10",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 11,
+        "fk_ps_b001_num_paciente": 11,
+        "descripcion_motivo": "Motivo de consulta número 11 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-04-11",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 12,
+        "fk_ps_b001_num_paciente": 12,
+        "descripcion_motivo": "Motivo de consulta número 12 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-05-12",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 13,
+        "fk_ps_b001_num_paciente": 13,
+        "descripcion_motivo": "Motivo de consulta número 13 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-06-13",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 14,
+        "fk_ps_b001_num_paciente": 14,
+        "descripcion_motivo": "Motivo de consulta número 14 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-07-14",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 15,
+        "fk_ps_b001_num_paciente": 15,
+        "descripcion_motivo": "Motivo de consulta número 15 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-01-15",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 16,
+        "fk_ps_b001_num_paciente": 16,
+        "descripcion_motivo": "Motivo de consulta número 16 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-02-16",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 17,
+        "fk_ps_b001_num_paciente": 17,
+        "descripcion_motivo": "Motivo de consulta número 17 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-03-17",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 18,
+        "fk_ps_b001_num_paciente": 18,
+        "descripcion_motivo": "Motivo de consulta número 18 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-04-18",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 19,
+        "fk_ps_b001_num_paciente": 19,
+        "descripcion_motivo": "Motivo de consulta número 19 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-05-19",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 20,
+        "fk_ps_b001_num_paciente": 20,
+        "descripcion_motivo": "Motivo de consulta número 20 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-06-20",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 21,
+        "fk_ps_b001_num_paciente": 21,
+        "descripcion_motivo": "Motivo de consulta número 21 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-07-21",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 22,
+        "fk_ps_b001_num_paciente": 22,
+        "descripcion_motivo": "Motivo de consulta número 22 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-01-22",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 23,
+        "fk_ps_b001_num_paciente": 23,
+        "descripcion_motivo": "Motivo de consulta número 23 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-02-23",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 24,
+        "fk_ps_b001_num_paciente": 24,
+        "descripcion_motivo": "Motivo de consulta número 24 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-03-24",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 25,
+        "fk_ps_b001_num_paciente": 25,
+        "descripcion_motivo": "Motivo de consulta número 25 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-04-25",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 26,
+        "fk_ps_b001_num_paciente": 26,
+        "descripcion_motivo": "Motivo de consulta número 26 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-05-26",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 27,
+        "fk_ps_b001_num_paciente": 27,
+        "descripcion_motivo": "Motivo de consulta número 27 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-06-27",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 28,
+        "fk_ps_b001_num_paciente": 28,
+        "descripcion_motivo": "Motivo de consulta número 28 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-07-28",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 29,
+        "fk_ps_b001_num_paciente": 29,
+        "descripcion_motivo": "Motivo de consulta número 29 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-01-01",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 30,
+        "fk_ps_b001_num_paciente": 30,
+        "descripcion_motivo": "Motivo de consulta número 30 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-02-02",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 31,
+        "fk_ps_b001_num_paciente": 31,
+        "descripcion_motivo": "Motivo de consulta número 31 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-03-03",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 32,
+        "fk_ps_b001_num_paciente": 32,
+        "descripcion_motivo": "Motivo de consulta número 32 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-04-04",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 33,
+        "fk_ps_b001_num_paciente": 33,
+        "descripcion_motivo": "Motivo de consulta número 33 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-05-05",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 34,
+        "fk_ps_b001_num_paciente": 34,
+        "descripcion_motivo": "Motivo de consulta número 34 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-06-06",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 35,
+        "fk_ps_b001_num_paciente": 35,
+        "descripcion_motivo": "Motivo de consulta número 35 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-07-07",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 36,
+        "fk_ps_b001_num_paciente": 36,
+        "descripcion_motivo": "Motivo de consulta número 36 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-01-08",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 37,
+        "fk_ps_b001_num_paciente": 37,
+        "descripcion_motivo": "Motivo de consulta número 37 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-02-09",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 38,
+        "fk_ps_b001_num_paciente": 38,
+        "descripcion_motivo": "Motivo de consulta número 38 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-03-10",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 39,
+        "fk_ps_b001_num_paciente": 39,
+        "descripcion_motivo": "Motivo de consulta número 39 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-04-11",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 40,
+        "fk_ps_b001_num_paciente": 40,
+        "descripcion_motivo": "Motivo de consulta número 40 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-05-12",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 41,
+        "fk_ps_b001_num_paciente": 41,
+        "descripcion_motivo": "Motivo de consulta número 41 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-06-13",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 42,
+        "fk_ps_b001_num_paciente": 42,
+        "descripcion_motivo": "Motivo de consulta número 42 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-07-14",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 43,
+        "fk_ps_b001_num_paciente": 43,
+        "descripcion_motivo": "Motivo de consulta número 43 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-01-15",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 44,
+        "fk_ps_b001_num_paciente": 44,
+        "descripcion_motivo": "Motivo de consulta número 44 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-02-16",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 45,
+        "fk_ps_b001_num_paciente": 45,
+        "descripcion_motivo": "Motivo de consulta número 45 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-03-17",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 46,
+        "fk_ps_b001_num_paciente": 46,
+        "descripcion_motivo": "Motivo de consulta número 46 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-04-18",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 47,
+        "fk_ps_b001_num_paciente": 47,
+        "descripcion_motivo": "Motivo de consulta número 47 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-05-19",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 48,
+        "fk_ps_b001_num_paciente": 48,
+        "descripcion_motivo": "Motivo de consulta número 48 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-06-20",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 49,
+        "fk_ps_b001_num_paciente": 49,
+        "descripcion_motivo": "Motivo de consulta número 49 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-07-21",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 50,
+        "fk_ps_b001_num_paciente": 50,
+        "descripcion_motivo": "Motivo de consulta número 50 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-01-22",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 51,
+        "fk_ps_b001_num_paciente": 1,
+        "descripcion_motivo": "Motivo de consulta número 51 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-02-23",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 52,
+        "fk_ps_b001_num_paciente": 2,
+        "descripcion_motivo": "Motivo de consulta número 52 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-03-24",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 53,
+        "fk_ps_b001_num_paciente": 3,
+        "descripcion_motivo": "Motivo de consulta número 53 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-04-25",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 54,
+        "fk_ps_b001_num_paciente": 4,
+        "descripcion_motivo": "Motivo de consulta número 54 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-05-26",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 55,
+        "fk_ps_b001_num_paciente": 5,
+        "descripcion_motivo": "Motivo de consulta número 55 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-06-27",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 56,
+        "fk_ps_b001_num_paciente": 6,
+        "descripcion_motivo": "Motivo de consulta número 56 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-07-28",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 57,
+        "fk_ps_b001_num_paciente": 7,
+        "descripcion_motivo": "Motivo de consulta número 57 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-01-01",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 58,
+        "fk_ps_b001_num_paciente": 8,
+        "descripcion_motivo": "Motivo de consulta número 58 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-02-02",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 59,
+        "fk_ps_b001_num_paciente": 9,
+        "descripcion_motivo": "Motivo de consulta número 59 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-03-03",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 60,
+        "fk_ps_b001_num_paciente": 10,
+        "descripcion_motivo": "Motivo de consulta número 60 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-04-04",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 61,
+        "fk_ps_b001_num_paciente": 11,
+        "descripcion_motivo": "Motivo de consulta número 61 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-05-05",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 62,
+        "fk_ps_b001_num_paciente": 12,
+        "descripcion_motivo": "Motivo de consulta número 62 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-06-06",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 63,
+        "fk_ps_b001_num_paciente": 13,
+        "descripcion_motivo": "Motivo de consulta número 63 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-07-07",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 64,
+        "fk_ps_b001_num_paciente": 14,
+        "descripcion_motivo": "Motivo de consulta número 64 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-01-08",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 65,
+        "fk_ps_b001_num_paciente": 15,
+        "descripcion_motivo": "Motivo de consulta número 65 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-02-09",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 66,
+        "fk_ps_b001_num_paciente": 16,
+        "descripcion_motivo": "Motivo de consulta número 66 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-03-10",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 67,
+        "fk_ps_b001_num_paciente": 17,
+        "descripcion_motivo": "Motivo de consulta número 67 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-04-11",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 68,
+        "fk_ps_b001_num_paciente": 18,
+        "descripcion_motivo": "Motivo de consulta número 68 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-05-12",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 69,
+        "fk_ps_b001_num_paciente": 19,
+        "descripcion_motivo": "Motivo de consulta número 69 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-06-13",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 70,
+        "fk_ps_b001_num_paciente": 20,
+        "descripcion_motivo": "Motivo de consulta número 70 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-07-14",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 71,
+        "fk_ps_b001_num_paciente": 21,
+        "descripcion_motivo": "Motivo de consulta número 71 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-01-15",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 72,
+        "fk_ps_b001_num_paciente": 22,
+        "descripcion_motivo": "Motivo de consulta número 72 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-02-16",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 73,
+        "fk_ps_b001_num_paciente": 23,
+        "descripcion_motivo": "Motivo de consulta número 73 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-03-17",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 74,
+        "fk_ps_b001_num_paciente": 24,
+        "descripcion_motivo": "Motivo de consulta número 74 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-04-18",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 75,
+        "fk_ps_b001_num_paciente": 25,
+        "descripcion_motivo": "Motivo de consulta número 75 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-05-19",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 76,
+        "fk_ps_b001_num_paciente": 26,
+        "descripcion_motivo": "Motivo de consulta número 76 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-06-20",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 77,
+        "fk_ps_b001_num_paciente": 27,
+        "descripcion_motivo": "Motivo de consulta número 77 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-07-21",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 78,
+        "fk_ps_b001_num_paciente": 28,
+        "descripcion_motivo": "Motivo de consulta número 78 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-01-22",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 79,
+        "fk_ps_b001_num_paciente": 29,
+        "descripcion_motivo": "Motivo de consulta número 79 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-02-23",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 80,
+        "fk_ps_b001_num_paciente": 30,
+        "descripcion_motivo": "Motivo de consulta número 80 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-03-24",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 81,
+        "fk_ps_b001_num_paciente": 31,
+        "descripcion_motivo": "Motivo de consulta número 81 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-04-25",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 82,
+        "fk_ps_b001_num_paciente": 32,
+        "descripcion_motivo": "Motivo de consulta número 82 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-05-26",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 83,
+        "fk_ps_b001_num_paciente": 33,
+        "descripcion_motivo": "Motivo de consulta número 83 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-06-27",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 84,
+        "fk_ps_b001_num_paciente": 34,
+        "descripcion_motivo": "Motivo de consulta número 84 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-07-28",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 85,
+        "fk_ps_b001_num_paciente": 35,
+        "descripcion_motivo": "Motivo de consulta número 85 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-01-01",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 86,
+        "fk_ps_b001_num_paciente": 36,
+        "descripcion_motivo": "Motivo de consulta número 86 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-02-02",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 87,
+        "fk_ps_b001_num_paciente": 37,
+        "descripcion_motivo": "Motivo de consulta número 87 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-03-03",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 88,
+        "fk_ps_b001_num_paciente": 38,
+        "descripcion_motivo": "Motivo de consulta número 88 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-04-04",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 89,
+        "fk_ps_b001_num_paciente": 39,
+        "descripcion_motivo": "Motivo de consulta número 89 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-05-05",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 90,
+        "fk_ps_b001_num_paciente": 40,
+        "descripcion_motivo": "Motivo de consulta número 90 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-06-06",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 91,
+        "fk_ps_b001_num_paciente": 41,
+        "descripcion_motivo": "Motivo de consulta número 91 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-07-07",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 92,
+        "fk_ps_b001_num_paciente": 42,
+        "descripcion_motivo": "Motivo de consulta número 92 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-01-08",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 93,
+        "fk_ps_b001_num_paciente": 43,
+        "descripcion_motivo": "Motivo de consulta número 93 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-02-09",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 94,
+        "fk_ps_b001_num_paciente": 44,
+        "descripcion_motivo": "Motivo de consulta número 94 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-03-10",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 95,
+        "fk_ps_b001_num_paciente": 45,
+        "descripcion_motivo": "Motivo de consulta número 95 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-04-11",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 96,
+        "fk_ps_b001_num_paciente": 46,
+        "descripcion_motivo": "Motivo de consulta número 96 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-05-12",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 97,
+        "fk_ps_b001_num_paciente": 47,
+        "descripcion_motivo": "Motivo de consulta número 97 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-06-13",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 98,
+        "fk_ps_b001_num_paciente": 48,
+        "descripcion_motivo": "Motivo de consulta número 98 para evaluación",
+        "nivel_urgencia": "alta",
+        "fecha_motivo": "2026-07-14",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 99,
+        "fk_ps_b001_num_paciente": 49,
+        "descripcion_motivo": "Motivo de consulta número 99 para evaluación",
+        "nivel_urgencia": "baja",
+        "fecha_motivo": "2026-01-15",
+        "observacion_motivo": ""
+      },
+      {
+        "pk_num_motivo_consulta": 100,
+        "fk_ps_b001_num_paciente": 50,
+        "descripcion_motivo": "Motivo de consulta número 100 para evaluación",
+        "nivel_urgencia": "media",
+        "fecha_motivo": "2026-02-16",
+        "observacion_motivo": ""
+      }
+    ],
+    "cm_b002_cita_medica": [
+      {
+        "pk_num_cita_medica": 1,
+        "fk_ps_b001_num_paciente": 1,
+        "fk_cm_b005_num_sesion": 1,
+        "fk_cm_b004_num_motivo_consulta": 1,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-01",
+        "hora": "09:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 2,
+        "fk_ps_b001_num_paciente": 2,
+        "fk_cm_b005_num_sesion": 2,
+        "fk_cm_b004_num_motivo_consulta": 2,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-02",
+        "hora": "10:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 3,
+        "fk_ps_b001_num_paciente": 3,
+        "fk_cm_b005_num_sesion": 3,
+        "fk_cm_b004_num_motivo_consulta": 3,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-03",
+        "hora": "11:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 4,
+        "fk_ps_b001_num_paciente": 4,
+        "fk_cm_b005_num_sesion": 4,
+        "fk_cm_b004_num_motivo_consulta": 4,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-04",
+        "hora": "12:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 5,
+        "fk_ps_b001_num_paciente": 5,
+        "fk_cm_b005_num_sesion": 5,
+        "fk_cm_b004_num_motivo_consulta": 5,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-05",
+        "hora": "13:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 6,
+        "fk_ps_b001_num_paciente": 6,
+        "fk_cm_b005_num_sesion": 6,
+        "fk_cm_b004_num_motivo_consulta": 6,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-06",
+        "hora": "14:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 7,
+        "fk_ps_b001_num_paciente": 7,
+        "fk_cm_b005_num_sesion": 7,
+        "fk_cm_b004_num_motivo_consulta": 7,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-07",
+        "hora": "15:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 8,
+        "fk_ps_b001_num_paciente": 8,
+        "fk_cm_b005_num_sesion": 8,
+        "fk_cm_b004_num_motivo_consulta": 8,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-08",
+        "hora": "16:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 9,
+        "fk_ps_b001_num_paciente": 9,
+        "fk_cm_b005_num_sesion": 9,
+        "fk_cm_b004_num_motivo_consulta": 9,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-09",
+        "hora": "17:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 10,
+        "fk_ps_b001_num_paciente": 10,
+        "fk_cm_b005_num_sesion": 10,
+        "fk_cm_b004_num_motivo_consulta": 10,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-10",
+        "hora": "08:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 11,
+        "fk_ps_b001_num_paciente": 11,
+        "fk_cm_b005_num_sesion": 11,
+        "fk_cm_b004_num_motivo_consulta": 11,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-11",
+        "hora": "09:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 12,
+        "fk_ps_b001_num_paciente": 12,
+        "fk_cm_b005_num_sesion": 12,
+        "fk_cm_b004_num_motivo_consulta": 12,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-12",
+        "hora": "10:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 13,
+        "fk_ps_b001_num_paciente": 13,
+        "fk_cm_b005_num_sesion": 13,
+        "fk_cm_b004_num_motivo_consulta": 13,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-13",
+        "hora": "11:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 14,
+        "fk_ps_b001_num_paciente": 14,
+        "fk_cm_b005_num_sesion": 14,
+        "fk_cm_b004_num_motivo_consulta": 14,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-14",
+        "hora": "12:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 15,
+        "fk_ps_b001_num_paciente": 15,
+        "fk_cm_b005_num_sesion": 15,
+        "fk_cm_b004_num_motivo_consulta": 15,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-15",
+        "hora": "13:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 16,
+        "fk_ps_b001_num_paciente": 16,
+        "fk_cm_b005_num_sesion": 16,
+        "fk_cm_b004_num_motivo_consulta": 16,
+        "estado_cita": "atendida",
+        "fecha": "2026-02-16",
+        "hora": "14:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 17,
+        "fk_ps_b001_num_paciente": 17,
+        "fk_cm_b005_num_sesion": 17,
+        "fk_cm_b004_num_motivo_consulta": 17,
+        "estado_cita": "cancelada",
+        "fecha": "2026-03-17",
+        "hora": "15:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 18,
+        "fk_ps_b001_num_paciente": 18,
+        "fk_cm_b005_num_sesion": 18,
+        "fk_cm_b004_num_motivo_consulta": 18,
+        "estado_cita": "agendada",
+        "fecha": "2026-04-18",
+        "hora": "16:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 19,
+        "fk_ps_b001_num_paciente": 19,
+        "fk_cm_b005_num_sesion": 19,
+        "fk_cm_b004_num_motivo_consulta": 19,
+        "estado_cita": "atendida",
+        "fecha": "2026-05-19",
+        "hora": "17:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 20,
+        "fk_ps_b001_num_paciente": 20,
+        "fk_cm_b005_num_sesion": 20,
+        "fk_cm_b004_num_motivo_consulta": 20,
+        "estado_cita": "cancelada",
+        "fecha": "2026-06-20",
+        "hora": "08:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 21,
+        "fk_ps_b001_num_paciente": 21,
+        "fk_cm_b005_num_sesion": 21,
+        "fk_cm_b004_num_motivo_consulta": 21,
+        "estado_cita": "agendada",
+        "fecha": "2026-07-21",
+        "hora": "09:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 22,
+        "fk_ps_b001_num_paciente": 22,
+        "fk_cm_b005_num_sesion": 22,
+        "fk_cm_b004_num_motivo_consulta": 22,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-22",
+        "hora": "10:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 23,
+        "fk_ps_b001_num_paciente": 23,
+        "fk_cm_b005_num_sesion": 23,
+        "fk_cm_b004_num_motivo_consulta": 23,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-23",
+        "hora": "11:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 24,
+        "fk_ps_b001_num_paciente": 24,
+        "fk_cm_b005_num_sesion": 24,
+        "fk_cm_b004_num_motivo_consulta": 24,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-24",
+        "hora": "12:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 25,
+        "fk_ps_b001_num_paciente": 25,
+        "fk_cm_b005_num_sesion": 25,
+        "fk_cm_b004_num_motivo_consulta": 25,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-25",
+        "hora": "13:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 26,
+        "fk_ps_b001_num_paciente": 26,
+        "fk_cm_b005_num_sesion": 26,
+        "fk_cm_b004_num_motivo_consulta": 26,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-26",
+        "hora": "14:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 27,
+        "fk_ps_b001_num_paciente": 27,
+        "fk_cm_b005_num_sesion": 27,
+        "fk_cm_b004_num_motivo_consulta": 27,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-27",
+        "hora": "15:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 28,
+        "fk_ps_b001_num_paciente": 28,
+        "fk_cm_b005_num_sesion": 28,
+        "fk_cm_b004_num_motivo_consulta": 28,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-28",
+        "hora": "16:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 29,
+        "fk_ps_b001_num_paciente": 29,
+        "fk_cm_b005_num_sesion": 29,
+        "fk_cm_b004_num_motivo_consulta": 29,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-01",
+        "hora": "17:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 30,
+        "fk_ps_b001_num_paciente": 30,
+        "fk_cm_b005_num_sesion": 30,
+        "fk_cm_b004_num_motivo_consulta": 30,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-02",
+        "hora": "08:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 31,
+        "fk_ps_b001_num_paciente": 31,
+        "fk_cm_b005_num_sesion": 1,
+        "fk_cm_b004_num_motivo_consulta": 31,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-03",
+        "hora": "09:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 32,
+        "fk_ps_b001_num_paciente": 32,
+        "fk_cm_b005_num_sesion": 2,
+        "fk_cm_b004_num_motivo_consulta": 32,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-04",
+        "hora": "10:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 33,
+        "fk_ps_b001_num_paciente": 33,
+        "fk_cm_b005_num_sesion": 3,
+        "fk_cm_b004_num_motivo_consulta": 33,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-05",
+        "hora": "11:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 34,
+        "fk_ps_b001_num_paciente": 34,
+        "fk_cm_b005_num_sesion": 4,
+        "fk_cm_b004_num_motivo_consulta": 34,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-06",
+        "hora": "12:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 35,
+        "fk_ps_b001_num_paciente": 35,
+        "fk_cm_b005_num_sesion": 5,
+        "fk_cm_b004_num_motivo_consulta": 35,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-07",
+        "hora": "13:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 36,
+        "fk_ps_b001_num_paciente": 36,
+        "fk_cm_b005_num_sesion": 6,
+        "fk_cm_b004_num_motivo_consulta": 36,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-08",
+        "hora": "14:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 37,
+        "fk_ps_b001_num_paciente": 37,
+        "fk_cm_b005_num_sesion": 7,
+        "fk_cm_b004_num_motivo_consulta": 37,
+        "estado_cita": "atendida",
+        "fecha": "2026-02-09",
+        "hora": "15:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 38,
+        "fk_ps_b001_num_paciente": 38,
+        "fk_cm_b005_num_sesion": 8,
+        "fk_cm_b004_num_motivo_consulta": 38,
+        "estado_cita": "cancelada",
+        "fecha": "2026-03-10",
+        "hora": "16:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 39,
+        "fk_ps_b001_num_paciente": 39,
+        "fk_cm_b005_num_sesion": 9,
+        "fk_cm_b004_num_motivo_consulta": 39,
+        "estado_cita": "agendada",
+        "fecha": "2026-04-11",
+        "hora": "17:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 40,
+        "fk_ps_b001_num_paciente": 40,
+        "fk_cm_b005_num_sesion": 10,
+        "fk_cm_b004_num_motivo_consulta": 40,
+        "estado_cita": "atendida",
+        "fecha": "2026-05-12",
+        "hora": "08:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 41,
+        "fk_ps_b001_num_paciente": 41,
+        "fk_cm_b005_num_sesion": 11,
+        "fk_cm_b004_num_motivo_consulta": 41,
+        "estado_cita": "cancelada",
+        "fecha": "2026-06-13",
+        "hora": "09:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 42,
+        "fk_ps_b001_num_paciente": 42,
+        "fk_cm_b005_num_sesion": 12,
+        "fk_cm_b004_num_motivo_consulta": 42,
+        "estado_cita": "agendada",
+        "fecha": "2026-07-14",
+        "hora": "10:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 43,
+        "fk_ps_b001_num_paciente": 43,
+        "fk_cm_b005_num_sesion": 13,
+        "fk_cm_b004_num_motivo_consulta": 43,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-15",
+        "hora": "11:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 44,
+        "fk_ps_b001_num_paciente": 44,
+        "fk_cm_b005_num_sesion": 14,
+        "fk_cm_b004_num_motivo_consulta": 44,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-16",
+        "hora": "12:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 45,
+        "fk_ps_b001_num_paciente": 45,
+        "fk_cm_b005_num_sesion": 15,
+        "fk_cm_b004_num_motivo_consulta": 45,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-17",
+        "hora": "13:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 46,
+        "fk_ps_b001_num_paciente": 46,
+        "fk_cm_b005_num_sesion": 16,
+        "fk_cm_b004_num_motivo_consulta": 46,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-18",
+        "hora": "14:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 47,
+        "fk_ps_b001_num_paciente": 47,
+        "fk_cm_b005_num_sesion": 17,
+        "fk_cm_b004_num_motivo_consulta": 47,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-19",
+        "hora": "15:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 48,
+        "fk_ps_b001_num_paciente": 48,
+        "fk_cm_b005_num_sesion": 18,
+        "fk_cm_b004_num_motivo_consulta": 48,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-20",
+        "hora": "16:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 49,
+        "fk_ps_b001_num_paciente": 49,
+        "fk_cm_b005_num_sesion": 19,
+        "fk_cm_b004_num_motivo_consulta": 49,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-21",
+        "hora": "17:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 50,
+        "fk_ps_b001_num_paciente": 50,
+        "fk_cm_b005_num_sesion": 20,
+        "fk_cm_b004_num_motivo_consulta": 50,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-22",
+        "hora": "08:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 51,
+        "fk_ps_b001_num_paciente": 1,
+        "fk_cm_b005_num_sesion": 21,
+        "fk_cm_b004_num_motivo_consulta": 51,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-23",
+        "hora": "09:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 52,
+        "fk_ps_b001_num_paciente": 2,
+        "fk_cm_b005_num_sesion": 22,
+        "fk_cm_b004_num_motivo_consulta": 52,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-24",
+        "hora": "10:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 53,
+        "fk_ps_b001_num_paciente": 3,
+        "fk_cm_b005_num_sesion": 23,
+        "fk_cm_b004_num_motivo_consulta": 53,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-25",
+        "hora": "11:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 54,
+        "fk_ps_b001_num_paciente": 4,
+        "fk_cm_b005_num_sesion": 24,
+        "fk_cm_b004_num_motivo_consulta": 54,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-26",
+        "hora": "12:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 55,
+        "fk_ps_b001_num_paciente": 5,
+        "fk_cm_b005_num_sesion": 25,
+        "fk_cm_b004_num_motivo_consulta": 55,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-27",
+        "hora": "13:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 56,
+        "fk_ps_b001_num_paciente": 6,
+        "fk_cm_b005_num_sesion": 26,
+        "fk_cm_b004_num_motivo_consulta": 56,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-28",
+        "hora": "14:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 57,
+        "fk_ps_b001_num_paciente": 7,
+        "fk_cm_b005_num_sesion": 27,
+        "fk_cm_b004_num_motivo_consulta": 57,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-01",
+        "hora": "15:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 58,
+        "fk_ps_b001_num_paciente": 8,
+        "fk_cm_b005_num_sesion": 28,
+        "fk_cm_b004_num_motivo_consulta": 58,
+        "estado_cita": "atendida",
+        "fecha": "2026-02-02",
+        "hora": "16:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 59,
+        "fk_ps_b001_num_paciente": 9,
+        "fk_cm_b005_num_sesion": 29,
+        "fk_cm_b004_num_motivo_consulta": 59,
+        "estado_cita": "cancelada",
+        "fecha": "2026-03-03",
+        "hora": "17:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 60,
+        "fk_ps_b001_num_paciente": 10,
+        "fk_cm_b005_num_sesion": 30,
+        "fk_cm_b004_num_motivo_consulta": 60,
+        "estado_cita": "agendada",
+        "fecha": "2026-04-04",
+        "hora": "08:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 61,
+        "fk_ps_b001_num_paciente": 11,
+        "fk_cm_b005_num_sesion": 1,
+        "fk_cm_b004_num_motivo_consulta": 61,
+        "estado_cita": "atendida",
+        "fecha": "2026-05-05",
+        "hora": "09:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 62,
+        "fk_ps_b001_num_paciente": 12,
+        "fk_cm_b005_num_sesion": 2,
+        "fk_cm_b004_num_motivo_consulta": 62,
+        "estado_cita": "cancelada",
+        "fecha": "2026-06-06",
+        "hora": "10:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 63,
+        "fk_ps_b001_num_paciente": 13,
+        "fk_cm_b005_num_sesion": 3,
+        "fk_cm_b004_num_motivo_consulta": 63,
+        "estado_cita": "agendada",
+        "fecha": "2026-07-07",
+        "hora": "11:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 64,
+        "fk_ps_b001_num_paciente": 14,
+        "fk_cm_b005_num_sesion": 4,
+        "fk_cm_b004_num_motivo_consulta": 64,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-08",
+        "hora": "12:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 65,
+        "fk_ps_b001_num_paciente": 15,
+        "fk_cm_b005_num_sesion": 5,
+        "fk_cm_b004_num_motivo_consulta": 65,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-09",
+        "hora": "13:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 66,
+        "fk_ps_b001_num_paciente": 16,
+        "fk_cm_b005_num_sesion": 6,
+        "fk_cm_b004_num_motivo_consulta": 66,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-10",
+        "hora": "14:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 67,
+        "fk_ps_b001_num_paciente": 17,
+        "fk_cm_b005_num_sesion": 7,
+        "fk_cm_b004_num_motivo_consulta": 67,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-11",
+        "hora": "15:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 68,
+        "fk_ps_b001_num_paciente": 18,
+        "fk_cm_b005_num_sesion": 8,
+        "fk_cm_b004_num_motivo_consulta": 68,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-12",
+        "hora": "16:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 69,
+        "fk_ps_b001_num_paciente": 19,
+        "fk_cm_b005_num_sesion": 9,
+        "fk_cm_b004_num_motivo_consulta": 69,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-13",
+        "hora": "17:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 70,
+        "fk_ps_b001_num_paciente": 20,
+        "fk_cm_b005_num_sesion": 10,
+        "fk_cm_b004_num_motivo_consulta": 70,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-14",
+        "hora": "08:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 71,
+        "fk_ps_b001_num_paciente": 21,
+        "fk_cm_b005_num_sesion": 11,
+        "fk_cm_b004_num_motivo_consulta": 71,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-15",
+        "hora": "09:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 72,
+        "fk_ps_b001_num_paciente": 22,
+        "fk_cm_b005_num_sesion": 12,
+        "fk_cm_b004_num_motivo_consulta": 72,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-16",
+        "hora": "10:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 73,
+        "fk_ps_b001_num_paciente": 23,
+        "fk_cm_b005_num_sesion": 13,
+        "fk_cm_b004_num_motivo_consulta": 73,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-17",
+        "hora": "11:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 74,
+        "fk_ps_b001_num_paciente": 24,
+        "fk_cm_b005_num_sesion": 14,
+        "fk_cm_b004_num_motivo_consulta": 74,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-18",
+        "hora": "12:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 75,
+        "fk_ps_b001_num_paciente": 25,
+        "fk_cm_b005_num_sesion": 15,
+        "fk_cm_b004_num_motivo_consulta": 75,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-19",
+        "hora": "13:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 76,
+        "fk_ps_b001_num_paciente": 26,
+        "fk_cm_b005_num_sesion": 16,
+        "fk_cm_b004_num_motivo_consulta": 76,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-20",
+        "hora": "14:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 77,
+        "fk_ps_b001_num_paciente": 27,
+        "fk_cm_b005_num_sesion": 17,
+        "fk_cm_b004_num_motivo_consulta": 77,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-21",
+        "hora": "15:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 78,
+        "fk_ps_b001_num_paciente": 28,
+        "fk_cm_b005_num_sesion": 18,
+        "fk_cm_b004_num_motivo_consulta": 78,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-22",
+        "hora": "16:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 79,
+        "fk_ps_b001_num_paciente": 29,
+        "fk_cm_b005_num_sesion": 19,
+        "fk_cm_b004_num_motivo_consulta": 79,
+        "estado_cita": "atendida",
+        "fecha": "2026-02-23",
+        "hora": "17:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 80,
+        "fk_ps_b001_num_paciente": 30,
+        "fk_cm_b005_num_sesion": 20,
+        "fk_cm_b004_num_motivo_consulta": 80,
+        "estado_cita": "cancelada",
+        "fecha": "2026-03-24",
+        "hora": "08:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 81,
+        "fk_ps_b001_num_paciente": 31,
+        "fk_cm_b005_num_sesion": 21,
+        "fk_cm_b004_num_motivo_consulta": 81,
+        "estado_cita": "agendada",
+        "fecha": "2026-04-25",
+        "hora": "09:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 82,
+        "fk_ps_b001_num_paciente": 32,
+        "fk_cm_b005_num_sesion": 22,
+        "fk_cm_b004_num_motivo_consulta": 82,
+        "estado_cita": "atendida",
+        "fecha": "2026-05-26",
+        "hora": "10:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 83,
+        "fk_ps_b001_num_paciente": 33,
+        "fk_cm_b005_num_sesion": 23,
+        "fk_cm_b004_num_motivo_consulta": 83,
+        "estado_cita": "cancelada",
+        "fecha": "2026-06-27",
+        "hora": "11:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 84,
+        "fk_ps_b001_num_paciente": 34,
+        "fk_cm_b005_num_sesion": 24,
+        "fk_cm_b004_num_motivo_consulta": 84,
+        "estado_cita": "agendada",
+        "fecha": "2026-07-28",
+        "hora": "12:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 85,
+        "fk_ps_b001_num_paciente": 35,
+        "fk_cm_b005_num_sesion": 25,
+        "fk_cm_b004_num_motivo_consulta": 85,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-01",
+        "hora": "13:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 86,
+        "fk_ps_b001_num_paciente": 36,
+        "fk_cm_b005_num_sesion": 26,
+        "fk_cm_b004_num_motivo_consulta": 86,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-02",
+        "hora": "14:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 87,
+        "fk_ps_b001_num_paciente": 37,
+        "fk_cm_b005_num_sesion": 27,
+        "fk_cm_b004_num_motivo_consulta": 87,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-03",
+        "hora": "15:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 88,
+        "fk_ps_b001_num_paciente": 38,
+        "fk_cm_b005_num_sesion": 28,
+        "fk_cm_b004_num_motivo_consulta": 88,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-04",
+        "hora": "16:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 89,
+        "fk_ps_b001_num_paciente": 39,
+        "fk_cm_b005_num_sesion": 29,
+        "fk_cm_b004_num_motivo_consulta": 89,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-05",
+        "hora": "17:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 90,
+        "fk_ps_b001_num_paciente": 40,
+        "fk_cm_b005_num_sesion": 30,
+        "fk_cm_b004_num_motivo_consulta": 90,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-06",
+        "hora": "08:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 91,
+        "fk_ps_b001_num_paciente": 41,
+        "fk_cm_b005_num_sesion": 1,
+        "fk_cm_b004_num_motivo_consulta": 91,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-07",
+        "hora": "09:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 92,
+        "fk_ps_b001_num_paciente": 42,
+        "fk_cm_b005_num_sesion": 2,
+        "fk_cm_b004_num_motivo_consulta": 92,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-08",
+        "hora": "10:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 93,
+        "fk_ps_b001_num_paciente": 43,
+        "fk_cm_b005_num_sesion": 3,
+        "fk_cm_b004_num_motivo_consulta": 93,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-09",
+        "hora": "11:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 94,
+        "fk_ps_b001_num_paciente": 44,
+        "fk_cm_b005_num_sesion": 4,
+        "fk_cm_b004_num_motivo_consulta": 94,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-10",
+        "hora": "12:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 95,
+        "fk_ps_b001_num_paciente": 45,
+        "fk_cm_b005_num_sesion": 5,
+        "fk_cm_b004_num_motivo_consulta": 95,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-11",
+        "hora": "13:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 96,
+        "fk_ps_b001_num_paciente": 46,
+        "fk_cm_b005_num_sesion": 6,
+        "fk_cm_b004_num_motivo_consulta": 96,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-12",
+        "hora": "14:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 97,
+        "fk_ps_b001_num_paciente": 47,
+        "fk_cm_b005_num_sesion": 7,
+        "fk_cm_b004_num_motivo_consulta": 97,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-13",
+        "hora": "15:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 98,
+        "fk_ps_b001_num_paciente": 48,
+        "fk_cm_b005_num_sesion": 8,
+        "fk_cm_b004_num_motivo_consulta": 98,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-14",
+        "hora": "16:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 99,
+        "fk_ps_b001_num_paciente": 49,
+        "fk_cm_b005_num_sesion": 9,
+        "fk_cm_b004_num_motivo_consulta": 99,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-15",
+        "hora": "17:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 100,
+        "fk_ps_b001_num_paciente": 50,
+        "fk_cm_b005_num_sesion": 10,
+        "fk_cm_b004_num_motivo_consulta": 100,
+        "estado_cita": "atendida",
+        "fecha": "2026-02-16",
+        "hora": "08:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 101,
+        "fk_ps_b001_num_paciente": 1,
+        "fk_cm_b005_num_sesion": 11,
+        "fk_cm_b004_num_motivo_consulta": 1,
+        "estado_cita": "cancelada",
+        "fecha": "2026-03-17",
+        "hora": "09:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 102,
+        "fk_ps_b001_num_paciente": 2,
+        "fk_cm_b005_num_sesion": 12,
+        "fk_cm_b004_num_motivo_consulta": 2,
+        "estado_cita": "agendada",
+        "fecha": "2026-04-18",
+        "hora": "10:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 103,
+        "fk_ps_b001_num_paciente": 3,
+        "fk_cm_b005_num_sesion": 13,
+        "fk_cm_b004_num_motivo_consulta": 3,
+        "estado_cita": "atendida",
+        "fecha": "2026-05-19",
+        "hora": "11:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 104,
+        "fk_ps_b001_num_paciente": 4,
+        "fk_cm_b005_num_sesion": 14,
+        "fk_cm_b004_num_motivo_consulta": 4,
+        "estado_cita": "cancelada",
+        "fecha": "2026-06-20",
+        "hora": "12:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 105,
+        "fk_ps_b001_num_paciente": 5,
+        "fk_cm_b005_num_sesion": 15,
+        "fk_cm_b004_num_motivo_consulta": 5,
+        "estado_cita": "agendada",
+        "fecha": "2026-07-21",
+        "hora": "13:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 106,
+        "fk_ps_b001_num_paciente": 6,
+        "fk_cm_b005_num_sesion": 16,
+        "fk_cm_b004_num_motivo_consulta": 6,
+        "estado_cita": "atendida",
+        "fecha": "2026-01-22",
+        "hora": "14:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 107,
+        "fk_ps_b001_num_paciente": 7,
+        "fk_cm_b005_num_sesion": 17,
+        "fk_cm_b004_num_motivo_consulta": 7,
+        "estado_cita": "cancelada",
+        "fecha": "2026-02-23",
+        "hora": "15:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 108,
+        "fk_ps_b001_num_paciente": 8,
+        "fk_cm_b005_num_sesion": 18,
+        "fk_cm_b004_num_motivo_consulta": 8,
+        "estado_cita": "agendada",
+        "fecha": "2026-03-24",
+        "hora": "16:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 109,
+        "fk_ps_b001_num_paciente": 9,
+        "fk_cm_b005_num_sesion": 19,
+        "fk_cm_b004_num_motivo_consulta": 9,
+        "estado_cita": "atendida",
+        "fecha": "2026-04-25",
+        "hora": "17:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 110,
+        "fk_ps_b001_num_paciente": 10,
+        "fk_cm_b005_num_sesion": 20,
+        "fk_cm_b004_num_motivo_consulta": 10,
+        "estado_cita": "cancelada",
+        "fecha": "2026-05-26",
+        "hora": "08:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 111,
+        "fk_ps_b001_num_paciente": 11,
+        "fk_cm_b005_num_sesion": 21,
+        "fk_cm_b004_num_motivo_consulta": 11,
+        "estado_cita": "agendada",
+        "fecha": "2026-06-27",
+        "hora": "09:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 112,
+        "fk_ps_b001_num_paciente": 12,
+        "fk_cm_b005_num_sesion": 22,
+        "fk_cm_b004_num_motivo_consulta": 12,
+        "estado_cita": "atendida",
+        "fecha": "2026-07-28",
+        "hora": "10:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 113,
+        "fk_ps_b001_num_paciente": 13,
+        "fk_cm_b005_num_sesion": 23,
+        "fk_cm_b004_num_motivo_consulta": 13,
+        "estado_cita": "cancelada",
+        "fecha": "2026-01-01",
+        "hora": "11:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 114,
+        "fk_ps_b001_num_paciente": 14,
+        "fk_cm_b005_num_sesion": 24,
+        "fk_cm_b004_num_motivo_consulta": 14,
+        "estado_cita": "agendada",
+        "fecha": "2026-02-02",
+        "hora": "12:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 115,
+        "fk_ps_b001_num_paciente": 15,
+        "fk_cm_b005_num_sesion": 25,
+        "fk_cm_b004_num_motivo_consulta": 15,
+        "estado_cita": "atendida",
+        "fecha": "2026-03-03",
+        "hora": "13:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 116,
+        "fk_ps_b001_num_paciente": 16,
+        "fk_cm_b005_num_sesion": 26,
+        "fk_cm_b004_num_motivo_consulta": 16,
+        "estado_cita": "cancelada",
+        "fecha": "2026-04-04",
+        "hora": "14:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "nuevo",
+        "remitido": true
+      },
+      {
+        "pk_num_cita_medica": 117,
+        "fk_ps_b001_num_paciente": 17,
+        "fk_cm_b005_num_sesion": 27,
+        "fk_cm_b004_num_motivo_consulta": 17,
+        "estado_cita": "agendada",
+        "fecha": "2026-05-05",
+        "hora": "15:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 118,
+        "fk_ps_b001_num_paciente": 18,
+        "fk_cm_b005_num_sesion": 28,
+        "fk_cm_b004_num_motivo_consulta": 18,
+        "estado_cita": "atendida",
+        "fecha": "2026-06-06",
+        "hora": "16:00:00",
+        "tipo_cita": "primera vez",
+        "estado_caso": "nuevo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 119,
+        "fk_ps_b001_num_paciente": 19,
+        "fk_cm_b005_num_sesion": 29,
+        "fk_cm_b004_num_motivo_consulta": 19,
+        "estado_cita": "cancelada",
+        "fecha": "2026-07-07",
+        "hora": "17:00:00",
+        "tipo_cita": "emergencia",
+        "estado_caso": "sucesivo",
+        "remitido": false
+      },
+      {
+        "pk_num_cita_medica": 120,
+        "fk_ps_b001_num_paciente": 20,
+        "fk_cm_b005_num_sesion": 30,
+        "fk_cm_b004_num_motivo_consulta": 20,
+        "estado_cita": "agendada",
+        "fecha": "2026-01-08",
+        "hora": "08:00:00",
+        "tipo_cita": "control",
+        "estado_caso": "nuevo",
+        "remitido": false
+      }
+    ],
+    "cm_b003_diagnostico_enfermedad": [
+      {
+        "pk_num_diagnostico": 1,
+        "fk_ps_b001_num_paciente": 1,
+        "fk_cm_a002_num_enfermedad": 1,
+        "fk_cm_b002_num_cita_medica": 1,
+        "critico": true,
+        "tratamiento": "Tratamiento 1",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-01"
+      },
+      {
+        "pk_num_diagnostico": 2,
+        "fk_ps_b001_num_paciente": 2,
+        "fk_cm_a002_num_enfermedad": 2,
+        "fk_cm_b002_num_cita_medica": 2,
+        "critico": false,
+        "tratamiento": "Tratamiento 2",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-02"
+      },
+      {
+        "pk_num_diagnostico": 3,
+        "fk_ps_b001_num_paciente": 3,
+        "fk_cm_a002_num_enfermedad": 3,
+        "fk_cm_b002_num_cita_medica": 3,
+        "critico": false,
+        "tratamiento": "Tratamiento 3",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-03"
+      },
+      {
+        "pk_num_diagnostico": 4,
+        "fk_ps_b001_num_paciente": 4,
+        "fk_cm_a002_num_enfermedad": 4,
+        "fk_cm_b002_num_cita_medica": 4,
+        "critico": false,
+        "tratamiento": "Tratamiento 4",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-04"
+      },
+      {
+        "pk_num_diagnostico": 5,
+        "fk_ps_b001_num_paciente": 5,
+        "fk_cm_a002_num_enfermedad": 5,
+        "fk_cm_b002_num_cita_medica": 5,
+        "critico": false,
+        "tratamiento": "Tratamiento 5",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-05"
+      },
+      {
+        "pk_num_diagnostico": 6,
+        "fk_ps_b001_num_paciente": 6,
+        "fk_cm_a002_num_enfermedad": 6,
+        "fk_cm_b002_num_cita_medica": 6,
+        "critico": false,
+        "tratamiento": "Tratamiento 6",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-06"
+      },
+      {
+        "pk_num_diagnostico": 7,
+        "fk_ps_b001_num_paciente": 7,
+        "fk_cm_a002_num_enfermedad": 7,
+        "fk_cm_b002_num_cita_medica": 7,
+        "critico": false,
+        "tratamiento": "Tratamiento 7",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-07"
+      },
+      {
+        "pk_num_diagnostico": 8,
+        "fk_ps_b001_num_paciente": 8,
+        "fk_cm_a002_num_enfermedad": 8,
+        "fk_cm_b002_num_cita_medica": 8,
+        "critico": true,
+        "tratamiento": "Tratamiento 8",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-08"
+      },
+      {
+        "pk_num_diagnostico": 9,
+        "fk_ps_b001_num_paciente": 9,
+        "fk_cm_a002_num_enfermedad": 9,
+        "fk_cm_b002_num_cita_medica": 9,
+        "critico": false,
+        "tratamiento": "Tratamiento 9",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-09"
+      },
+      {
+        "pk_num_diagnostico": 10,
+        "fk_ps_b001_num_paciente": 10,
+        "fk_cm_a002_num_enfermedad": 10,
+        "fk_cm_b002_num_cita_medica": 10,
+        "critico": false,
+        "tratamiento": "Tratamiento 10",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-10"
+      },
+      {
+        "pk_num_diagnostico": 11,
+        "fk_ps_b001_num_paciente": 11,
+        "fk_cm_a002_num_enfermedad": 11,
+        "fk_cm_b002_num_cita_medica": 11,
+        "critico": false,
+        "tratamiento": "Tratamiento 11",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-11"
+      },
+      {
+        "pk_num_diagnostico": 12,
+        "fk_ps_b001_num_paciente": 12,
+        "fk_cm_a002_num_enfermedad": 12,
+        "fk_cm_b002_num_cita_medica": 12,
+        "critico": false,
+        "tratamiento": "Tratamiento 12",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-12"
+      },
+      {
+        "pk_num_diagnostico": 13,
+        "fk_ps_b001_num_paciente": 13,
+        "fk_cm_a002_num_enfermedad": 13,
+        "fk_cm_b002_num_cita_medica": 13,
+        "critico": false,
+        "tratamiento": "Tratamiento 13",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-13"
+      },
+      {
+        "pk_num_diagnostico": 14,
+        "fk_ps_b001_num_paciente": 14,
+        "fk_cm_a002_num_enfermedad": 14,
+        "fk_cm_b002_num_cita_medica": 14,
+        "critico": false,
+        "tratamiento": "Tratamiento 14",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-14"
+      },
+      {
+        "pk_num_diagnostico": 15,
+        "fk_ps_b001_num_paciente": 15,
+        "fk_cm_a002_num_enfermedad": 15,
+        "fk_cm_b002_num_cita_medica": 15,
+        "critico": true,
+        "tratamiento": "Tratamiento 15",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-15"
+      },
+      {
+        "pk_num_diagnostico": 16,
+        "fk_ps_b001_num_paciente": 16,
+        "fk_cm_a002_num_enfermedad": 1,
+        "fk_cm_b002_num_cita_medica": 16,
+        "critico": false,
+        "tratamiento": "Tratamiento 16",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-16"
+      },
+      {
+        "pk_num_diagnostico": 17,
+        "fk_ps_b001_num_paciente": 17,
+        "fk_cm_a002_num_enfermedad": 2,
+        "fk_cm_b002_num_cita_medica": 17,
+        "critico": false,
+        "tratamiento": "Tratamiento 17",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-17"
+      },
+      {
+        "pk_num_diagnostico": 18,
+        "fk_ps_b001_num_paciente": 18,
+        "fk_cm_a002_num_enfermedad": 3,
+        "fk_cm_b002_num_cita_medica": 18,
+        "critico": false,
+        "tratamiento": "Tratamiento 18",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-18"
+      },
+      {
+        "pk_num_diagnostico": 19,
+        "fk_ps_b001_num_paciente": 19,
+        "fk_cm_a002_num_enfermedad": 4,
+        "fk_cm_b002_num_cita_medica": 19,
+        "critico": false,
+        "tratamiento": "Tratamiento 19",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-19"
+      },
+      {
+        "pk_num_diagnostico": 20,
+        "fk_ps_b001_num_paciente": 20,
+        "fk_cm_a002_num_enfermedad": 5,
+        "fk_cm_b002_num_cita_medica": 20,
+        "critico": false,
+        "tratamiento": "Tratamiento 20",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-20"
+      },
+      {
+        "pk_num_diagnostico": 21,
+        "fk_ps_b001_num_paciente": 21,
+        "fk_cm_a002_num_enfermedad": 6,
+        "fk_cm_b002_num_cita_medica": 21,
+        "critico": false,
+        "tratamiento": "Tratamiento 21",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-21"
+      },
+      {
+        "pk_num_diagnostico": 22,
+        "fk_ps_b001_num_paciente": 22,
+        "fk_cm_a002_num_enfermedad": 7,
+        "fk_cm_b002_num_cita_medica": 22,
+        "critico": true,
+        "tratamiento": "Tratamiento 22",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-22"
+      },
+      {
+        "pk_num_diagnostico": 23,
+        "fk_ps_b001_num_paciente": 23,
+        "fk_cm_a002_num_enfermedad": 8,
+        "fk_cm_b002_num_cita_medica": 23,
+        "critico": false,
+        "tratamiento": "Tratamiento 23",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-23"
+      },
+      {
+        "pk_num_diagnostico": 24,
+        "fk_ps_b001_num_paciente": 24,
+        "fk_cm_a002_num_enfermedad": 9,
+        "fk_cm_b002_num_cita_medica": 24,
+        "critico": false,
+        "tratamiento": "Tratamiento 24",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-24"
+      },
+      {
+        "pk_num_diagnostico": 25,
+        "fk_ps_b001_num_paciente": 25,
+        "fk_cm_a002_num_enfermedad": 10,
+        "fk_cm_b002_num_cita_medica": 25,
+        "critico": false,
+        "tratamiento": "Tratamiento 25",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-25"
+      },
+      {
+        "pk_num_diagnostico": 26,
+        "fk_ps_b001_num_paciente": 26,
+        "fk_cm_a002_num_enfermedad": 11,
+        "fk_cm_b002_num_cita_medica": 26,
+        "critico": false,
+        "tratamiento": "Tratamiento 26",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-26"
+      },
+      {
+        "pk_num_diagnostico": 27,
+        "fk_ps_b001_num_paciente": 27,
+        "fk_cm_a002_num_enfermedad": 12,
+        "fk_cm_b002_num_cita_medica": 27,
+        "critico": false,
+        "tratamiento": "Tratamiento 27",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-27"
+      },
+      {
+        "pk_num_diagnostico": 28,
+        "fk_ps_b001_num_paciente": 28,
+        "fk_cm_a002_num_enfermedad": 13,
+        "fk_cm_b002_num_cita_medica": 28,
+        "critico": false,
+        "tratamiento": "Tratamiento 28",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-28"
+      },
+      {
+        "pk_num_diagnostico": 29,
+        "fk_ps_b001_num_paciente": 29,
+        "fk_cm_a002_num_enfermedad": 14,
+        "fk_cm_b002_num_cita_medica": 29,
+        "critico": true,
+        "tratamiento": "Tratamiento 29",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-01"
+      },
+      {
+        "pk_num_diagnostico": 30,
+        "fk_ps_b001_num_paciente": 30,
+        "fk_cm_a002_num_enfermedad": 15,
+        "fk_cm_b002_num_cita_medica": 30,
+        "critico": false,
+        "tratamiento": "Tratamiento 30",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-02"
+      },
+      {
+        "pk_num_diagnostico": 31,
+        "fk_ps_b001_num_paciente": 31,
+        "fk_cm_a002_num_enfermedad": 1,
+        "fk_cm_b002_num_cita_medica": 31,
+        "critico": false,
+        "tratamiento": "Tratamiento 31",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-03"
+      },
+      {
+        "pk_num_diagnostico": 32,
+        "fk_ps_b001_num_paciente": 32,
+        "fk_cm_a002_num_enfermedad": 2,
+        "fk_cm_b002_num_cita_medica": 32,
+        "critico": false,
+        "tratamiento": "Tratamiento 32",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-04"
+      },
+      {
+        "pk_num_diagnostico": 33,
+        "fk_ps_b001_num_paciente": 33,
+        "fk_cm_a002_num_enfermedad": 3,
+        "fk_cm_b002_num_cita_medica": 33,
+        "critico": false,
+        "tratamiento": "Tratamiento 33",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-05"
+      },
+      {
+        "pk_num_diagnostico": 34,
+        "fk_ps_b001_num_paciente": 34,
+        "fk_cm_a002_num_enfermedad": 4,
+        "fk_cm_b002_num_cita_medica": 34,
+        "critico": false,
+        "tratamiento": "Tratamiento 34",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-06"
+      },
+      {
+        "pk_num_diagnostico": 35,
+        "fk_ps_b001_num_paciente": 35,
+        "fk_cm_a002_num_enfermedad": 5,
+        "fk_cm_b002_num_cita_medica": 35,
+        "critico": false,
+        "tratamiento": "Tratamiento 35",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-07"
+      },
+      {
+        "pk_num_diagnostico": 36,
+        "fk_ps_b001_num_paciente": 36,
+        "fk_cm_a002_num_enfermedad": 6,
+        "fk_cm_b002_num_cita_medica": 36,
+        "critico": true,
+        "tratamiento": "Tratamiento 36",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-08"
+      },
+      {
+        "pk_num_diagnostico": 37,
+        "fk_ps_b001_num_paciente": 37,
+        "fk_cm_a002_num_enfermedad": 7,
+        "fk_cm_b002_num_cita_medica": 37,
+        "critico": false,
+        "tratamiento": "Tratamiento 37",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-09"
+      },
+      {
+        "pk_num_diagnostico": 38,
+        "fk_ps_b001_num_paciente": 38,
+        "fk_cm_a002_num_enfermedad": 8,
+        "fk_cm_b002_num_cita_medica": 38,
+        "critico": false,
+        "tratamiento": "Tratamiento 38",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-10"
+      },
+      {
+        "pk_num_diagnostico": 39,
+        "fk_ps_b001_num_paciente": 39,
+        "fk_cm_a002_num_enfermedad": 9,
+        "fk_cm_b002_num_cita_medica": 39,
+        "critico": false,
+        "tratamiento": "Tratamiento 39",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-11"
+      },
+      {
+        "pk_num_diagnostico": 40,
+        "fk_ps_b001_num_paciente": 40,
+        "fk_cm_a002_num_enfermedad": 10,
+        "fk_cm_b002_num_cita_medica": 40,
+        "critico": false,
+        "tratamiento": "Tratamiento 40",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-12"
+      },
+      {
+        "pk_num_diagnostico": 41,
+        "fk_ps_b001_num_paciente": 41,
+        "fk_cm_a002_num_enfermedad": 11,
+        "fk_cm_b002_num_cita_medica": 41,
+        "critico": false,
+        "tratamiento": "Tratamiento 41",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-13"
+      },
+      {
+        "pk_num_diagnostico": 42,
+        "fk_ps_b001_num_paciente": 42,
+        "fk_cm_a002_num_enfermedad": 12,
+        "fk_cm_b002_num_cita_medica": 42,
+        "critico": false,
+        "tratamiento": "Tratamiento 42",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-14"
+      },
+      {
+        "pk_num_diagnostico": 43,
+        "fk_ps_b001_num_paciente": 43,
+        "fk_cm_a002_num_enfermedad": 13,
+        "fk_cm_b002_num_cita_medica": 43,
+        "critico": true,
+        "tratamiento": "Tratamiento 43",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-15"
+      },
+      {
+        "pk_num_diagnostico": 44,
+        "fk_ps_b001_num_paciente": 44,
+        "fk_cm_a002_num_enfermedad": 14,
+        "fk_cm_b002_num_cita_medica": 44,
+        "critico": false,
+        "tratamiento": "Tratamiento 44",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-16"
+      },
+      {
+        "pk_num_diagnostico": 45,
+        "fk_ps_b001_num_paciente": 45,
+        "fk_cm_a002_num_enfermedad": 15,
+        "fk_cm_b002_num_cita_medica": 45,
+        "critico": false,
+        "tratamiento": "Tratamiento 45",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-17"
+      },
+      {
+        "pk_num_diagnostico": 46,
+        "fk_ps_b001_num_paciente": 46,
+        "fk_cm_a002_num_enfermedad": 1,
+        "fk_cm_b002_num_cita_medica": 46,
+        "critico": false,
+        "tratamiento": "Tratamiento 46",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-18"
+      },
+      {
+        "pk_num_diagnostico": 47,
+        "fk_ps_b001_num_paciente": 47,
+        "fk_cm_a002_num_enfermedad": 2,
+        "fk_cm_b002_num_cita_medica": 47,
+        "critico": false,
+        "tratamiento": "Tratamiento 47",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-19"
+      },
+      {
+        "pk_num_diagnostico": 48,
+        "fk_ps_b001_num_paciente": 48,
+        "fk_cm_a002_num_enfermedad": 3,
+        "fk_cm_b002_num_cita_medica": 48,
+        "critico": false,
+        "tratamiento": "Tratamiento 48",
+        "etapa": "leve",
+        "fecha_diagnostico": "2026-01-20"
+      },
+      {
+        "pk_num_diagnostico": 49,
+        "fk_ps_b001_num_paciente": 49,
+        "fk_cm_a002_num_enfermedad": 4,
+        "fk_cm_b002_num_cita_medica": 49,
+        "critico": false,
+        "tratamiento": "Tratamiento 49",
+        "etapa": "inicial",
+        "fecha_diagnostico": "2026-01-21"
+      },
+      {
+        "pk_num_diagnostico": 50,
+        "fk_ps_b001_num_paciente": 50,
+        "fk_cm_a002_num_enfermedad": 5,
+        "fk_cm_b002_num_cita_medica": 50,
+        "critico": true,
+        "tratamiento": "Tratamiento 50",
+        "etapa": "avanzada",
+        "fecha_diagnostico": "2026-01-22"
+      }
+    ],
+    "cm_b006_bloqueo_agenda": [
+      {
+        "pk_num_bloqueo_agenda": 1,
+        "fk_cm_b001_num_medico_ministerio_salud": 10001,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-01-01",
+        "fecha_fin": "2026-01-04",
+        "razon_bloqueo": "permiso",
+        "motivo_bloqueo": "Bloqueo 1"
+      },
+      {
+        "pk_num_bloqueo_agenda": 2,
+        "fk_cm_b001_num_medico_ministerio_salud": 10002,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-02-02",
+        "fecha_fin": "2026-02-05",
+        "razon_bloqueo": "reposo",
+        "motivo_bloqueo": "Bloqueo 2"
+      },
+      {
+        "pk_num_bloqueo_agenda": 3,
+        "fk_cm_b001_num_medico_ministerio_salud": 10003,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-03-03",
+        "fecha_fin": "2026-03-06",
+        "razon_bloqueo": "capacitacion",
+        "motivo_bloqueo": "Bloqueo 3"
+      },
+      {
+        "pk_num_bloqueo_agenda": 4,
+        "fk_cm_b001_num_medico_ministerio_salud": 10004,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-04-04",
+        "fecha_fin": "2026-04-07",
+        "razon_bloqueo": "vacaciones",
+        "motivo_bloqueo": "Bloqueo 4"
+      },
+      {
+        "pk_num_bloqueo_agenda": 5,
+        "fk_cm_b001_num_medico_ministerio_salud": 10005,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-05-05",
+        "fecha_fin": "2026-05-08",
+        "razon_bloqueo": "permiso",
+        "motivo_bloqueo": "Bloqueo 5"
+      },
+      {
+        "pk_num_bloqueo_agenda": 6,
+        "fk_cm_b001_num_medico_ministerio_salud": 10006,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-06-06",
+        "fecha_fin": "2026-06-09",
+        "razon_bloqueo": "reposo",
+        "motivo_bloqueo": "Bloqueo 6"
+      },
+      {
+        "pk_num_bloqueo_agenda": 7,
+        "fk_cm_b001_num_medico_ministerio_salud": 10007,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-07-07",
+        "fecha_fin": "2026-07-10",
+        "razon_bloqueo": "capacitacion",
+        "motivo_bloqueo": "Bloqueo 7"
+      },
+      {
+        "pk_num_bloqueo_agenda": 8,
+        "fk_cm_b001_num_medico_ministerio_salud": 10008,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-01-08",
+        "fecha_fin": "2026-01-11",
+        "razon_bloqueo": "vacaciones",
+        "motivo_bloqueo": "Bloqueo 8"
+      },
+      {
+        "pk_num_bloqueo_agenda": 9,
+        "fk_cm_b001_num_medico_ministerio_salud": 10009,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-02-09",
+        "fecha_fin": "2026-02-12",
+        "razon_bloqueo": "permiso",
+        "motivo_bloqueo": "Bloqueo 9"
+      },
+      {
+        "pk_num_bloqueo_agenda": 10,
+        "fk_cm_b001_num_medico_ministerio_salud": 10010,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-03-10",
+        "fecha_fin": "2026-03-13",
+        "razon_bloqueo": "reposo",
+        "motivo_bloqueo": "Bloqueo 10"
+      },
+      {
+        "pk_num_bloqueo_agenda": 11,
+        "fk_cm_b001_num_medico_ministerio_salud": 10011,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-04-11",
+        "fecha_fin": "2026-04-14",
+        "razon_bloqueo": "capacitacion",
+        "motivo_bloqueo": "Bloqueo 11"
+      },
+      {
+        "pk_num_bloqueo_agenda": 12,
+        "fk_cm_b001_num_medico_ministerio_salud": 10012,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-05-12",
+        "fecha_fin": "2026-05-15",
+        "razon_bloqueo": "vacaciones",
+        "motivo_bloqueo": "Bloqueo 12"
+      },
+      {
+        "pk_num_bloqueo_agenda": 13,
+        "fk_cm_b001_num_medico_ministerio_salud": 10013,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-06-13",
+        "fecha_fin": "2026-06-16",
+        "razon_bloqueo": "permiso",
+        "motivo_bloqueo": "Bloqueo 13"
+      },
+      {
+        "pk_num_bloqueo_agenda": 14,
+        "fk_cm_b001_num_medico_ministerio_salud": 10014,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-07-14",
+        "fecha_fin": "2026-07-17",
+        "razon_bloqueo": "reposo",
+        "motivo_bloqueo": "Bloqueo 14"
+      },
+      {
+        "pk_num_bloqueo_agenda": 15,
+        "fk_cm_b001_num_medico_ministerio_salud": 10015,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-01-15",
+        "fecha_fin": "2026-01-18",
+        "razon_bloqueo": "capacitacion",
+        "motivo_bloqueo": "Bloqueo 15"
+      },
+      {
+        "pk_num_bloqueo_agenda": 16,
+        "fk_cm_b001_num_medico_ministerio_salud": 10001,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-02-16",
+        "fecha_fin": "2026-02-19",
+        "razon_bloqueo": "vacaciones",
+        "motivo_bloqueo": "Bloqueo 16"
+      },
+      {
+        "pk_num_bloqueo_agenda": 17,
+        "fk_cm_b001_num_medico_ministerio_salud": 10002,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-03-17",
+        "fecha_fin": "2026-03-20",
+        "razon_bloqueo": "permiso",
+        "motivo_bloqueo": "Bloqueo 17"
+      },
+      {
+        "pk_num_bloqueo_agenda": 18,
+        "fk_cm_b001_num_medico_ministerio_salud": 10003,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-04-18",
+        "fecha_fin": "2026-04-21",
+        "razon_bloqueo": "reposo",
+        "motivo_bloqueo": "Bloqueo 18"
+      },
+      {
+        "pk_num_bloqueo_agenda": 19,
+        "fk_cm_b001_num_medico_ministerio_salud": 10004,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-05-19",
+        "fecha_fin": "2026-05-22",
+        "razon_bloqueo": "capacitacion",
+        "motivo_bloqueo": "Bloqueo 19"
+      },
+      {
+        "pk_num_bloqueo_agenda": 20,
+        "fk_cm_b001_num_medico_ministerio_salud": 10005,
+        "fk_cm_b005_num_sesion": null,
+        "fecha_inicio": "2026-06-20",
+        "fecha_fin": "2026-06-23",
+        "razon_bloqueo": "vacaciones",
+        "motivo_bloqueo": "Bloqueo 20"
+      }
+    ],
+    "cm_c001_diagnostico_sintoma": [
+      {
+        "fk_cm_b003_num_diagnostico": 1,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 2,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 3,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 4,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 5,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 6,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 7,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 8,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 9,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 10,
+        "fk_cm_a003_num_sintoma": 10
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 11,
+        "fk_cm_a003_num_sintoma": 11
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 12,
+        "fk_cm_a003_num_sintoma": 12
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 13,
+        "fk_cm_a003_num_sintoma": 13
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 14,
+        "fk_cm_a003_num_sintoma": 14
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 15,
+        "fk_cm_a003_num_sintoma": 15
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 16,
+        "fk_cm_a003_num_sintoma": 16
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 17,
+        "fk_cm_a003_num_sintoma": 17
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 18,
+        "fk_cm_a003_num_sintoma": 18
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 19,
+        "fk_cm_a003_num_sintoma": 19
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 20,
+        "fk_cm_a003_num_sintoma": 20
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 21,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 22,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 23,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 24,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 25,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 26,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 27,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 28,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 29,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 30,
+        "fk_cm_a003_num_sintoma": 10
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 31,
+        "fk_cm_a003_num_sintoma": 11
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 32,
+        "fk_cm_a003_num_sintoma": 12
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 33,
+        "fk_cm_a003_num_sintoma": 13
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 34,
+        "fk_cm_a003_num_sintoma": 14
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 35,
+        "fk_cm_a003_num_sintoma": 15
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 36,
+        "fk_cm_a003_num_sintoma": 16
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 37,
+        "fk_cm_a003_num_sintoma": 17
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 38,
+        "fk_cm_a003_num_sintoma": 18
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 39,
+        "fk_cm_a003_num_sintoma": 19
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 40,
+        "fk_cm_a003_num_sintoma": 20
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 41,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 42,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 43,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 44,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 45,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 46,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 47,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 48,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 49,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b003_num_diagnostico": 50,
+        "fk_cm_a003_num_sintoma": 10
+      }
+    ],
+    "cm_c002_motivo_sintoma": [
+      {
+        "fk_cm_b004_num_motivo_consulta": 1,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 2,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 3,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 4,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 5,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 6,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 7,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 8,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 9,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 10,
+        "fk_cm_a003_num_sintoma": 10
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 11,
+        "fk_cm_a003_num_sintoma": 11
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 12,
+        "fk_cm_a003_num_sintoma": 12
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 13,
+        "fk_cm_a003_num_sintoma": 13
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 14,
+        "fk_cm_a003_num_sintoma": 14
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 15,
+        "fk_cm_a003_num_sintoma": 15
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 16,
+        "fk_cm_a003_num_sintoma": 16
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 17,
+        "fk_cm_a003_num_sintoma": 17
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 18,
+        "fk_cm_a003_num_sintoma": 18
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 19,
+        "fk_cm_a003_num_sintoma": 19
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 20,
+        "fk_cm_a003_num_sintoma": 20
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 21,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 22,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 23,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 24,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 25,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 26,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 27,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 28,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 29,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 30,
+        "fk_cm_a003_num_sintoma": 10
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 31,
+        "fk_cm_a003_num_sintoma": 11
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 32,
+        "fk_cm_a003_num_sintoma": 12
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 33,
+        "fk_cm_a003_num_sintoma": 13
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 34,
+        "fk_cm_a003_num_sintoma": 14
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 35,
+        "fk_cm_a003_num_sintoma": 15
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 36,
+        "fk_cm_a003_num_sintoma": 16
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 37,
+        "fk_cm_a003_num_sintoma": 17
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 38,
+        "fk_cm_a003_num_sintoma": 18
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 39,
+        "fk_cm_a003_num_sintoma": 19
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 40,
+        "fk_cm_a003_num_sintoma": 20
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 41,
+        "fk_cm_a003_num_sintoma": 1
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 42,
+        "fk_cm_a003_num_sintoma": 2
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 43,
+        "fk_cm_a003_num_sintoma": 3
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 44,
+        "fk_cm_a003_num_sintoma": 4
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 45,
+        "fk_cm_a003_num_sintoma": 5
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 46,
+        "fk_cm_a003_num_sintoma": 6
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 47,
+        "fk_cm_a003_num_sintoma": 7
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 48,
+        "fk_cm_a003_num_sintoma": 8
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 49,
+        "fk_cm_a003_num_sintoma": 9
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 50,
+        "fk_cm_a003_num_sintoma": 10
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 51,
+        "fk_cm_a003_num_sintoma": 11
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 52,
+        "fk_cm_a003_num_sintoma": 12
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 53,
+        "fk_cm_a003_num_sintoma": 13
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 54,
+        "fk_cm_a003_num_sintoma": 14
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 55,
+        "fk_cm_a003_num_sintoma": 15
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 56,
+        "fk_cm_a003_num_sintoma": 16
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 57,
+        "fk_cm_a003_num_sintoma": 17
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 58,
+        "fk_cm_a003_num_sintoma": 18
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 59,
+        "fk_cm_a003_num_sintoma": 19
+      },
+      {
+        "fk_cm_b004_num_motivo_consulta": 60,
+        "fk_cm_a003_num_sintoma": 20
+      }
+    ]
+  }
+}

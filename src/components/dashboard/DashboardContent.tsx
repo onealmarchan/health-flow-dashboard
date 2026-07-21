@@ -55,6 +55,9 @@ export function DashboardContent() {
       pacientesDelta: pacientes.change || 0,
       cargaMedia: carga.total || 0,
       cargaMeta: carga.meta || 250,
+      cargaPct: carga.total > 0 && carga.meta > 0
+        ? Math.round((carga.total / carga.meta) * 1000) / 10
+        : 0,
       desviacionCarga: cargaEsp.length > 0
         ? cargaEsp.reduce((sum, e) => sum + e.desviacion, 0) / cargaEsp.length
         : 0,
@@ -132,13 +135,9 @@ export function DashboardContent() {
         <MetricCard
           title="Carga / Esp."
           value={metrics.cargaMedia}
-          subtitle={
-            metrics.topEspecialidad
-              ? `${metrics.topEspecialidad.especialidad}: ${metrics.topEspecialidad.desviacion >= 0 ? '+' : ''}${metrics.topEspecialidad.desviacion.toFixed(1)}%`
-              : `Meta ${metrics.cargaMeta}`
-          }
+          subtitle={`${metrics.cargaPct.toFixed(0)}% de capacidad (meta: ${metrics.cargaMeta})`}
           icon={Stethoscope}
-          semaforo={getSemaforo('cargaEspecialista', metrics.desviacionCarga)}
+          semaforo={getSemaforo('cargaEspecialista', metrics.cargaPct)}
         />
         <MetricCard
           title="% Urgencias"

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, ChevronsUpDown, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { RowActions } from '@/components/shared/RowActions';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { cn } from '@/lib/utils';
 import { useReportableTable } from '@/components/reports/useReportableTable';
@@ -175,6 +176,7 @@ export function CitasPage() {
   const [localAppointments, setLocalAppointments] = useState<any[]>([]);
   const { data: apiCitas = [], isLoading: isLoadingCitas } = useCitas();
   const createCita = useCreateCita();
+  const updateCita = useUpdateCita();
   const createMotivoConsulta = useCreateMotivoConsulta();
 
   const mergedAppointments = useMemo(() => {
@@ -315,6 +317,7 @@ export function CitasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'confirmada' | 'pendiente' | 'cancelada' | 'atendida'>('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [cancelCitaId, setCancelCitaId] = useState<number | string | null>(null);
   const itemsPerPage = 8;
 
   const emptyPatient = {
@@ -333,8 +336,18 @@ export function CitasPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   const persistNewPatient = () => {
+    if (isMinor && !newPatient.ciRepresentante.trim()) {
+      toast.error('La cédula del representante es obligatoria para menores');
+      return;
+    }
+
+    if (!selectedComunidadId) {
+      toast.error('Selecciona una comunidad');
+      return;
+    }
+
     const validationError = validateWithZod(pacienteRegistroRapidoSchema, {
-      ci: isMinor ? '' : newPatient.ci,
+      ci: isMinor ? newPatient.ciRepresentante.trim() : newPatient.ci,
       nombres: newPatient.nombres,
       apellidos: newPatient.apellidos,
       fechaNac: newPatient.fechaNac,
@@ -344,7 +357,7 @@ export function CitasPage() {
       nacionalidad: newPatient.nacionalidad as 'Venezolano' | 'Extranjero' | '',
       estado: newPatient.estado,
       estadoCivil: newPatient.estadoCivil as any,
-      comunidadId: selectedComunidadId || 0,
+      comunidadId: selectedComunidadId,
     });
 
     if (validationError) {
@@ -352,17 +365,12 @@ export function CitasPage() {
       return;
     }
 
-    if (isMinor && !newPatient.ciRepresentante.trim()) {
-      toast.error('La cédula del representante es obligatoria para menores');
-      return;
-    }
-
     setFormErrors({});
     const ciFinal = isMinor && newPatient.ciRepresentante
-      ? `${newPatient.ciRepresentante}-R01`
+      ? `${newPatient.ciRepresentante.trim()}-R01`
       : newPatient.ci;
     createPaciente.mutate({
-      fk_ps_a001_num_comunidad: selectedComunidadId!,
+      fk_ps_a001_num_comunidad: selectedComunidadId,
       ci: ciFinal,
       nombres: newPatient.nombres.trim(),
       apellidos: newPatient.apellidos.trim(),
@@ -412,6 +420,22 @@ export function CitasPage() {
     setSelectedComunidadId(null);
     setShowNewComunidadForm(false);
     setComunidadSearch('');
+  };
+
+  const handleCancelCita = async () => {
+    if (!cancelCitaId) return;
+    try {
+      await updateCita.mutateAsync({
+        id: Number(cancelCitaId),
+        data: { estado_cita: 'cancelada' },
+      });
+      toast.success('Cita cancelada exitosamente');
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg || 'Error al cancelar la cita');
+    } finally {
+      setCancelCitaId(null);
+    }
   };
 
   const handleMinorChange = (checked: boolean) => {
@@ -816,7 +840,7 @@ export function CitasPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="w-10 p-3">{appointmentsReports.HeaderCheckbox}</th>
-                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado'].map(h => (
+                {['Paciente', 'Doctor', 'Especialidad', 'Fecha', 'Hora', 'Estado', 'Acciones'].map(h => (
                   <th key={h} className="text-left p-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
@@ -839,11 +863,24 @@ export function CitasPage() {
                         {apt.status}
                       </span>
                     </td>
+                    <td className="p-3">
+                      {(apt.status === 'pendiente' || apt.status === 'confirmada') && (
+                        <RowActions actions={[
+                          {
+                            icon: Ban,
+                            label: 'Cancelar cita',
+                            variant: 'destructive',
+                            animateOnClick: true,
+                            onClick: () => setCancelCitaId(apt.id),
+                          },
+                        ]} />
+                      )}
+                    </td>
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={7} className="p-6 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="p-6 text-center text-sm text-muted-foreground">
                     No hay citas que coincidan con los filtros actuales.
                   </td>
                 </tr>
@@ -1677,6 +1714,14 @@ export function CitasPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={cancelCitaId !== null}
+        onOpenChange={(open) => { if (!open) setCancelCitaId(null); }}
+        onConfirm={handleCancelCita}
+        title="¿Cancelar esta cita?"
+        description="La cita quedará registrada como cancelada. Esta acción no se puede deshacer."
+      />
     </div>
   );
 }

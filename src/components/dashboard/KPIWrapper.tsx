@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { KPIExportPopover } from './KPIExportPopover';
+import { getSemaforo, semaforoClasses, type KpiKind } from '@/lib/kpi-semaforos';
 
 export interface KPIView {
   label: string;
   /** Stable id used for filtering by preset and export filename lookup. */
   id?: string;
   component: React.ReactNode;
+  /** Semáforo threshold kind — when paired with semaforoValue, renders a colored indicator dot. */
+  semaforoKind?: KpiKind;
+  /** Numeric value evaluated against semaforoKind thresholds. */
+  semaforoValue?: number;
 }
 
 interface KPIWrapperProps {
@@ -89,7 +94,7 @@ export function KPIWrapper({ views, selectedKpiIds, className }: KPIWrapperProps
         </div>
       )}
       {safeViews.length > 1 && (
-        <div className="absolute top-3.5 left-3 flex gap-1.5">
+        <div className="absolute top-3.5 left-3 flex items-center gap-1.5">
           {safeViews.map((_, idx) => (
             <div key={idx}
               className={cn(
@@ -98,6 +103,30 @@ export function KPIWrapper({ views, selectedKpiIds, className }: KPIWrapperProps
               )}
             />
           ))}
+          {active.semaforoKind && active.semaforoValue != null && (() => {
+            const sem = getSemaforo(active.semaforoKind!, active.semaforoValue!);
+            const cls = semaforoClasses[sem];
+            return (
+              <span className={cn("inline-flex items-center gap-1 ml-1", cls.text)}
+                title={sem === 'verde' ? 'Aceptable' : sem === 'ambar' ? 'Transitorio' : 'Crítico'}>
+                <span className={cn("w-2 h-2 rounded-full ring-1", cls.ring, cls.bg)} />
+              </span>
+            );
+          })()}
+        </div>
+      )}
+      {safeViews.length === 1 && active.semaforoKind && active.semaforoValue != null && (
+        <div className="absolute top-3.5 left-3 z-10">
+          {(() => {
+            const sem = getSemaforo(active.semaforoKind!, active.semaforoValue!);
+            const cls = semaforoClasses[sem];
+            return (
+              <span className={cn("inline-flex items-center gap-1", cls.text)}
+                title={sem === 'verde' ? 'Aceptable' : sem === 'ambar' ? 'Transitorio' : 'Crítico'}>
+                <span className={cn("w-2 h-2 rounded-full ring-1", cls.ring, cls.bg)} />
+              </span>
+            );
+          })()}
         </div>
       )}
       {active.component}
