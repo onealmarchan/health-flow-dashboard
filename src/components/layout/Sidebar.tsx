@@ -69,8 +69,8 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
     )}>
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-md shrink-0">
-            <Activity className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-xl bg-card shadow-md shrink-0 flex items-center justify-center overflow-hidden border border-border/40">
+            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-0.5" />
           </div>
           {(!collapsed || isMobile) && (
             <div className="animate-fade-in overflow-hidden">

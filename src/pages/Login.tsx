@@ -236,8 +236,8 @@ export default function Login() {
       >
         {/* Brand header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center shadow-md mb-3">
-            <Activity className="w-6 h-6 text-primary-foreground" />
+          <div className="w-12 h-12 rounded-xl bg-card shadow-md mb-3 flex items-center justify-center overflow-hidden border border-border/40">
+            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-1" />
           </div>
           <h1 className="text-lg font-bold text-foreground">MediCitas</h1>
           <p className="text-xs text-muted-foreground">Sistema de Gestión Médica</p>
