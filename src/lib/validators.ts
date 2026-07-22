@@ -83,13 +83,14 @@ export const especialidadSchema = z.object({
   descripcion: z.string().min(1, 'Descripción requerida').max(100, 'Máximo 100 caracteres'),
 });
 
-// -------- Diagnóstico --------
+// -------- Síntoma --------
 export const sintomaSchema = z.object({
   nombre: z.string().min(3, 'Nombre mínimo 3 caracteres'),
   descripcion: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
   gravedad: z.number().int().min(1, 'Gravedad 1–5').max(5, 'Gravedad 1–5'),
 });
 
+// -------- Diagnóstico --------
 export const diagnosticoSchema = z.object({
   sintomas: z.array(sintomaSchema).min(1, 'Agrega al menos un síntoma'),
   enfermedad: z.string().min(1, 'Selecciona la enfermedad'),
@@ -103,3 +104,43 @@ export const usuarioSchema = (emailsExistentes: Set<string> = new Set()) => z.ob
   email: z.string().email('Email inválido').refine(v => !emailsExistentes.has(v.toLowerCase()), 'Este correo ya está registrado'),
   rol: z.enum(['Administrador', 'Auxiliar Administrativo'], { required_error: 'Selecciona un rol' }),
 });
+
+// -------- Usuario completo (registro/editar) --------
+export const usuarioCompletoSchema = (emailsExistentes: Set<string> = new Set(), isEdit: boolean = false) => z.object({
+  nombre: nombreField('El nombre'),
+  apellido: z.string().max(100, 'Máximo 100 caracteres').optional().or(z.literal('')),
+  email: z.string().email('Email inválido').refine(v => !emailsExistentes.has(v.toLowerCase()), 'Este correo ya está registrado'),
+  cedula: isEdit
+    ? z.string().optional().or(z.literal(''))
+    : z.string().min(6, 'Mínimo 6 dígitos').max(10, 'Máximo 10 caracteres').regex(/^\d{6,10}(-R\d{1,3})?$/, 'Cédula: 6-10 dígitos (ej: 12345678 o 12345678-R1)'),
+  telefono: z.string().regex(/^\d{11}$/, 'El teléfono debe tener 11 dígitos numéricos').optional().or(z.literal('')),
+  password: isEdit
+    ? z.string().optional().or(z.literal(''))
+    : z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  rol: z.enum(['Administrador', 'Auxiliar Administrativo'], { required_error: 'Selecciona un rol' }),
+});
+export type UsuarioCompletoInput = z.infer<ReturnType<typeof usuarioCompletoSchema>>;
+
+// -------- Nueva enfermedad (Diagnósticos) --------
+export const nuevaEnfermedadSchema = z.object({
+  nombre: z.string().min(3, 'Nombre mínimo 3 caracteres').max(100, 'Máximo 100 caracteres'),
+  descripcion: z.string().max(200, 'Máximo 200 caracteres').optional().or(z.literal('')),
+  cronico: z.boolean().optional(),
+});
+
+// -------- Bloqueo de jornada --------
+export const bloqueoSchema = z.object({
+  fechaInicio: z.string().min(1, 'Fecha de inicio requerida'),
+  fechaFin: z.string().min(1, 'Fecha de fin requerida'),
+  turno: z.enum(['Mañana', 'Tarde', 'Noche', 'Completo'], { required_error: 'Selecciona el turno' }),
+  razon: z.string().min(1, 'La razón es obligatoria').max(100, 'Máximo 100 caracteres'),
+  observaciones: z.string().max(200, 'Máximo 200 caracteres').optional().or(z.literal('')),
+}).refine(
+  (data) => {
+    if (data.fechaInicio && data.fechaFin) {
+      return new Date(data.fechaFin) >= new Date(data.fechaInicio);
+    }
+    return true;
+  },
+  { message: 'La fecha de fin debe ser igual o posterior a la fecha de inicio', path: ['fechaFin'] }
+);

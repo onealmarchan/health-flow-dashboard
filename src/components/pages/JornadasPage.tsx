@@ -836,7 +836,7 @@ export function JornadasPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="overflow-x-auto">
+                   <div className="overflow-x-auto scrollbar-thin">
                     <table className="w-full text-sm">
                       <thead className="sticky top-0 bg-card z-10">
                         <tr className="border-b border-border">
@@ -1039,7 +1039,7 @@ export function JornadasPage() {
                   {filteredBloqueos.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">Sin bloqueos registrados</p>
                   ) : (
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto scrollbar-thin">
                       <table className="w-full text-sm">
                         <thead className="sticky top-0 bg-card z-10">
                           <tr className="border-b border-border">
@@ -1101,7 +1101,7 @@ export function JornadasPage() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-foreground">Fecha Inicio</Label>
+                <Label className="text-foreground">Fecha Inicio <span className="text-destructive">*</span></Label>
                 <Input
                   type="date"
                   value={blockModal.fechaInicio}
@@ -1110,7 +1110,7 @@ export function JornadasPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Fecha Fin</Label>
+                <Label className="text-foreground">Fecha Fin <span className="text-destructive">*</span></Label>
                 <Input
                   type="date"
                   value={blockModal.fechaFin}
@@ -1120,7 +1120,7 @@ export function JornadasPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Turno</Label>
+              <Label className="text-foreground">Turno <span className="text-destructive">*</span></Label>
               <Select
                 value={blockModal.turno}
                 onValueChange={v => setBlockModal(s => ({ ...s, turno: v as TurnoOrAll }))}
@@ -1136,7 +1136,7 @@ export function JornadasPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Razón</Label>
+              <Label className="text-foreground">Razón <span className="text-destructive">*</span></Label>
               <Select value={blockModal.razon} onValueChange={v => setBlockModal(s => ({ ...s, razon: v }))}>
                 <SelectTrigger><SelectValue placeholder="Seleccionar razón" /></SelectTrigger>
                 <SelectContent className="bg-popover border border-border z-50">

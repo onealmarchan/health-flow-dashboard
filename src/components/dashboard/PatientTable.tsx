@@ -191,7 +191,7 @@ export function PatientTable() {
 
         {reports.ContextBar}
 
-        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border">

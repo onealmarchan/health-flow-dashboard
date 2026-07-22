@@ -147,7 +147,7 @@ export function AvailabilityTable({ data, onEdit, filter: propFilter, onFilterCh
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto scrollbar-thin">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">

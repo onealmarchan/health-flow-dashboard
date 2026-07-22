@@ -6,6 +6,7 @@ import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useSesionesMedicas } from '@/services/useJornadas';
 import { useDiagnosticos, useEnfermedades } from '@/services/useDiagnosticos';
 import { useDistribucionEnfermedades, useReconsultasCriticos, useTasaDemandaEspecialidad } from '@/services/useIndicadores';
+import { usePacientes } from '@/services/usePacientes';
 import type { KpiKind } from '@/lib/kpi-semaforos';
 import { semaforoFill } from '@/lib/kpi-semaforos';
 
@@ -123,21 +124,86 @@ function DiseaseDistribution() {
 
 function ReconsultaFrequency() {
   const { data: backendData, isLoading } = useReconsultasCriticos();
+  const { data: citas = [] } = useCitas();
+  const { data: pacientes = [] } = usePacientes();
 
-  const reconsultaData = useMemo(() => {
+  const backendChartData = useMemo(() => {
     if (backendData) {
       const items = Array.isArray(backendData) ? backendData : (backendData?.items || backendData?.rangos || []);
       if (Array.isArray(items) && items.length > 0) {
-        return items.map((d: any) => ({
+        const mapped = items.map((d: any) => ({
           rango: typeof d.rango === 'object' ? 'N/A' : (d.rango || d.grupo || 'N/A'),
           reconsultas: typeof d.reconsultas === 'object' ? 0 : Number(d.reconsultas || 0),
           totalCriticos: typeof d.totalCriticos === 'object' ? 0 : Number(d.totalCriticos || 0),
           tasaCambio: typeof d.tasaCambio === 'object' ? 0 : Number(d.tasaCambio || 0),
         })).filter((d: any) => d.rango !== 'N/A');
+        const hasAny = mapped.some(d => d.reconsultas > 0 || d.totalCriticos > 0);
+        if (hasAny) return mapped;
       }
     }
-    return [];
+    return null;
   }, [backendData]);
+
+  const localChartData = useMemo(() => {
+    if (pacientes.length === 0 || citas.length === 0) return null;
+    const currentYear = new Date().getFullYear();
+
+    const pacMap = new Map<string, any>();
+    pacientes.forEach((p: any) => pacMap.set(String(p.pk_num_paciente ?? p.num ?? p.id ?? ''), p));
+
+    const citasPorPaciente = new Map<string, any[]>();
+    citas.forEach((c: any) => {
+      const pId = String(c.fk_ps_b001_num_paciente ?? c.pacienteId ?? c.paciente?.num ?? '');
+      if (!pId) return;
+      if (!citasPorPaciente.has(pId)) citasPorPaciente.set(pId, []);
+      citasPorPaciente.get(pId)!.push(c);
+    });
+
+    const ranges = ['0-12', '13-18', '19-59', '60+'];
+    const counts: Record<string, { totalCriticos: number; reconsultas: number }> = {};
+    ranges.forEach(r => counts[r] = { totalCriticos: 0, reconsultas: 0 });
+
+    const getAgeRange = (age: number) => {
+      if (age <= 12) return '0-12';
+      if (age <= 18) return '13-18';
+      if (age <= 59) return '19-59';
+      return '60+';
+    };
+
+    citasPorPaciente.forEach((citasPaciente, pId) => {
+      const pac = pacMap.get(pId);
+      if (!pac || !pac.fecha_nacimiento) return;
+      const age = currentYear - new Date(pac.fecha_nacimiento).getFullYear();
+      const range = getAgeRange(age);
+      const numCitas = citasPaciente.length;
+      counts[range].totalCriticos += 1;
+      if (numCitas > 1) counts[range].reconsultas += 1;
+    });
+
+    return ranges.map(r => ({
+      rango: r,
+      totalCriticos: counts[r].totalCriticos,
+      reconsultas: counts[r].reconsultas,
+      tasaCambio: 0,
+    }));
+  }, [citas, pacientes]);
+
+  const reconsultaData = backendChartData ?? localChartData ?? [];
+  const hasData = reconsultaData.some(d => d.reconsultas > 0 || d.totalCriticos > 0);
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="mb-4 pr-8">
+          <h3 className="text-lg font-semibold text-foreground">Frecuencia de Reconsultas</h3>
+          <p className="text-sm text-muted-foreground">Pacientes críticos reconsultados por grupo etario</p>
+        </div>
+        <div className="h-[200px] flex items-center justify-center">
+          <span className="text-muted-foreground animate-pulse">Cargando indicador...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (reconsultaData.length === 0) {
     return (
@@ -182,6 +248,9 @@ function ReconsultaFrequency() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {!hasData && (
+        <p className="text-xs text-muted-foreground text-center mt-2">Sin reconsultas registradas en el período seleccionado</p>
+      )}
     </div>
   );
 }
@@ -249,6 +318,8 @@ export function StackedBarChartComponent({ selectedKpiIds }: { selectedKpiIds?: 
   const { data: enfermedades = [] } = useEnfermedades();
   const { data: reconBackend } = useReconsultasCriticos();
   const { data: tendBackend } = useTasaDemandaEspecialidad();
+  const { data: pacientes = [] } = usePacientes();
+  const { data: citas = [] } = useCitas();
 
   const semBajo: KpiKind = 'porcentajeBajo';
 
@@ -283,11 +354,28 @@ export function StackedBarChartComponent({ selectedKpiIds }: { selectedKpiIds?: 
       if (Array.isArray(items) && items.length > 0) {
         const totalRecon = items.reduce((s: number, d: any) => s + (Number(d.reconsultas) || 0), 0);
         const totalCrit = items.reduce((s: number, d: any) => s + (Number(d.totalCriticos) || 0), 0);
-        return totalCrit > 0 ? Math.round((totalRecon / totalCrit) * 1000) / 10 : 0;
+        if (totalCrit > 0) return Math.round((totalRecon / totalCrit) * 1000) / 10;
       }
     }
-    return 0;
-  }, [reconBackend]);
+    if (pacientes.length === 0 || citas.length === 0) return 0;
+    const currentYear = new Date().getFullYear();
+    const pacMap = new Map<string, any>();
+    pacientes.forEach((p: any) => pacMap.set(String(p.pk_num_paciente ?? p.num ?? p.id ?? ''), p));
+    const citasPorPaciente = new Map<string, number>();
+    citas.forEach((c: any) => {
+      const pId = String(c.fk_ps_b001_num_paciente ?? c.pacienteId ?? c.paciente?.num ?? '');
+      if (pId) citasPorPaciente.set(pId, (citasPorPaciente.get(pId) || 0) + 1);
+    });
+    let totalCrit = 0;
+    let totalRecon = 0;
+    citasPorPaciente.forEach((numCitas, pId) => {
+      const pac = pacMap.get(pId);
+      if (!pac || !pac.fecha_nacimiento) return;
+      totalCrit += 1;
+      if (numCitas > 1) totalRecon += 1;
+    });
+    return totalCrit > 0 ? Math.round((totalRecon / totalCrit) * 1000) / 10 : 0;
+  }, [reconBackend, pacientes, citas]);
 
   const tendenciaValue = useMemo(() => {
     if (tendBackend) {

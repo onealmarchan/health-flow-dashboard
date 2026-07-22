@@ -313,7 +313,7 @@ export function EspecialistasPage() {
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
+           <div className="overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border">
@@ -347,25 +347,25 @@ export function EspecialistasPage() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-foreground">Número MPPS</Label>
-              <Input value={newSpec.mpps} onChange={e => setNewSpec({ ...newSpec, mpps: e.target.value })} placeholder="MPPS-XXX" />
+              <Label className="text-foreground">Número MPPS <span className="text-destructive">*</span></Label>
+              <Input value={newSpec.mpps} onChange={e => setNewSpec({ ...newSpec, mpps: e.target.value })} placeholder="4-6 dígitos numéricos" maxLength={6} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-foreground">Nombre</Label>
-                <Input value={newSpec.nombre} onChange={e => setNewSpec({ ...newSpec, nombre: e.target.value })} />
+                <Label className="text-foreground">Nombre <span className="text-destructive">*</span></Label>
+                <Input value={newSpec.nombre} onChange={e => setNewSpec({ ...newSpec, nombre: e.target.value })} placeholder="Nombre" />
               </div>
               <div className="space-y-2">
-                <Label className="text-foreground">Apellido</Label>
-                <Input value={newSpec.apellido} onChange={e => setNewSpec({ ...newSpec, apellido: e.target.value })} />
+                <Label className="text-foreground">Apellido <span className="text-destructive">*</span></Label>
+                <Input value={newSpec.apellido} onChange={e => setNewSpec({ ...newSpec, apellido: e.target.value })} placeholder="Apellido" />
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Teléfono</Label>
-              <Input value={newSpec.telefono} onChange={e => setNewSpec({ ...newSpec, telefono: e.target.value })} />
+              <Label className="text-foreground">Teléfono <span className="text-destructive">*</span></Label>
+              <Input value={newSpec.telefono} onChange={e => setNewSpec({ ...newSpec, telefono: e.target.value })} placeholder="04121234567" maxLength={11} />
             </div>
             <div className="space-y-2">
-              <Label className="text-foreground">Especialidad</Label>
+              <Label className="text-foreground">Especialidad <span className="text-destructive">*</span></Label>
               <div className="flex gap-2">
                 <Select value={newSpec.especialidadId} onValueChange={v => setNewSpec({ ...newSpec, especialidadId: v })}>
                   <SelectTrigger className="flex-1">

@@ -160,7 +160,9 @@ export function AgeTreeMap({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
       fill: colors[idx % colors.length]
     })).filter(g => g.patients > 0);
 
-    // 3. Condition by age — from backend indicator or empty
+    // 3. Condition by age — from backend indicator
+    // Backend returns casosEnfermedad (cases of specific disease) and totalPacientes (total patients in age group).
+    // When enfermedadId=1 has no cases, fall back to totalPacientes so the treemap still shows useful data.
     let calculatedConditionData: AgeGroup[] = [];
     if (condicionData) {
       const raw = condicionData;
@@ -168,8 +170,8 @@ export function AgeTreeMap({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
       if (Array.isArray(items) && items.length > 0) {
         calculatedConditionData = items.map((d: any, idx: number) => ({
           name: d.rango || d.grupoEdad || d.grupo || d.nombre || d.name || d.label || d.edad || `Grupo ${idx + 1}`,
-          size: Math.max(d.casosEnfermedad || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 1, 1),
-          patients: d.casosEnfermedad || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 0,
+          size: Math.max(d.casosEnfermedad || d.totalPacientes || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 1, 1),
+          patients: d.casosEnfermedad || d.totalPacientes || d.casos || d.pacientes || d.total || d.valor || d.count || d.value || d.cantidad || 0,
           fill: colors[idx % colors.length],
         })).filter(g => g.patients > 0);
       }
@@ -224,7 +226,7 @@ export function AgeTreeMap({ selectedKpiIds }: { selectedKpiIds?: string[] }) {
         label: 'Condiciones por Edad',
         semaforoKind: semBajo,
         semaforoValue: condConcentration,
-        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle={totalCond > 0 ? `Análisis por grupos etarios — ${totalCond} casos registrados` : 'Sin datos disponibles para el período actual'} total={totalCond} semaforoKind={semBajo} />,
+        component: <TreeMapView data={conditionAgeData} title="Concentración de Condiciones por Edad" subtitle={totalCond > 0 ? `Análisis por grupos etarios — ${totalCond} pacientes registrados` : 'Sin datos disponibles para el período actual'} total={totalCond} semaforoKind={semBajo} />,
       },
     ]} />
   );

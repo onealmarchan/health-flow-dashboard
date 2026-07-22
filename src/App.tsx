@@ -62,9 +62,16 @@ const App = () => {
 
 export default App;
 
+function forceLogout() {
+  try { localStorage.removeItem('token'); } catch {}
+  try { clearAuthToken(); } catch {}
+  try { localStorage.removeItem('activeSharedId'); } catch {}
+  queryClient.clear();
+}
+
 function AppBroadcasts() {
-  // global listener for shared-session open events
   const navigate = useNavigate();
+
   useEffect(() => {
     let bc: BroadcastChannel | null = null;
     try {
@@ -72,21 +79,14 @@ function AppBroadcasts() {
       bc.onmessage = (ev) => {
         const data = ev.data as any;
         if (data?.type === 'open') {
-          try { localStorage.removeItem('token'); } catch (e) {}
-          try { clearAuthToken(); } catch (e) {}
-          try { localStorage.removeItem('activeSharedId'); } catch (e) {}
-          queryClient.clear();
+          forceLogout();
           navigate('/login');
         }
       };
-    } catch (e) {
-      // fallback: listen to localStorage changes
+    } catch {
       const handler = (ev: StorageEvent) => {
         if (ev.key === 'shared_open' && ev.newValue) {
-          try { localStorage.removeItem('token'); } catch (e) {}
-          try { clearAuthToken(); } catch (e) {}
-          try { localStorage.removeItem('activeSharedId'); } catch (e) {}
-          queryClient.clear();
+          forceLogout();
           navigate('/login');
         }
       };

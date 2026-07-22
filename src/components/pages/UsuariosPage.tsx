@@ -18,7 +18,7 @@ import { RowActions } from '@/components/shared/RowActions';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { useUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuarioEstado } from '@/services/useUsuarios';
 import { useRequestCode, useResetPassword } from '@/services/useAuth';
-import { usuarioSchema, validateWithZod } from '@/lib/validators';
+import { usuarioSchema, usuarioCompletoSchema, validateWithZod } from '@/lib/validators';
 
 export type Usuario = {
   id: number | string;
@@ -152,9 +152,14 @@ export function UsuariosPage() {
     if (editingUser) {
       emailsExistentes.delete(editingUser.email?.toLowerCase() || '');
     }
-    const error = validateWithZod(usuarioSchema(emailsExistentes), {
-      nombreCompleto: newUser.nombre,
+    const isEdit = !!editingUser;
+    const error = validateWithZod(usuarioCompletoSchema(emailsExistentes, isEdit), {
+      nombre: newUser.nombre,
+      apellido: newUser.apellido || '',
       email: newUser.email,
+      cedula: newUser.cedula,
+      telefono: newUser.telefono || '',
+      password: newUser.password,
       rol: newUser.rol || '',
     });
     if (error) {
@@ -183,14 +188,6 @@ export function UsuariosPage() {
         onError: () => toast.error('Error al actualizar usuario'),
       });
     } else {
-      if (!newUser.cedula.trim()) {
-        toast.error('La cédula es obligatoria');
-        return;
-      }
-      if (!newUser.password || newUser.password.length < 6) {
-        toast.error('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
       createUsuario.mutate({
         nombre: newUser.nombre,
         apellido: newUser.apellido || undefined,
@@ -356,7 +353,7 @@ export function UsuariosPage() {
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+         <div className="overflow-x-auto scrollbar-thin">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -448,12 +445,12 @@ export function UsuariosPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-foreground">Cédula {!editingUser && <span className="text-destructive">*</span>}</Label>
+                <Label className="text-foreground">Cédula <span className="text-destructive">*</span></Label>
                 <Input value={newUser.cedula} onChange={e => setNewUser({ ...newUser, cedula: e.target.value })} placeholder="12345678" disabled={!!editingUser} />
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">Teléfono</Label>
-                <Input value={newUser.telefono} onChange={e => setNewUser({ ...newUser, telefono: e.target.value })} placeholder="0412-1234567" />
+                <Input value={newUser.telefono} onChange={e => setNewUser({ ...newUser, telefono: e.target.value })} placeholder="04121234567" maxLength={11} />
               </div>
             </div>
             {!editingUser && (

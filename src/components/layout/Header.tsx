@@ -128,13 +128,19 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
           {/* Notifications */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
-              <button className="relative p-2 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer">
+              <button
+                className="relative p-2 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer"
+                aria-label={`Notificaciones${unreadCount > 0 ? `, ${unreadCount} sin leer` : ''}`}
+              >
                 <Bell className="w-[18px] h-[18px] text-foreground" />
                 {unreadCount > 0 && (
-                  <span className={cn(
-                    "absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center leading-none shadow-sm",
-                    "animate-badge-pulse"
-                  )}>
+                  <span
+                    aria-live="polite"
+                    className={cn(
+                      "absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center leading-none shadow-sm",
+                      "animate-badge-pulse"
+                    )}
+                  >
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
@@ -182,11 +188,11 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
                     const Icon = cfg.icon;
                     const isNew = newNotifIds.has(n.id);
                     return (
-                      <div
+                      <button
                         key={n.id}
                         onClick={() => handleSelectNotification(n)}
                         className={cn(
-                          'flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-border/50 last:border-0',
+                          'w-full text-left flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 border-b border-border/50 last:border-0',
                           n.read
                             ? 'hover:bg-secondary/30'
                             : 'bg-primary/5 hover:bg-primary/10',
@@ -216,10 +222,11 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
                           onClick={(e) => { e.stopPropagation(); deleteNot.mutate(n.id); }}
                           className="mt-0.5 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0 cursor-pointer"
                           title="Eliminar"
+                          aria-label="Eliminar notificación"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
-                      </div>
+                      </button>
                     );
                   })
                 )}
@@ -266,7 +273,7 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer">
+              <button className="flex items-center gap-2 p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer" aria-label="Menú de usuario">
                 <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center">
                   <User className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>

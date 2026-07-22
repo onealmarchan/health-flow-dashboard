@@ -60,6 +60,7 @@ export function AjustesPage() {
             <div className="grid grid-cols-1 gap-2">
               {lightThemes.map(t => (
                 <button key={t.id} onClick={() => { setLightPreference(t.id); setMode('light'); }}
+                  aria-pressed={lightPreference === t.id}
                   className={cn('flex items-center gap-2 rounded-md border p-2.5 text-sm hover:bg-accent transition-colors',
                     lightPreference === t.id ? 'border-primary bg-primary/10' : 'border-border')}>
                   <span className={cn('w-5 h-5 rounded-full shrink-0', t.color)} />
@@ -79,6 +80,7 @@ export function AjustesPage() {
             <div className="grid grid-cols-1 gap-2">
               {darkThemes.map(t => (
                 <button key={t.id} onClick={() => { setDarkPreference(t.id); setMode('dark'); }}
+                  aria-pressed={darkPreference === t.id}
                   className={cn('flex items-center gap-2 rounded-md border p-2.5 text-sm hover:bg-accent transition-colors',
                     darkPreference === t.id ? 'border-primary bg-primary/10' : 'border-border')}>
                   <span className={cn('w-5 h-5 rounded-full shrink-0', t.color)} />
@@ -112,6 +114,7 @@ export function AjustesPage() {
             <div className="grid grid-cols-1 gap-1.5">
               {FONT_OPTIONS.map(f => (
                 <button key={f.id} onClick={() => update('fontFamily', f.id)}
+                  aria-pressed={settings.fontFamily === f.id}
                   className={cn(
                     'flex items-center justify-between rounded-md border p-2.5 text-sm hover:bg-accent transition-colors text-left',
                     settings.fontFamily === f.id ? 'border-primary bg-primary/10' : 'border-border',
@@ -131,6 +134,7 @@ export function AjustesPage() {
             <div className="grid grid-cols-1 gap-1.5">
               {FONT_SIZE_OPTIONS.map(s => (
                 <button key={s.id} onClick={() => update('fontSize', s.id)}
+                  aria-pressed={settings.fontSize === s.id}
                   className={cn(
                     'flex items-center justify-between rounded-md border p-2.5 hover:bg-accent transition-colors text-left',
                     settings.fontSize === s.id ? 'border-primary bg-primary/10' : 'border-border',
@@ -160,6 +164,7 @@ export function AjustesPage() {
         <div className="space-y-3">
           {NOTIFICATION_OPTIONS.map(n => (
             <button key={n.id} onClick={() => update('notifications', n.id)}
+              aria-pressed={settings.notifications === n.id}
               className={cn(
                 'w-full flex items-center gap-3 rounded-md border p-3 text-left hover:bg-accent transition-colors',
                 settings.notifications === n.id ? 'border-primary bg-primary/10' : 'border-border',
@@ -184,7 +189,7 @@ export function AjustesPage() {
             <p className="text-sm font-medium text-foreground">Sonido de notificación</p>
             <p className="text-xs text-muted-foreground">Reproducir sonido al recibir una notificación</p>
           </div>
-          <Switch checked={settings.soundEnabled} onCheckedChange={v => update('soundEnabled', v)} />
+          <Switch checked={settings.soundEnabled} onCheckedChange={v => update('soundEnabled', v)} aria-label="Sonido de notificación" />
         </div>
       </section>
 
@@ -203,7 +208,7 @@ export function AjustesPage() {
             <p className="text-sm font-medium text-foreground">Modo compacto</p>
             <p className="text-xs text-muted-foreground">Reduce el espaciado y el tamaño de los elementos para ver más contenido</p>
           </div>
-          <Switch checked={settings.compactMode} onCheckedChange={v => update('compactMode', v)} />
+          <Switch checked={settings.compactMode} onCheckedChange={v => update('compactMode', v)} aria-label="Modo compacto" />
         </div>
       </section>
 

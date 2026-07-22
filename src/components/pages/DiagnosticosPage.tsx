@@ -28,6 +28,7 @@ import { SearchBar } from '@/components/shared/SearchBar';
 import { FiltersButton } from '@/components/shared/FiltersButton';
 import { TablePagination } from '@/components/shared/TablePagination';
 import { cn } from '@/lib/utils';
+import { sintomaSchema, nuevaEnfermedadSchema, validateWithZod } from '@/lib/validators';
 import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
 import {
@@ -263,9 +264,21 @@ export function DiagnosticosPage() {
       toast.error('Seleccione un Nº de Cita');
       return;
     }
-    if (form.sintomas.every((s) => !s.nombre.trim())) {
-      toast.error('Ingrese al menos un síntoma');
+    if (!form.tratamientoPrevio.trim()) {
+      toast.error('Ingrese el tratamiento o indicaciones');
       return;
+    }
+    const validSintomas = form.sintomas.filter(s => s.nombre.trim());
+    if (validSintomas.length === 0) {
+      toast.error('Ingrese al menos un síntoma con nombre');
+      return;
+    }
+    for (const s of validSintomas) {
+      const err = validateWithZod(sintomaSchema, { nombre: s.nombre, descripcion: s.descripcion || '', gravedad: s.gravedad });
+      if (err) {
+        toast.error(`Síntoma: ${err}`);
+        return;
+      }
     }
     setConfirmOpen(true);
   };
@@ -358,8 +371,13 @@ export function DiagnosticosPage() {
 
       // Create enfermedad if it's a new one
       if (enfermedadId === -1) {
-        if (!completeForm.enfermedad.nombre.trim()) {
-          toast.error('Ingrese el nombre de la nueva enfermedad');
+        const err = validateWithZod(nuevaEnfermedadSchema, {
+          nombre: completeForm.enfermedad.nombre,
+          descripcion: completeForm.enfermedad.descripcion,
+          cronico: completeForm.enfermedad.cronico,
+        });
+        if (err) {
+          toast.error(err);
           return;
         }
         const newEnf: any = await createEnfermedad.mutateAsync({
@@ -585,7 +603,7 @@ export function DiagnosticosPage() {
 
       {/* Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-thin">
           {isLoading || placeholderLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -745,7 +763,7 @@ export function DiagnosticosPage() {
           <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-foreground">Nº Cita del Paciente</Label>
+                <Label className="text-foreground">Nº Cita del Paciente <span className="text-destructive">*</span></Label>
                 <Select value={form.numCitaOrigen} onValueChange={handleCitaChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccione una cita" />
@@ -800,7 +818,7 @@ export function DiagnosticosPage() {
                 </RadioGroup>
               </div>
               <div className="space-y-2 md:col-span-2">
-                <Label className="text-foreground">Tratamiento / Indicaciones</Label>
+                <Label className="text-foreground">Tratamiento / Indicaciones <span className="text-destructive">*</span></Label>
                 <Textarea
                   value={form.tratamientoPrevio}
                   onChange={(e) => setForm({ ...form, tratamientoPrevio: e.target.value })}
@@ -834,7 +852,7 @@ export function DiagnosticosPage() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div className="space-y-1">
-                      <Label className="text-xs text-foreground">Nombre</Label>
+                      <Label className="text-xs text-foreground">Nombre <span className="text-destructive">*</span></Label>
                       <Input value={s.nombre} onChange={(e) => updateSintoma(idx, { nombre: e.target.value })} />
                     </div>
                     <div className="space-y-1">
@@ -942,7 +960,7 @@ export function DiagnosticosPage() {
             {completeForm.sintomas.length > 0 && (
               <div className="space-y-2 pt-2 border-t border-border">
                 <h3 className="text-sm font-semibold text-foreground">Síntomas registrados</h3>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto scrollbar-thin">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border">
@@ -970,7 +988,7 @@ export function DiagnosticosPage() {
               <h3 className="text-sm font-semibold text-foreground">Enfermedad Determinada</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-foreground">Buscar enfermedad existente</Label>
+                  <Label className="text-foreground">Buscar enfermedad existente <span className="text-destructive">*</span></Label>
                   <Select
                     value={completeForm.enfermedadId ? String(completeForm.enfermedadId) : ''}
                     onValueChange={(v) => {
@@ -1032,7 +1050,7 @@ export function DiagnosticosPage() {
 
               {/* Etapa */}
               <div className="space-y-2">
-                <Label className="text-foreground">Etapa del Diagnóstico</Label>
+                <Label className="text-foreground">Etapa del Diagnóstico <span className="text-destructive">*</span></Label>
                 <Select
                   value={completeForm.etapa}
                   onValueChange={(v) => setCompleteForm({ ...completeForm, etapa: v as '' | 'leve' | 'inicial' | 'avanzada' })}
@@ -1159,7 +1177,7 @@ export function DiagnosticosPage() {
 
                 <div className="border border-border rounded-lg p-3 sm:p-4 bg-background/40">
                   <h4 className="font-semibold text-foreground mb-2">C. Síntomas Detectados</h4>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto scrollbar-thin">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border">

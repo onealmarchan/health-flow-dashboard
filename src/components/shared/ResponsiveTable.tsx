@@ -14,7 +14,7 @@ interface ResponsiveTableProps {
 export function ResponsiveTable({ children, className }: ResponsiveTableProps) {
   return (
     <div className={cn('table-responsive', className)}>
-      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
+      <div className="overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0 pb-2">
         <div className="min-w-[640px]">
           {children}
         </div>

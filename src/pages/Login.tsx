@@ -236,11 +236,11 @@ export default function Login() {
       >
         {/* Brand header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-12 h-12 rounded-xl bg-card shadow-md mb-3 flex items-center justify-center overflow-hidden border border-border/40">
-            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-1" />
+          <div className="w-20 h-20 rounded-2xl bg-card shadow-lg mb-4 flex items-center justify-center overflow-hidden border border-border/40">
+            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-1.5" />
           </div>
-          <h1 className="text-lg font-bold text-foreground">MediCitas</h1>
-          <p className="text-xs text-muted-foreground">Sistema de Gestión Médica</p>
+          <h1 className="text-xl font-bold text-foreground">MediCitas</h1>
+          <p className="text-sm text-muted-foreground">Sistema de Gestión Médica</p>
         </div>
 
         <div key={`${mode}-${recoverStep}`} className="animate-fade-in">
@@ -329,6 +329,7 @@ export default function Login() {
                   <Input
                     id="recover-email"
                     type="email"
+                    autoComplete="email"
                     placeholder="correo@ejemplo.com"
                     value={recoverEmail}
                     onChange={e => setRecoverEmail(e.target.value)}
@@ -448,6 +449,7 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowNewPass(s => !s)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+                    aria-label={showNewPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showNewPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -470,6 +472,7 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowRepeatPass(s => !s)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-200"
+                    aria-label={showRepeatPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
                     {showRepeatPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

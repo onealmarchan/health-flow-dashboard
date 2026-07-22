@@ -38,12 +38,13 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
           className="h-7 w-7"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
+          aria-label="Página anterior"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </Button>
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`e${i}`} className="px-0.5 sm:px-1 text-xs text-muted-foreground">…</span>
+            <span key={`e${i}`} className="px-0.5 sm:px-1 text-xs text-muted-foreground" aria-hidden="true">…</span>
           ) : (
             <Button
               key={p}
@@ -54,6 +55,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
                 p === currentPage && 'bg-primary text-primary-foreground'
               )}
               onClick={() => onPageChange(p)}
+              aria-current={p === currentPage ? 'page' : undefined}
             >
               {p}
             </Button>
@@ -65,6 +67,7 @@ export function TablePagination({ currentPage, totalPages, totalItems, onPageCha
           className="h-7 w-7"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
+          aria-label="Página siguiente"
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </Button>

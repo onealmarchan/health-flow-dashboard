@@ -69,8 +69,8 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
     )}>
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-card shadow-md shrink-0 flex items-center justify-center overflow-hidden border border-border/40">
-            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-0.5" />
+          <div className="w-14 h-14 rounded-xl bg-card shadow-md shrink-0 flex items-center justify-center overflow-hidden border border-border/40">
+            <img src="/logo.png" alt="MediCitas Logo" className="w-full h-full object-contain p-1" />
           </div>
           {(!collapsed || isMobile) && (
             <div className="animate-fade-in overflow-hidden">
@@ -92,7 +92,7 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
         )}
       </div>
 
-      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto" aria-label="Menú principal">
         {mainMenuItems.map((item, i) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -100,6 +100,7 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
             <button
               key={item.id}
               onClick={() => handlePageChange(item.id)}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "sidebar-item w-full animate-fade-in",
                 isActive && "sidebar-item-active"
@@ -124,6 +125,7 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
             <button
               key={item.id}
               onClick={() => handlePageChange(item.id)}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 "sidebar-item w-full animate-fade-in",
                 isActive && "sidebar-item-active"
@@ -144,6 +146,8 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
         <div className="p-3 border-t border-sidebar-border">
           <button
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+            aria-expanded={!collapsed}
             className="sidebar-item w-full justify-center text-muted-foreground hover:text-sidebar-foreground cursor-pointer"
           >
             {collapsed ? (
@@ -167,6 +171,7 @@ export function Sidebar({ currentPage, onPageChange, mobileOpen = false, onMobil
           <div
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-overlay-in"
             onClick={closeMobile}
+            aria-hidden="true"
           />
         )}
         <div

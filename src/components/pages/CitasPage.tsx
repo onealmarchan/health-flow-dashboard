@@ -20,7 +20,7 @@ import { useReportableTable } from '@/components/reports/useReportableTable';
 import type { ReportableModule } from '@/components/reports/types';
 import { usePacientes, useCreatePaciente, useUpdatePaciente, useDeletePaciente } from '@/services/usePacientes';
 import { CITAS_KEY, MOTIVOS_KEY, buildCreateCitaPayload, useCitas, useCreateCita, useCreateMotivoConsulta, useUpdateCita, useDeleteCita } from '@/services/useCitas';
-import { useMedicos } from '@/services/useMedicos';
+import { useMedicos, useEspecialidades } from '@/services/useMedicos';
 import { useSesionesMedicas, useCreateSesion } from '@/services/useJornadas';
 import { useComunidades, useCreateComunidad } from '@/services/useComunidades';
 import { validateWithZod, pacienteRegistroRapidoSchema, nuevaComunidadSchema, motivoConsultaSchema } from '@/lib/validators';
@@ -96,6 +96,7 @@ export function CitasPage() {
   const { data: apiPacientes = [], isLoading: isLoadingPacientes } = usePacientes();
   const createPaciente = useCreatePaciente();
   const { data: apiMedicos = [], isLoading: isLoadingMedicos } = useMedicos();
+  const { data: apiEspecialidades = [] } = useEspecialidades();
   const { data: apiSesiones = [], isLoading: isLoadingSesiones } = useSesionesMedicas();
   const qc = useQueryClient();
 
@@ -117,6 +118,15 @@ export function CitasPage() {
     });
     return map;
   }, [apiMedicos]);
+
+  const especialidadMap = useMemo(() => {
+    const map = new Map<string, any>();
+    apiEspecialidades.forEach((e: any) => {
+      const id = String(e.id ?? e.pk_num_especialidad ?? '');
+      if (id) map.set(id, e);
+    });
+    return map;
+  }, [apiEspecialidades]);
 
   // Map sesion ID → medico ID
   const sesionMedicoMap = useMemo(() => {
@@ -216,11 +226,9 @@ export function CitasPage() {
       ? `${medico.nombre || ''} ${medico.apellido || ''}`.trim()
       : '');
 
-    const especialidad = typeof medico?.especialidad === 'object'
-      ? medico?.especialidad?.nombre || 'General'
-      : typeof c.medico?.especialidad === 'object'
-        ? c.medico?.especialidad?.nombre || 'General'
-        : 'General';
+    const specId = String(medico?.fk_cm_a001_num_especialidad || medico?.especialidad?.id || '');
+    const spec = especialidadMap.get(specId);
+    const especialidad = spec?.nombre || (typeof medico?.especialidad === 'object' ? medico?.especialidad?.nombre : '') || (typeof c.medico?.especialidad === 'object' ? c.medico?.especialidad?.nombre : '') || 'General';
 
     return {
       id: c.pk_num_cita_medica || c.pk_num_cita || c.id || idx + 1,
@@ -240,9 +248,11 @@ export function CitasPage() {
   const doctorsBySpecialty = useMemo(() => {
     const groups: Record<string, { specialty: string, doctors: any[] }> = {};
     apiMedicos.forEach((m: any) => {
-      const spec = m.especialidad?.nombre || 'General';
-      if (!groups[spec]) groups[spec] = { specialty: spec, doctors: [] };
-      groups[spec].doctors.push({
+      const specId = String(m.fk_cm_a001_num_especialidad || m.especialidad?.id || '');
+      const spec = especialidadMap.get(specId);
+      const specName = spec?.nombre || m.especialidad?.nombre || 'Sin especialidad';
+      if (!groups[specName]) groups[specName] = { specialty: specName, doctors: [] };
+      groups[specName].doctors.push({
         id: m.pk_num_medico_ministerio_salud || m.id,
         name: `${m.nombre || m.nombres || ''} ${m.apellido || m.apellidos || ''}`.trim(),
         mpps: m.pk_num_medico_ministerio_salud || '',
@@ -250,7 +260,20 @@ export function CitasPage() {
       });
     });
     return Object.values(groups);
-  }, [apiMedicos]);
+  }, [apiMedicos, especialidadMap]);
+
+  const doctorDaysMap = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    apiSesiones.forEach((s: any) => {
+      const medicoId = String(s.fk_cm_b001_num_medico_ministerio_salud ?? '');
+      const dia = s.dias_semana;
+      if (medicoId && dia) {
+        if (!map.has(medicoId)) map.set(medicoId, new Set());
+        map.get(medicoId)!.add(dia);
+      }
+    });
+    return map;
+  }, [apiSesiones]);
 
   // Derive occupied dates from API appointments + local appointments
   const apiReservedDates = useMemo(() => {
@@ -367,7 +390,7 @@ export function CitasPage() {
 
     setFormErrors({});
     const ciFinal = isMinor && newPatient.ciRepresentante
-      ? `${newPatient.ciRepresentante.trim()}-R01`
+      ? newPatient.ciRepresentante.trim()
       : newPatient.ci;
     createPaciente.mutate({
       fk_ps_a001_num_comunidad: selectedComunidadId,
@@ -383,7 +406,13 @@ export function CitasPage() {
       estado_paciente: newPatient.estado === 'Activo' ? 'activo' : 'encamado'
     }, {
       onSuccess: () => toast.success('Paciente registrado exitosamente'),
-      onError: (e: any) => toast.error(e?.response?.data?.message || 'Error al registrar paciente'),
+      onError: (e: any) => {
+        const data = e?.response?.data;
+        const msg = data?.message || e?.message || 'Error al registrar paciente';
+        const detail = Array.isArray(msg) ? msg.join(', ') : typeof msg === 'string' ? msg : JSON.stringify(msg);
+        console.error('[Paciente] Error completo:', JSON.stringify(data, null, 2));
+        toast.error(detail);
+      },
     });
   };
 
@@ -459,14 +488,7 @@ export function CitasPage() {
   // Open Motivo modal from a doctor card
   const handleAsignarCita = (doctor: SelectedDoctor) => {
     setSelectedDoctor(doctor);
-    setMotivoData({
-      numPaciente: selectedPatient ? String(selectedPatient.num) : '',
-      descripcion: '',
-      urgencia: '',
-      fecha: '',
-      observacion: '',
-    });
-    setModalStep('motivo');
+    setModalStep('fullCita');
   };
 
   const isMotivoValid = useMemo(() => {
@@ -504,7 +526,7 @@ export function CitasPage() {
     setHoraSeleccionada('');
     setTurno('');
     setRemitido('no');
-    setModalStep('fullCita');
+    setModalStep('schedule');
   };
 
   const cells = useMemo(() => buildMonthGrid(calYear, calMonth), [calYear, calMonth]);
@@ -540,6 +562,21 @@ export function CitasPage() {
   const handleAgendarCitaFinal = () => {
     if (!selectedPatient || !selectedDoctor || !selectedDate || !horaSeleccionada) {
       toast.error('Complete los datos de la cita antes de registrar');
+      return;
+    }
+    if (!tipoCita) {
+      toast.error('Seleccione el tipo de cita');
+      return;
+    }
+    if (!motivoTexto || motivoTexto.trim().length < 5) {
+      toast.error('El motivo de la consulta debe tener al menos 5 caracteres');
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(selectedDate + 'T12:00:00');
+    if (checkDate < today) {
+      toast.error('No se pueden agendar citas en fechas pasadas');
       return;
     }
 
@@ -835,7 +872,7 @@ export function CitasPage() {
             <span className="ml-2 text-sm text-muted-foreground">Cargando citas...</span>
           </div>
         ) : (
-        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="overflow-x-auto scrollbar-thin -mx-4 px-4 sm:mx-0 sm:px-0">
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-border">
@@ -917,8 +954,8 @@ export function CitasPage() {
             </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto scrollbar-thin -mx-5 px-5 sm:mx-0 sm:px-0">
+            <table className="text-sm min-w-[900px]">
               <thead>
                 <tr className="border-b border-border">
                   {['Nº', 'CI', 'Nombres', 'Apellidos', 'F. Nacimiento', 'Sexo', 'Dirección', 'Teléfono', 'Nacionalidad', 'Estado', 'E. Civil', 'Acciones'].map(h => (
@@ -929,19 +966,19 @@ export function CitasPage() {
               <tbody>
                 {filteredPatients.map(p => (
                   <tr key={p.num} className="border-b border-border/50 hover:bg-secondary/50">
-                    <td className="p-2 text-foreground">{p.num}</td>
-                    <td className="p-2 text-foreground font-mono">{p.ci}</td>
-                    <td className="p-2 text-foreground">{p.nombres}</td>
-                    <td className="p-2 text-foreground">{p.apellidos}</td>
-                    <td className="p-2 text-muted-foreground">{p.fechaNac}</td>
-                    <td className="p-2 text-foreground">{p.sexo}</td>
+                    <td className="p-2 text-foreground whitespace-nowrap">{p.num}</td>
+                    <td className="p-2 text-foreground font-mono whitespace-nowrap">{p.ci}</td>
+                    <td className="p-2 text-foreground whitespace-nowrap">{p.nombres}</td>
+                    <td className="p-2 text-foreground whitespace-nowrap">{p.apellidos}</td>
+                    <td className="p-2 text-muted-foreground whitespace-nowrap">{p.fechaNac}</td>
+                    <td className="p-2 text-foreground whitespace-nowrap">{p.sexo}</td>
                     <td className="p-2 text-muted-foreground truncate max-w-[120px]">{p.direccion}</td>
-                    <td className="p-2 text-muted-foreground">{p.telefono}</td>
-                    <td className="p-2 text-muted-foreground">{p.nacionalidad}</td>
-                    <td className="p-2 text-foreground">{p.estado}</td>
-                    <td className="p-2 text-muted-foreground">{p.estadoCivil}</td>
-                    <td className="p-2">
-                      <Button size="sm" variant="outline" onClick={() => { setSelectedPatient(p); setModalStep('schedule'); }}>
+                    <td className="p-2 text-muted-foreground whitespace-nowrap">{p.telefono}</td>
+                    <td className="p-2 text-muted-foreground whitespace-nowrap">{p.nacionalidad}</td>
+                    <td className="p-2 text-foreground whitespace-nowrap">{p.estado}</td>
+                    <td className="p-2 text-muted-foreground whitespace-nowrap">{p.estadoCivil}</td>
+                    <td className="p-2 whitespace-nowrap">
+                      <Button size="sm" variant="outline" onClick={() => { setSelectedPatient(p); setMotivoData({ numPaciente: String(p.num), descripcion: '', urgencia: '', fecha: '', observacion: '' }); setModalStep('motivo'); }}>
                         <CalendarDays className="w-3 h-3 mr-1" />
                         Agendar
                       </Button>
@@ -984,11 +1021,11 @@ export function CitasPage() {
                 <Input
                   value={newPatient.ciRepresentante}
                   onChange={e => setNewPatient({ ...newPatient, ciRepresentante: e.target.value.replace(/\D/g, '').slice(0, 8) })}
-                  placeholder="Ej: 4568987 → generará 4568987-R01"
+                  placeholder="Ej: 4568987"
                   maxLength={8}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Se asignará un subíndice correlativo (ej: 4568987-R01)
+                  Se usará como documento de identificación del paciente menor.
                 </p>
               </div>
             )}
@@ -1277,26 +1314,41 @@ export function CitasPage() {
                   {group.specialty}
                 </h3>
                 <div className="space-y-2">
-                  {group.doctors.map(doc => (
+                  {group.doctors.map(doc => {
+                    const days = doctorDaysMap.get(String(doc.mpps));
+                    const dayOrder = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+                    const orderedDays = days ? dayOrder.filter(d => days.has(d)) : [];
+                    const dayAbbr: Record<string, string> = { Lunes: 'Lu', Martes: 'Ma', Miercoles: 'Mi', Jueves: 'Ju', Viernes: 'Vi', Sabado: 'Sa', Domingo: 'Do' };
+                    return (
                     <div
                       key={doc.id}
                       className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
                     >
-                      <div className="flex flex-col">
+                      <div className="flex flex-col gap-1.5 min-w-0">
                         <span className="font-medium text-foreground">{doc.name}</span>
                         <span className="text-xs text-muted-foreground">
                           {doc.mpps} · Carga actual: {doc.carga}
                         </span>
+                        {orderedDays.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-0.5">
+                            {orderedDays.map(d => (
+                              <span key={d} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-success/15 text-success border border-success/20">
+                                {dayAbbr[d] || d}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <Button
                         size="sm"
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 ml-3"
                         onClick={() => handleAsignarCita({ ...doc, specialty: group.specialty })}
                       >
                         Asignar Cita
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -1305,12 +1357,12 @@ export function CitasPage() {
       </Dialog>
 
       {/* Step 4: Motivo de Consulta */}
-      <Dialog open={modalStep === 'motivo'} onOpenChange={(o) => !o && setModalStep('schedule')}>
+      <Dialog open={modalStep === 'motivo'} onOpenChange={(o) => !o && setModalStep('search')}>
         <DialogContent className="bg-card border border-border w-[92vw] max-w-2xl max-h-[82vh] p-0 overflow-hidden flex flex-col">
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-border">
             <DialogTitle className="text-foreground">Motivo de Consulta</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-              {selectedDoctor?.name} · {selectedDoctor?.specialty}
+              Paciente: {selectedPatient?.nombres} {selectedPatient?.apellidos}
             </DialogDescription>
           </DialogHeader>
 
@@ -1374,7 +1426,7 @@ export function CitasPage() {
       </Dialog>
 
       {/* Step 5: Cita Médica - Fullscreen */}
-      <Dialog open={modalStep === 'fullCita'} onOpenChange={(o) => !o && setModalStep('motivo')}>
+      <Dialog open={modalStep === 'fullCita'} onOpenChange={(o) => !o && setModalStep('schedule')}>
         <DialogContent className="bg-card border border-border max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col">
           {/* Hidden header for accessibility */}
           <DialogHeader className="sr-only">
@@ -1387,7 +1439,7 @@ export function CitasPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setModalStep('motivo')}
+              onClick={() => setModalStep('schedule')}
               className="text-foreground"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -1696,7 +1748,7 @@ export function CitasPage() {
                   <div className="flex flex-col gap-2 pt-2">
                     <Button
                       variant="outline"
-                      onClick={() => setModalStep('motivo')}
+                      onClick={() => setModalStep('schedule')}
                     >
                       Regresar
                     </Button>
