@@ -79,7 +79,7 @@ export function AdvancedSheetShell({
 }: BaseShellProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto bg-card border-l border-border">
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto bg-card border-l border-border">
         <SheetHeader>
           <SheetTitle className="text-foreground">{title}</SheetTitle>
           <SheetDescription className="text-muted-foreground">{scopeText}</SheetDescription>
@@ -95,7 +95,7 @@ export function AdvancedSheetShell({
 
           <section className="space-y-2">
             <Label className="text-foreground font-semibold">Campos a exportar</Label>
-            <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto pr-1 border border-border rounded-md p-2">
+            <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto pr-1 border border-border rounded-md p-2">
               {fieldOptions.map(f => (
                 <label key={f.key} className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                   <Checkbox checked={selectedFields.has(f.key)} onCheckedChange={() => onToggleField(f.key)} />

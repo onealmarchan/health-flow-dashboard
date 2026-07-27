@@ -27,3 +27,8 @@ export type SortMode =
   | 'alpha-desc'
   | 'date-asc'
   | 'date-desc';
+
+export interface CapturedChart {
+  spec: { kind: 'barras' | 'pie' | 'linea'; title: string; dataKey: string; labelKey: string };
+  dataUrl: string;
+}

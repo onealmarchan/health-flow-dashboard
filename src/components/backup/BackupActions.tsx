@@ -53,10 +53,12 @@ export function BackupActions({ className }: BackupActionsProps) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className={className}>
-            <DatabaseBackup className="h-4 w-4" />
-            Respaldo
-            <ChevronDown className="h-4 w-4" />
+          <Button asChild variant="outline" className={className}>
+            <span className="inline-flex items-center gap-2">
+              <DatabaseBackup className="h-4 w-4" />
+              Respaldo
+              <ChevronDown className="h-4 w-4" />
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 bg-popover border border-border z-[60]">

@@ -1,25 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import type { ReportableModule, ExportFormat, SortMode } from './types';
-import { exportReport, generarReporteGeneral } from './exporters';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { ReportableModule, ExportFormat, SortMode, CapturedChart } from './types';
+import { buildReportPDF } from './exporters';
 import { AdvancedSheetShell, ReportTypeRadio, AdvancedReportType } from './AdvancedSheetShell';
+import { ReportChartCapture, type ChartSpec } from './ReportChartCapture';
 
 type CitasReportType = 'general' | 'total' | 'menor' | 'mayor' | 'promedio';
 
 const types: AdvancedReportType<CitasReportType>[] = [
-  { id: 'general', label: 'Reporte General', description: 'PDF completo con portada, resumen ejecutivo, métricas y tabla de datos detallada.' },
+  { id: 'general', label: 'Reporte General', description: 'PDF con portada, tabla, gráficas y resumen.' },
   { id: 'total', label: 'Total de citas registradas', description: 'Total dentro del rango — desglose por estado.' },
   { id: 'menor', label: 'Volumen menor de citas', description: 'Especialidad con la menor cantidad de citas.' },
   { id: 'mayor', label: 'Volumen mayor de citas', description: 'Especialidad con la mayor cantidad de citas.' },
   { id: 'promedio', label: 'Promedio de citas registradas', description: 'Promedio por especialidad.' },
 ];
 
-const chartOptions = [
-  { id: 'barras', label: 'Barras por especialidad' },
-  { id: 'estado', label: 'Distribución por estado de cita' },
-  { id: 'evolucion', label: 'Línea de evolución temporal' },
+const availableCharts: { id: string; label: string; spec: ChartSpec }[] = [
+  { id: 'barras-especialidad', label: 'Barras por especialidad', spec: { kind: 'barras', title: 'Citas por Especialidad', labelKey: 'specialty' } },
+  { id: 'pie-estado', label: 'Distribución por estado', spec: { kind: 'pie', title: 'Distribución por Estado', labelKey: 'status' } },
+  { id: 'linea-evolucion', label: 'Evolución temporal', spec: { kind: 'linea', title: 'Evolución Temporal de Citas', labelKey: 'date' } },
 ];
 
 interface Props<T> {
@@ -37,9 +39,11 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
   const [to, setTo] = useState('');
   const [enableSort, setEnableSort] = useState(false);
   const [sortMode, setSortMode] = useState<SortMode>('date-desc');
-  const [format, setFormat] = useState<ExportFormat>('xlsx');
+  const [format, setFormat] = useState<ExportFormat>('pdf');
   const [includeMetrics, setIncludeMetrics] = useState(false);
-  const [chart, setChart] = useState<string>('barras');
+  const [selectedCharts, setSelectedCharts] = useState<Set<string>>(new Set());
+  const [capturedCharts, setCapturedCharts] = useState<CapturedChart[]>([]);
+  const [isCapturing, setIsCapturing] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -47,7 +51,9 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
       setType('');
       setFrom(''); setTo('');
       setEnableSort(false); setSortMode('date-desc');
-      setFormat('xlsx'); setIncludeMetrics(false); setChart('barras');
+      setFormat('pdf'); setIncludeMetrics(false);
+      setSelectedCharts(new Set());
+      setCapturedCharts([]);
     }
   }, [open, module]);
 
@@ -89,46 +95,70 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
 
   const dateRangeInvalid = from && to && from > to;
   const dateRangeMissing = !from || !to;
-  const isGeneral = type === 'general';
 
   let validationMessage: string | null = null;
   if (!type) validationMessage = 'Debes seleccionar un tipo de reporte antes de continuar.';
-  else if (!isGeneral && dateRangeMissing) validationMessage = 'El rango de fechas es obligatorio para este tipo de reporte.';
-  else if (!isGeneral && dateRangeInvalid) validationMessage = 'La fecha final debe ser posterior a la inicial.';
+  else if (dateRangeMissing) validationMessage = 'El rango de fechas es obligatorio.';
+  else if (dateRangeInvalid) validationMessage = 'La fecha final debe ser posterior a la inicial.';
   else if (activeFields.length === 0) validationMessage = 'Selecciona al menos un campo para exportar.';
-  else if (filteredRows.length === 0) validationMessage = 'Los filtros aplicados no arrojan registros. Ajusta las opciones e intenta nuevamente.';
+  else if (filteredRows.length === 0) validationMessage = 'Los filtros no arrojan registros.';
 
-  const canGenerate = !validationMessage;
+  const canGenerate = !validationMessage && !isCapturing;
 
-  const previewLines = [
-    { label: 'Alcance', value: scopeText },
-    { label: 'Campos', value: `${activeFields.length} of ${module.fields.length}` },
-    { label: 'Registros', value: String(filteredRows.length) },
-    { label: 'Tipo', value: type ? types.find(t => t.id === type)!.label : '— no seleccionado —' },
-    { label: 'Formato', value: isGeneral ? 'PDF (completo con portada)' : format.toUpperCase() },
-    ...(!isGeneral && includeMetrics ? [{ label: 'Métricas', value: chartOptions.find(c => c.id === chart)!.label }] : []),
-  ];
+  const chartRows = useMemo(() => {
+    return filteredRows.map(r => {
+      const row: Record<string, any> = {};
+      module.fields.forEach(f => { row[f.key] = f.accessor(r); });
+      return row;
+    });
+  }, [filteredRows, module.fields]);
+
+  const chartsToRender: ChartSpec[] = useMemo(() => {
+    if (!includeMetrics || selectedCharts.size === 0) return [];
+    return availableCharts.filter(c => selectedCharts.has(c.id)).map(c => c.spec);
+  }, [includeMetrics, selectedCharts]);
+
+  const onChartsCaptured = useCallback((images: { spec: ChartSpec; dataUrl: string }[]) => {
+    setCapturedCharts(images as CapturedChart[]);
+  }, []);
 
   const handleGenerate = async () => {
     if (!canGenerate) return;
-    if (isGeneral) {
-      const metrics = module.metrics ? module.metrics(filteredRows) : {
-        'Total registros': filteredRows.length,
-      };
-      generarReporteGeneral(
-        `Reporte General — ${module.name}`,
-        scopeText,
-        filteredRows,
-        activeFields,
-        metrics,
-        `Reporte_General_${module.name.replace(/\s+/g, '_')}`
-      );
-    } else {
-      await exportReport(format, module, filteredRows, activeFields, {
-        scope: scopeText,
-        includeMetrics,
-      });
+
+    const isPDF = format === 'pdf';
+    if (isPDF && chartsToRender.length > 0) {
+      setIsCapturing(true);
+      await new Promise(r => setTimeout(r, 800));
+      setIsCapturing(false);
     }
+
+    const typeObj = types.find(t => t.id === type);
+    const typeName = typeObj?.label || 'Reporte';
+    const metrics = module.metrics ? module.metrics(filteredRows) : { 'Total registros': filteredRows.length };
+
+    const safe = module.name.replace(/\s+/g, '_');
+    const fileName = `${safe}_${type}`;
+
+    if (isPDF) {
+      await buildReportPDF({
+        title: `${typeName} — ${module.name}`,
+        subtitle: scopeText,
+        rows: filteredRows,
+        fields: activeFields,
+        metrics,
+        fileName,
+        chartImages: capturedCharts.length > 0 ? capturedCharts : undefined,
+      });
+    } else {
+      // CSV / XLSX / DOCX — sin plantilla PDF
+      const { downloadCSV, downloadXLSX, downloadDOCX } = await import('./exporters');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const name = `${safe}_${stamp}`;
+      if (format === 'csv') downloadCSV(name, filteredRows, activeFields);
+      else if (format === 'xlsx') await downloadXLSX(name, filteredRows, activeFields, metrics);
+      else await downloadDOCX(name, `${typeName} — ${module.name}`, scopeText, filteredRows, activeFields, metrics);
+    }
+
     toast.success('Reporte generado correctamente');
     onOpenChange(false);
   };
@@ -141,42 +171,70 @@ export function AdvancedReportSheetCitas<T>({ open, onOpenChange, module, select
     });
   };
 
+  const toggleChart = (chartId: string) => {
+    setSelectedCharts(prev => {
+      const next = new Set(prev);
+      if (next.has(chartId)) next.delete(chartId); else next.add(chartId);
+      return next;
+    });
+  };
+
+  const previewLines = [
+    { label: 'Alcance', value: scopeText },
+    { label: 'Campos', value: `${activeFields.length} de ${module.fields.length}` },
+    { label: 'Registros', value: String(filteredRows.length) },
+    { label: 'Tipo', value: type ? types.find(t => t.id === type)!.label : '— no seleccionado —' },
+    { label: 'Formato', value: format.toUpperCase() },
+    ...(includeMetrics && selectedCharts.size > 0 ? [{ label: 'Gráficas', value: `${selectedCharts.size} en PDF` }] : []),
+  ];
+
   return (
-    <AdvancedSheetShell
-      open={open}
-      onOpenChange={onOpenChange}
-      title="Reporte avanzado — Citas médicas"
-      scopeText={scopeText}
-      scope={scope}
-      fieldOptions={module.fields.map(f => ({ key: f.key, label: f.label }))}
-      selectedFields={fieldKeys}
-      onToggleField={toggleField}
-      from={from} to={to}
-      onFromChange={setFrom} onToChange={setTo}
-      enableSort={enableSort} onEnableSortChange={setEnableSort}
-      sortMode={sortMode} onSortModeChange={setSortMode}
-      format={format} onFormatChange={setFormat}
-      includeMetrics={includeMetrics} onIncludeMetricsChange={setIncludeMetrics}
-      hideFormatAndMetrics={isGeneral}
-      metricsExtra={
-        !isGeneral ? (
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Tipo de gráfico</Label>
-            <Select value={chart} onValueChange={setChart}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-popover border border-border z-50">
-                {chartOptions.map(o => <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : undefined
-      }
-      previewLines={previewLines}
-      validationMessage={validationMessage}
-      canGenerate={canGenerate}
-      onGenerate={handleGenerate}
-    >
-      <ReportTypeRadio<CitasReportType> value={type} onChange={(v) => setType(v)} options={types} />
-    </AdvancedSheetShell>
+    <>
+      {format === 'pdf' && chartsToRender.length > 0 && (
+        <ReportChartCapture charts={chartsToRender} rows={chartRows} onCapture={onChartsCaptured} />
+      )}
+
+      <AdvancedSheetShell
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Reporte avanzado — Citas médicas"
+        scopeText={scopeText}
+        scope={scope}
+        fieldOptions={module.fields.map(f => ({ key: f.key, label: f.label }))}
+        selectedFields={fieldKeys}
+        onToggleField={toggleField}
+        from={from} to={to}
+        onFromChange={setFrom} onToChange={setTo}
+        enableSort={enableSort} onEnableSortChange={setEnableSort}
+        sortMode={sortMode} onSortModeChange={setSortMode}
+        format={format} onFormatChange={setFormat}
+        includeMetrics={includeMetrics} onIncludeMetricsChange={setIncludeMetrics}
+        metricsExtra={
+          format === 'pdf' ? (
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground font-medium">Gráficas para el PDF</Label>
+              <div className="space-y-1.5">
+                {availableCharts.map(chart => (
+                  <label key={chart.id} className="flex items-start gap-2.5 p-2 rounded-md border border-border/50 hover:bg-muted/50 cursor-pointer transition-colors">
+                    <Checkbox checked={selectedCharts.has(chart.id)} onCheckedChange={() => toggleChart(chart.id)} className="mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-foreground block">{chart.label}</span>
+                      <span className="text-xs text-muted-foreground">{chart.spec.title}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              {isCapturing && <p className="text-xs text-primary animate-pulse">Capturando gráficas...</p>}
+            </div>
+          ) : undefined
+        }
+        previewLines={previewLines}
+        validationMessage={validationMessage}
+        canGenerate={canGenerate}
+        onGenerate={handleGenerate}
+      >
+        <ReportTypeRadio<CitasReportType> value={type} onChange={(v) => setType(v)} options={types} />
+      </AdvancedSheetShell>
+    </>
   );
 }

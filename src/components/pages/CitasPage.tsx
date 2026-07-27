@@ -1447,11 +1447,11 @@ export function CitasPage() {
             </Button>
           </div>
 
-          {/* Body: 70/30 grid */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-10 overflow-hidden">
-            {/* Left column 70% */}
-            <div className="lg:col-span-7 p-6 overflow-y-auto border-r border-border min-h-0">
-              <div className="mb-4">
+          {/* Body: grid layout */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+            {/* Left column — calendar */}
+            <div className="lg:col-span-8 p-6 overflow-y-auto border-r border-border min-h-0">
+              <div className="mb-5">
                 <h2 className="text-2xl font-bold text-foreground">Cita Médica</h2>
                 <p className="text-sm text-muted-foreground">
                   Nº de Cita Médica: <span className="font-mono font-medium text-foreground">{citaNumber}</span>
@@ -1459,11 +1459,11 @@ export function CitasPage() {
               </div>
 
               {/* Month/Year selectors */}
-              <div className="flex gap-3 mb-4">
+              <div className="flex gap-4 mb-5">
                 <div className="flex-1 space-y-2">
-                  <Label className="text-foreground">Mes</Label>
+                  <Label className="text-foreground font-medium">Mes</Label>
                   <Select value={String(calMonth)} onValueChange={v => setCalMonth(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-popover border border-border z-50 max-h-72">
                       {monthNames.map((m, i) => (
                         <SelectItem key={m} value={String(i)}>{m}</SelectItem>
@@ -1472,9 +1472,9 @@ export function CitasPage() {
                   </Select>
                 </div>
                 <div className="flex-1 space-y-2">
-                  <Label className="text-foreground">Año</Label>
+                  <Label className="text-foreground font-medium">Año</Label>
                   <Select value={String(calYear)} onValueChange={v => setCalYear(Number(v))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent className="bg-popover border border-border z-50">
                       {yearsRange.map(y => (
                         <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -1485,15 +1485,15 @@ export function CitasPage() {
               </div>
 
               {/* Calendar */}
-              <div className="rounded-lg border border-border p-4 bg-background/50">
-                <div className="grid grid-cols-7 gap-2 mb-2">
+              <div className="rounded-xl border border-border p-5 bg-background/50">
+                <div className="grid grid-cols-7 gap-2.5 mb-3">
                   {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-                    <div key={i} className="text-center text-xs font-semibold text-muted-foreground py-1">
+                    <div key={i} className="text-center text-sm font-bold text-muted-foreground py-1.5">
                       {d}
                     </div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2.5">
                   {cells.map((day, idx) => {
                     if (day === null) return <div key={idx} />;
                     const key = formatDateKey(calYear, calMonth, day);
@@ -1506,10 +1506,10 @@ export function CitasPage() {
                         onClick={() => handleDayClick(day)}
                         disabled={isReserved}
                         className={cn(
-                          'mx-auto w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border transition-all',
-                          isReserved && 'bg-destructive text-destructive-foreground border-destructive cursor-not-allowed',
-                          isSelected && 'bg-primary text-primary-foreground border-primary',
-                          !isReserved && !isSelected && 'bg-background text-foreground border-border hover:border-primary'
+                          'mx-auto w-12 h-12 rounded-full flex items-center justify-center text-base font-semibold border-2 transition-all',
+                          isReserved && 'bg-destructive text-destructive-foreground border-destructive cursor-not-allowed opacity-70',
+                          isSelected && 'bg-primary text-primary-foreground border-primary shadow-md scale-110',
+                          !isReserved && !isSelected && 'bg-background text-foreground border-border hover:border-primary hover:bg-primary/5'
                         )}
                       >
                         {day}
@@ -1518,228 +1518,281 @@ export function CitasPage() {
                   })}
                 </div>
 
-                {/* Selected day number bottom-right */}
-                <div className="flex justify-end mt-3">
-                  {selectedDayNumber !== null && (
-                    <span className="text-sm text-muted-foreground">
-                      Día seleccionado:{' '}
-                      <span className="font-semibold text-foreground">{selectedDayNumber}</span>
-                    </span>
-                  )}
+                {/* Legend */}
+                <div className="flex flex-wrap gap-5 mt-5 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-background border-2 border-border" />
+                    <span className="text-foreground">Disponible</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-destructive border-2 border-destructive" />
+                    <span className="text-foreground">Reservado</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-4 h-4 rounded-full bg-primary border-2 border-primary" />
+                    <span className="text-foreground">Seleccionado</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-background border border-border" />
-                  <span className="text-foreground">Cupos Disponibles</span>
+              {selectedDayNumber !== null && (
+                <div className="mt-3 text-sm text-muted-foreground">
+                  Día seleccionado: <span className="font-semibold text-foreground">{selectedDayNumber}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-destructive border border-destructive" />
-                  <span className="text-foreground">Cupos Reservados</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-primary border border-primary" />
-                  <span className="text-foreground">Cupo Seleccionado</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            {/* Right column 30% */}
-            <div className="lg:col-span-3 p-6 overflow-y-auto bg-background/30 min-h-0">
+            {/* Right column — form controls */}
+            <div className="lg:col-span-4 p-6 overflow-y-auto bg-background/30 min-h-0">
               {!selectedDate ? (
                 <div className="h-full flex items-center justify-center text-center">
-                  <p className="text-muted-foreground text-sm">
-                    Seleccione una fecha disponible
+                  <p className="text-muted-foreground text-base">
+                    Seleccione una fecha disponible en el calendario
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {/* Top: 3 controls */}
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Tipo de Cita</Label>
-                      <Select value={tipoCita} onValueChange={setTipoCita}>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                        <SelectContent className="bg-popover border border-border z-50">
-                          <SelectItem value="Primera vez">Primera vez</SelectItem>
-                          <SelectItem value="Control">Control</SelectItem>
-                          <SelectItem value="Urgencia">Urgencia</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Motivo</Label>
-                      <Input value={motivoTexto} onChange={e => setMotivoTexto(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Turno</Label>
-                      <Select value={turno} onValueChange={(v) => { setTurno(v as 'Mañana' | 'Tarde' | 'Noche'); setHoraSeleccionada(''); }}>
-                        <SelectTrigger><SelectValue placeholder="Seleccionar turno" /></SelectTrigger>
-                        <SelectContent className="bg-popover border border-border z-50">
-                          <SelectItem value="Mañana">Mañana</SelectItem>
-                          <SelectItem value="Tarde">Tarde</SelectItem>
-                          <SelectItem value="Noche">Noche</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-foreground">Hora Disponible</Label>
-                      <Select value={horaSeleccionada} onValueChange={setHoraSeleccionada} disabled={!turno}>
-                        <SelectTrigger>
-                          <SelectValue placeholder={turno ? 'Seleccionar' : 'Seleccione un turno primero'} />
-                        </SelectTrigger>
-                        <SelectContent className="bg-popover border border-border z-50">
-                          {availableHours.length === 0 ? (
-                            <SelectItem value="none" disabled>Sin horarios</SelectItem>
-                          ) : (
-                            availableHours.map(h => (
-                              <SelectItem key={h} value={h}>{h}</SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium">Tipo de Cita</Label>
+                    <Select value={tipoCita} onValueChange={setTipoCita}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
+                      <SelectContent className="bg-popover border border-border z-50">
+                        <SelectItem value="Primera vez">Primera vez</SelectItem>
+                        <SelectItem value="Control">Control</SelectItem>
+                        <SelectItem value="Urgencia">Urgencia</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium">Motivo</Label>
+                    <Input value={motivoTexto} onChange={e => setMotivoTexto(e.target.value)} className="h-11" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium">Turno</Label>
+                    <Select value={turno} onValueChange={(v) => { setTurno(v as 'Mañana' | 'Tarde' | 'Noche'); setHoraSeleccionada(''); }}>
+                      <SelectTrigger className="h-11"><SelectValue placeholder="Seleccionar turno" /></SelectTrigger>
+                      <SelectContent className="bg-popover border border-border z-50">
+                        <SelectItem value="Mañana">Mañana</SelectItem>
+                        <SelectItem value="Tarde">Tarde</SelectItem>
+                        <SelectItem value="Noche">Noche</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-foreground font-medium">Hora Disponible</Label>
+                    <Select value={horaSeleccionada} onValueChange={setHoraSeleccionada} disabled={!turno}>
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder={turno ? 'Seleccionar' : 'Seleccione un turno primero'} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border border-border z-50">
+                        {availableHours.length === 0 ? (
+                          <SelectItem value="none" disabled>Sin horarios</SelectItem>
+                        ) : (
+                          availableHours.map(h => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Resumen card */}
                   {isResumenReady && selectedPatient && selectedDoctor && (() => {
+                    const doctorSesion = apiSesiones.find((s: any) => {
+                      const medicoId = String(s.fk_cm_b001_num_medico_ministerio_salud ?? s.fk_cm_a001_num_medico ?? '');
+                      return medicoId === String(selectedDoctor.id);
+                    });
+                    const horarioSesion = doctorSesion
+                      ? `${doctorSesion.hora_inicio || ''} – ${doctorSesion.hora_fin || ''} (${doctorSesion.turno || ''})`
+                      : '—';
+
+                    const field = (label: string, value: string | number | undefined | null) => (
+                      <div className="flex gap-1">
+                        <span className="text-muted-foreground">{label}:</span>
+                        <span className="text-foreground font-medium">{value || '—'}</span>
+                      </div>
+                    );
+
                     const generarComprobantePDF = async () => {
                       const { default: jsPDF } = await import('jspdf');
                       const doc = new jsPDF({ unit: 'pt', format: 'letter' });
                       const W = doc.internal.pageSize.getWidth();
+                      const H = doc.internal.pageSize.getHeight();
                       let y = 40;
-                      const line = () => { doc.setLineWidth(0.5); doc.line(40, y, W - 40, y); y += 12; };
+
+                      const line = () => { doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.5); doc.line(44, y, W - 44, y); y += 14; };
                       const row = (left: string, right?: string) => {
-                        doc.setFontSize(10);
-                        doc.text(left, 44, y);
+                        doc.setFontSize(9.5);
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(60, 60, 60);
+                        doc.text(left, 48, y);
                         if (right) doc.text(right, W / 2 + 10, y);
-                        y += 14;
+                        y += 15;
+                      };
+                      const rowBold = (left: string, right?: string) => {
+                        doc.setFontSize(9.5);
+                        doc.setFont('helvetica', 'bold');
+                        doc.setTextColor(30, 30, 30);
+                        doc.text(left, 48, y);
+                        if (right) doc.text(right, W / 2 + 10, y);
+                        doc.setFont('helvetica', 'normal');
+                        y += 15;
                       };
                       const section = (title: string) => {
                         doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(10);
-                        doc.text(title, 44, y);
+                        doc.setFontSize(9);
+                        doc.setTextColor(100, 100, 100);
+                        doc.text(title, 48, y);
                         doc.setFont('helvetica', 'normal');
                         y += 14;
                       };
 
+                      // Header
+                      doc.setFillColor(41, 98, 255);
+                      doc.rect(0, 0, W, 72, 'F');
+                      doc.setTextColor(255, 255, 255);
                       doc.setFont('helvetica', 'bold');
-                      doc.setFontSize(12);
-                      doc.text('Centro Ambulatorio Dr Salvador Allende', 44, y);
-                      doc.text(`N° cita: ${citaNumber}`, W - 200, y);
-                      y += 16;
+                      doc.setFontSize(14);
+                      doc.text('Centro Ambulatorio Dr. Salvador Allende', 48, 30);
                       doc.setFontSize(11);
-                      doc.text('Comprobante de Cita Médica', 44, y);
-                      y += 8;
-                      line();
+                      doc.text('Comprobante de Cita Médica', 48, 50);
                       doc.setFont('helvetica', 'normal');
+                      doc.setFontSize(9);
+                      doc.text(`N° ${citaNumber}`, W - 48, 50, { align: 'right' });
+                      y = 88;
 
-                      row(`Fecha de Cita: ${selectedDate || ''}`, `Hora Asignada: ${horaSeleccionada || ''}`);
-                      row(`Turno: ${turno || ''}    Tipo de Cita: ${tipoCita || ''}    Caso: ${remitido === 'si' ? 'Remitido' : 'Directo'}`);
+                      // Datos de la cita
+                      section('DATOS DE LA CITA');
+                      row(`Fecha: ${selectedDate || '—'}`, `Hora: ${horaSeleccionada || '—'}`);
+                      row(`Turno: ${turno || '—'}`, `Tipo: ${tipoCita || '—'}`);
+                      row(`Caso: ${remitido === 'si' ? 'Remitido' : 'Directo'}`, `Fecha de registro: ${new Date().toLocaleDateString('es-VE')}`);
                       line();
 
+                      // Datos del paciente
                       section('DATOS DEL PACIENTE');
-                      row(`Cédula: ${selectedPatient.ci}`, `Nombres: ${selectedPatient.nombres}`);
-                      row(`Apellidos: ${selectedPatient.apellidos}`, `Fecha Nac.: ${selectedPatient.fechaNac}`);
-                      row(`Sexo: ${selectedPatient.sexo}`, `Teléfono: ${selectedPatient.telefono}`);
-                      row(`Comunidad: —`, `Estado: ${selectedPatient.estado}`);
-                      row(`Parroquia: —`);
+                      rowBold(`Cédula: ${selectedPatient.ci}`, `Nombres: ${selectedPatient.nombres}`);
+                      rowBold(`Apellidos: ${selectedPatient.apellidos}`, `Fecha Nac.: ${selectedPatient.fechaNac}`);
+                      row(`Sexo: ${selectedPatient.sexo}`, `Teléfono: ${selectedPatient.telefono || '—'}`);
+                      row(`Dirección: ${selectedPatient.direccion || '—'}`);
+                      row(`Comunidad: ${selectedPatient.comunidad || '—'}`, `Parroquia: ${selectedPatient.parroquia || '—'}`);
+                      row(`Municipio: ${selectedPatient.municipio || '—'}`, `Estado: ${selectedPatient.estadoGeo || '—'}`);
+                      row(`Estado de salud: ${selectedPatient.estado || '—'}`);
                       line();
 
+                      // Médico tratante
                       section('MÉDICO TRATANTE');
-                      row(`N° Ministerio de Salud: ${selectedDoctor.mpps}`, `Especialidad: ${selectedDoctor.specialty}`);
-                      row(`Nombres y Apellidos: ${selectedDoctor.name}`, `Horario de Sesión: —`);
+                      rowBold(`N° MPPS: ${selectedDoctor.mpps}`, `Especialidad: ${selectedDoctor.specialty}`);
+                      rowBold(`Nombres y Apellidos: ${selectedDoctor.name}`);
+                      row(`Horario de sesión: ${horarioSesion}`, `Carga: ${selectedDoctor.carga || '—'}`);
                       line();
 
+                      // Motivo de consulta
                       section('MOTIVO DE CONSULTA');
-                      doc.setFontSize(10);
-                      const split = doc.splitTextToSize(motivoTexto || '—', W - 88);
-                      doc.text(split, 44, y);
-                      y += split.length * 12 + 4;
+                      doc.setFontSize(9.5);
+                      doc.setFont('helvetica', 'normal');
+                      doc.setTextColor(60, 60, 60);
+                      const descText = motivoData.descripcion || motivoTexto || '—';
+                      const split = doc.splitTextToSize(descText, W - 96);
+                      doc.text(split, 48, y);
+                      y += split.length * 12 + 6;
                       row(`Nivel de Urgencia: ${motivoData.urgencia || '—'}`, `Remisión: ${remitido === 'si' ? 'Sí' : 'No'}`);
+                      if (motivoData.observacion) {
+                        row(`Observación: ${motivoData.observacion}`);
+                      }
                       line();
+
+                      // Footer
+                      doc.setFontSize(7.5);
+                      doc.setTextColor(150, 150, 150);
+                      doc.text(`Centro Ambulatorio Dr. Salvador Allende — Comprobante de Cita — Generado: ${new Date().toLocaleString('es-VE')}`, W / 2, H - 24, { align: 'center' });
 
                       doc.save(`Comprobante_${citaNumber}.pdf`);
                     };
 
                     return (
-                      <div className="rounded-lg border border-border p-4 bg-card space-y-3">
-                        <div className="flex items-start justify-between border-b border-border pb-2">
+                      <div className="rounded-lg border border-border bg-card overflow-hidden">
+                        <div className="bg-primary px-4 py-3 flex items-start justify-between">
                           <div>
-                            <h3 className="text-xs font-semibold text-foreground">Centro Ambulatorio Dr Salvador Allende</h3>
-                            <p className="text-sm font-bold text-foreground">Comprobante de Cita Médica</p>
+                            <h3 className="text-xs font-semibold text-primary-foreground">Centro Ambulatorio Dr. Salvador Allende</h3>
+                            <p className="text-sm font-bold text-primary-foreground">Comprobante de Cita Médica</p>
                           </div>
-                          <div className="text-right text-xs">
-                            <div className="text-muted-foreground">N° cita</div>
-                            <div className="font-mono font-semibold text-foreground">{citaNumber}</div>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs pb-2 border-b border-border/60">
-                          <div><span className="text-muted-foreground">Fecha de Cita:</span> <span className="text-foreground">{selectedDate}</span></div>
-                          <div><span className="text-muted-foreground">Hora Asignada:</span> <span className="text-foreground">{horaSeleccionada}</span></div>
-                          <div><span className="text-muted-foreground">Turno:</span> <span className="text-foreground">{turno || '—'}</span></div>
-                          <div><span className="text-muted-foreground">Tipo de Cita:</span> <span className="text-foreground">{tipoCita}</span></div>
-                          <div className="col-span-2 flex items-center gap-2">
-                            <span className="text-muted-foreground">Caso:</span>
-                            <RadioGroup value={remitido} onValueChange={(v) => setRemitido(v as 'si' | 'no')} className="flex gap-3">
-                              <div className="flex items-center gap-1">
-                                <RadioGroupItem value="si" id="rem-si" />
-                                <Label htmlFor="rem-si" className="text-foreground text-xs">Remitido</Label>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <RadioGroupItem value="no" id="rem-no" />
-                                <Label htmlFor="rem-no" className="text-foreground text-xs">Directo</Label>
-                              </div>
-                            </RadioGroup>
+                          <div className="text-right">
+                            <div className="text-[10px] text-primary-foreground/70">N° cita</div>
+                            <div className="font-mono font-semibold text-sm text-primary-foreground">{citaNumber}</div>
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 pb-2 border-b border-border/60">
-                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Datos del Paciente</h4>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                            <div><span className="text-muted-foreground">Cédula:</span> <span className="text-foreground">{selectedPatient.ci}</span></div>
-                            <div><span className="text-muted-foreground">Nombres:</span> <span className="text-foreground">{selectedPatient.nombres}</span></div>
-                            <div><span className="text-muted-foreground">Apellidos:</span> <span className="text-foreground">{selectedPatient.apellidos}</span></div>
-                            <div><span className="text-muted-foreground">F. Nac.:</span> <span className="text-foreground">{selectedPatient.fechaNac}</span></div>
-                            <div><span className="text-muted-foreground">Sexo:</span> <span className="text-foreground">{selectedPatient.sexo}</span></div>
-                            <div><span className="text-muted-foreground">Teléfono:</span> <span className="text-foreground">{selectedPatient.telefono}</span></div>
-                            <div><span className="text-muted-foreground">Comunidad:</span> <span className="text-foreground">—</span></div>
-                            <div><span className="text-muted-foreground">Estado:</span> <span className="text-foreground">{selectedPatient.estado}</span></div>
-                            <div className="col-span-2"><span className="text-muted-foreground">Parroquia:</span> <span className="text-foreground">—</span></div>
+                        <div className="p-4 space-y-3">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs pb-3 border-b border-border/60">
+                            {field('Fecha de Cita', selectedDate)}
+                            {field('Hora Asignada', horaSeleccionada)}
+                            {field('Turno', turno)}
+                            {field('Tipo de Cita', tipoCita)}
+                            <div className="col-span-2 flex items-center gap-2 pt-1">
+                              <span className="text-muted-foreground text-xs">Caso:</span>
+                              <RadioGroup value={remitido} onValueChange={(v) => setRemitido(v as 'si' | 'no')} className="flex gap-3">
+                                <div className="flex items-center gap-1">
+                                  <RadioGroupItem value="si" id="rem-si" />
+                                  <Label htmlFor="rem-si" className="text-foreground text-xs">Remitido</Label>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <RadioGroupItem value="no" id="rem-no" />
+                                  <Label htmlFor="rem-no" className="text-foreground text-xs">Directo</Label>
+                                </div>
+                              </RadioGroup>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 pb-3 border-b border-border/60">
+                            <h4 className="text-[10px] font-semibold uppercase tracking-wide text-primary">Datos del Paciente</h4>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                              {field('Cédula', selectedPatient.ci)}
+                              {field('Nombres', selectedPatient.nombres)}
+                              {field('Apellidos', selectedPatient.apellidos)}
+                              {field('F. Nac.', selectedPatient.fechaNac)}
+                              {field('Sexo', selectedPatient.sexo)}
+                              {field('Teléfono', selectedPatient.telefono)}
+                              {field('Dirección', selectedPatient.direccion)}
+                              {field('Comunidad', selectedPatient.comunidad)}
+                              {field('Parroquia', selectedPatient.parroquia)}
+                              {field('Municipio', selectedPatient.municipio)}
+                              {field('Estado', selectedPatient.estadoGeo)}
+                              {field('Estado de salud', selectedPatient.estado)}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 pb-3 border-b border-border/60">
+                            <h4 className="text-[10px] font-semibold uppercase tracking-wide text-primary">Médico Tratante</h4>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                              {field('N° MPPS', selectedDoctor.mpps)}
+                              {field('Especialidad', selectedDoctor.specialty)}
+                              {field('Nombres y Apellidos', selectedDoctor.name)}
+                              {field('Horario de Sesión', horarioSesion)}
+                              {field('Carga de pacientes', selectedDoctor.carga)}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <h4 className="text-[10px] font-semibold uppercase tracking-wide text-primary">Motivo de Consulta</h4>
+                            <p className="text-xs text-foreground whitespace-pre-wrap bg-muted/30 rounded-md p-2.5">{motivoTexto || '—'}</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                              {field('Nivel de Urgencia', motivoData.urgencia)}
+                              {field('Remisión', remitido === 'si' ? 'Sí' : 'No')}
+                              {motivoData.observacion && field('Observación', motivoData.observacion)}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="space-y-1.5 pb-2 border-b border-border/60">
-                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Médico Tratante</h4>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                            <div><span className="text-muted-foreground">N° MPPS:</span> <span className="text-foreground font-mono">{selectedDoctor.mpps}</span></div>
-                            <div><span className="text-muted-foreground">Especialidad:</span> <span className="text-foreground">{selectedDoctor.specialty}</span></div>
-                            <div><span className="text-muted-foreground">Nombres y Apellidos:</span> <span className="text-foreground">{selectedDoctor.name}</span></div>
-                            <div><span className="text-muted-foreground">Horario de Sesión:</span> <span className="text-foreground">—</span></div>
-                          </div>
+                        <div className="px-4 pb-4">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={generarComprobantePDF}
+                          >
+                            <FileDown className="w-4 h-4 mr-2" />
+                            Generar Comprobante de Cita
+                          </Button>
                         </div>
-
-                        <div className="space-y-1.5">
-                          <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Motivo de Consulta</h4>
-                          <p className="text-xs text-muted-foreground">Descripción del motivo</p>
-                          <p className="text-xs text-foreground whitespace-pre-wrap">{motivoTexto || '—'}</p>
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pt-1">
-                            <div><span className="text-muted-foreground">Nivel de Urgencia:</span> <span className="text-foreground">{motivoData.urgencia || '—'}</span></div>
-                            <div><span className="text-muted-foreground">Remisión:</span> <span className="text-foreground">{remitido === 'si' ? 'Sí' : 'No'}</span></div>
-                          </div>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          className="w-full mt-2"
-                          onClick={generarComprobantePDF}
-                        >
-                          <FileDown className="w-4 h-4 mr-2" />
-                          Generar Comprobante de Cita
-                        </Button>
                       </div>
                     );
                   })()}

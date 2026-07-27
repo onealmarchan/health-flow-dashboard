@@ -128,7 +128,8 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
           {/* Notifications */}
           <DropdownMenu open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <DropdownMenuTrigger asChild>
-              <button
+              <span
+                role="button"
                 className="relative p-2 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer"
                 aria-label={`Notificaciones${unreadCount > 0 ? `, ${unreadCount} sin leer` : ''}`}
               >
@@ -144,7 +145,7 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
-              </button>
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
@@ -273,7 +274,7 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
           {/* User menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer" aria-label="Menú de usuario">
+              <span className="flex items-center gap-2 p-1.5 rounded-lg bg-secondary/60 hover:bg-secondary transition-colors duration-200 cursor-pointer" role="button" aria-label="Menú de usuario">
                 <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center">
                   <User className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
@@ -282,7 +283,7 @@ export function Header({ onMenuToggle, onPageChange }: HeaderProps) {
                     {user?.email ? user.email.split('@')[0] : 'Usuario'}
                   </span>
                 )}
-              </button>
+              </span>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-popover border border-border z-50">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>

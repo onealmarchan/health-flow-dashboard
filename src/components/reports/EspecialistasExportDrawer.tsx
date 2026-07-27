@@ -23,11 +23,11 @@ export type Especialista = {
   fechaIngreso: string;
   createdAt: number;
 };
-import { downloadCSV, downloadXLSX, downloadPDF } from './exporters';
+import { downloadCSV, downloadXLSX, downloadPDF, downloadDOCX } from './exporters';
 
 type ReportType = 'total' | 'menor' | 'mayor' | 'promedio';
 type Disponibilidad = 'todos' | 'disp' | 'nodisp';
-type FormatId = 'xlsx' | 'csv' | 'pdf';
+type FormatId = 'xlsx' | 'csv' | 'pdf' | 'docx';
 type SortId = 'carga-desc' | 'carga-asc' | 'az' | 'za' | 'mpps-asc' | 'mpps-desc';
 type FieldId = 'num' | 'mpps' | 'nombre' | 'apellido' | 'especialidad' | 'pacientes' | 'telefono' | 'disponible';
 
@@ -194,7 +194,8 @@ export function EspecialistasExportDrawer({ open, onOpenChange, especialistas, e
       const title = 'Reporte — Especialistas Médicos';
 
       if (format === 'csv') downloadCSV(fileName, numbered, fieldDefs);
-      else if (format === 'xlsx') downloadXLSX(fileName, numbered, fieldDefs, metrics);
+      else if (format === 'xlsx') await downloadXLSX(fileName, numbered, fieldDefs, metrics);
+      else if (format === 'docx') await downloadDOCX(fileName, title, scopeText, numbered, fieldDefs, metrics);
       else downloadPDF(fileName, title, scopeText, numbered, fieldDefs, metrics);
 
       toast.success('Reporte generado correctamente');
@@ -251,7 +252,9 @@ export function EspecialistasExportDrawer({ open, onOpenChange, especialistas, e
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent className="bg-popover border border-border z-50">
                 <SelectItem value="all">Todas las especialidades</SelectItem>
-                {[...especialidades].sort().map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                {especialidades.sort((a, b) => a.nombre.localeCompare(b.nombre)).map(e => (
+                  <SelectItem key={e.pk_num_especialidad} value={e.nombre}>{e.nombre}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </section>
@@ -301,8 +304,8 @@ export function EspecialistasExportDrawer({ open, onOpenChange, especialistas, e
 
           <section className="space-y-2">
             <Label className="text-foreground font-semibold">Formato de salida</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['xlsx', 'csv', 'pdf'] as FormatId[]).map(f => (
+            <div className="grid grid-cols-4 gap-2">
+              {(['xlsx', 'csv', 'pdf', 'docx'] as FormatId[]).map(f => (
                 <button key={f} type="button" onClick={() => setFormat(f)}
                   className={cn(
                     'px-3 py-2 rounded-md border text-sm transition-colors',

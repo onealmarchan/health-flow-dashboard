@@ -29,7 +29,6 @@ export function SplitExportButton({ showAdvanced = false, onExport, onAdvancedAl
 
   const handleOpenChange = (o: boolean) => {
     setOpen(o);
-    if (!o) setPicks(new Set()); // reset on close
   };
 
   const handleExport = () => {
@@ -50,8 +49,10 @@ export function SplitExportButton({ showAdvanced = false, onExport, onAdvancedAl
       </Button>
       <DropdownMenu open={open} onOpenChange={handleOpenChange}>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="outline" className="rounded-l-none px-2" aria-label="Más formatos">
-            <ChevronDown className="w-3.5 h-3.5" />
+          <Button asChild size="sm" variant="outline" className="rounded-l-none px-2" aria-label="Más formatos">
+            <span>
+              <ChevronDown className="w-3.5 h-3.5" />
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="bg-popover border border-border z-50 w-56">
