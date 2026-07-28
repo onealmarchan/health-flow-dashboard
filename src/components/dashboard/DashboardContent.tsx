@@ -8,7 +8,7 @@ import { DecisionMatrix } from './DecisionMatrix';
 import { GeographicKPI } from './GeographicKPI';
 import { PatientTable } from './PatientTable';
 import { Button } from '@/components/ui/button';
-import { KPIConfigModal, KPIConfigValue } from './KPIConfigModal';
+import { KPIConfigModal, KPIConfigValue, isPresetType } from './KPIConfigModal';
 import { KPI_CATALOG } from './kpiCatalog';
 import { getSemaforo } from '@/lib/kpi-semaforos';
 import { useDashboardMetrics } from '@/services/useDashboard';
@@ -71,9 +71,9 @@ export function DashboardContent() {
 
   const eligibleSlots = (() => {
     if (config.types === 'random') return [1, 2, 3, 4, 5];
-    if (config.types === 'epidemiologicos') {
-      const epiPreset = PRESET_KPI_IDS['epidemiologicos'];
-      const slots = new Set(KPI_CATALOG.filter(k => epiPreset.includes(k.id)).map(k => k.slot));
+    if (isPresetType(config.types)) {
+      const presetKpiIds = PRESET_KPI_IDS[config.types];
+      const slots = new Set(KPI_CATALOG.filter(k => presetKpiIds.includes(k.id)).map(k => k.slot));
       return Array.from(slots).sort();
     }
     const selected = config.types;
@@ -83,7 +83,7 @@ export function DashboardContent() {
 
   const selectedKpiIds = (() => {
     if (config.types === 'random') return undefined;
-    if (config.types === 'epidemiologicos') return PRESET_KPI_IDS['epidemiologicos'];
+    if (isPresetType(config.types)) return PRESET_KPI_IDS[config.types];
     return undefined;
   })();
   const visibleSlots = eligibleSlots.slice(0, config.count);

@@ -8,8 +8,16 @@ import { KPI_CATALOG, KPI_TYPE_LABELS, KPIType } from './kpiCatalog';
 import { Activity, BarChart3, Map, Stethoscope } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type PresetId = 'epidemiologicos' | 'carga-trabajo' | 'seguimiento' | 'geografia';
+
+const PRESET_IDS: readonly PresetId[] = ['epidemiologicos', 'carga-trabajo', 'seguimiento', 'geografia'];
+
+export function isPresetType(v: KPIConfigValue['types']): v is PresetId {
+  return typeof v === 'string' && v !== 'random' && (PRESET_IDS as readonly string[]).includes(v);
+}
+
 export interface KPIConfigValue {
-  types: 'random' | 'epidemiologicos' | KPIType[];
+  types: 'random' | PresetId | KPIType[];
   count: number;
 }
 
@@ -56,14 +64,14 @@ const PRESETS = [
 export function KPIConfigModal({ open, onOpenChange, value, onApply }: Props) {
   const [mode, setMode] = useState<'random' | 'preset' | 'custom'>(() => {
     if (value.types === 'random') return 'random';
-    if (value.types === 'epidemiologicos') return 'preset';
+    if (isPresetType(value.types)) return 'preset';
     return 'custom';
   });
-  const [selectedPreset, setSelectedPreset] = useState<string>(() => {
-    if (value.types === 'epidemiologicos') return 'epidemiologicos';
+  const [selectedPreset, setSelectedPreset] = useState<PresetId>(() => {
+    if (isPresetType(value.types)) return value.types;
     return 'epidemiologicos';
   });
-  const [types, setTypes] = useState<Set<KPIType>>(new Set(value.types === 'random' || value.types === 'epidemiologicos' ? [] : value.types));
+  const [types, setTypes] = useState<Set<KPIType>>(new Set(value.types === 'random' || isPresetType(value.types) ? [] : value.types));
   const [count, setCount] = useState(value.count);
 
   useEffect(() => {
@@ -71,9 +79,9 @@ export function KPIConfigModal({ open, onOpenChange, value, onApply }: Props) {
       if (value.types === 'random') {
         setMode('random');
         setTypes(new Set());
-      } else if (value.types === 'epidemiologicos') {
+      } else if (isPresetType(value.types)) {
         setMode('preset');
-        setSelectedPreset('epidemiologicos');
+        setSelectedPreset(value.types);
         setTypes(new Set());
       } else {
         setMode('custom');
@@ -111,7 +119,7 @@ export function KPIConfigModal({ open, onOpenChange, value, onApply }: Props) {
     if (mode === 'random') {
       typesValue = 'random';
     } else if (mode === 'preset') {
-      typesValue = 'epidemiologicos';
+      typesValue = selectedPreset;
     } else {
       typesValue = types.size === 0 ? 'random' : Array.from(types);
     }

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, ChevronsUpDown, Ban } from 'lucide-react';
+import { Plus, Search, Filter, CalendarDays, ArrowLeft, FileDown, Loader2, Check, X, ChevronsUpDown, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -295,6 +295,14 @@ export function CitasPage() {
     ...localDayOverrides,
   }), [apiReservedDates, localDayOverrides]);
 
+  // Track CIs that belong to minors (registered with representative's cédula)
+  const [minorCis, setMinorCis] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('minorCis');
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch { return new Set(); }
+  });
+
   // New patient form state
   const [isMinor, setIsMinor] = useState(false);
   const [newPatient, setNewPatient] = useState({
@@ -405,7 +413,17 @@ export function CitasPage() {
       estado_civil: mapEstadoCivil(newPatient.estadoCivil),
       estado_paciente: newPatient.estado === 'Activo' ? 'activo' : 'encamado'
     }, {
-      onSuccess: () => toast.success('Paciente registrado exitosamente'),
+      onSuccess: () => {
+        if (isMinor && ciFinal) {
+          setMinorCis(prev => {
+            const next = new Set(prev);
+            next.add(ciFinal);
+            localStorage.setItem('minorCis', JSON.stringify([...next]));
+            return next;
+          });
+        }
+        toast.success('Paciente registrado exitosamente');
+      },
       onError: (e: any) => {
         const data = e?.response?.data;
         const msg = data?.message || e?.message || 'Error al registrar paciente';
@@ -958,7 +976,7 @@ export function CitasPage() {
             <table className="text-sm min-w-[900px]">
               <thead>
                 <tr className="border-b border-border">
-                  {['Nº', 'CI', 'Nombres', 'Apellidos', 'F. Nacimiento', 'Sexo', 'Dirección', 'Teléfono', 'Nacionalidad', 'Estado', 'E. Civil', 'Acciones'].map(h => (
+                  {['Nº', 'Cédula', 'Nombres', 'Apellidos', 'F. Nacimiento', 'Sexo', 'Dirección', 'Teléfono', 'Nacionalidad', 'Estado', 'E. Civil', 'Acciones'].map(h => (
                     <th key={h} className="text-left p-2 text-xs font-medium text-muted-foreground whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -967,7 +985,19 @@ export function CitasPage() {
                 {filteredPatients.map(p => (
                   <tr key={p.num} className="border-b border-border/50 hover:bg-secondary/50">
                     <td className="p-2 text-foreground whitespace-nowrap">{p.num}</td>
-                    <td className="p-2 text-foreground font-mono whitespace-nowrap">{p.ci}</td>
+                    <td className="p-2 whitespace-nowrap">
+                      {p.ci && !minorCis.has(p.ci) ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/20 text-success">
+                          <Check className="w-3 h-3" />
+                          {p.ci}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-destructive/20 text-destructive">
+                          <X className="w-3 h-3" />
+                          Sin CI
+                        </span>
+                      )}
+                    </td>
                     <td className="p-2 text-foreground whitespace-nowrap">{p.nombres}</td>
                     <td className="p-2 text-foreground whitespace-nowrap">{p.apellidos}</td>
                     <td className="p-2 text-muted-foreground whitespace-nowrap">{p.fechaNac}</td>
